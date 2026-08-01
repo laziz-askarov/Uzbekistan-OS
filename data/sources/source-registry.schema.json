@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uzbekistan-os.local/schemas/source-registry.schema.json",
+  "title": "Uzbekistan OS source registry",
+  "type": "object",
+  "required": ["registry_version", "environment", "sources"],
+  "properties": {
+    "registry_version": { "const": "1.0" },
+    "environment": { "type": "string", "enum": ["development", "staging", "production"] },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "organization": {
+      "type": "object",
+      "required": ["id", "slug", "name", "website_url", "is_official"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "website_url": { "type": "string", "format": "uri" },
+        "is_official": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "id",
+        "slug",
+        "organization",
+        "title",
+        "url",
+        "source_type",
+        "domains",
+        "languages",
+        "crawl_policy",
+        "adapter_key",
+        "trust_tier",
+        "status",
+        "owner",
+        "reviewed_at",
+        "production_eligible"
+      ],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "organization": { "$ref": "#/$defs/organization" },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "source_type": { "type": "string", "enum": ["html", "pdf", "feed", "manual"] },
+        "domains": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["immigration", "tourism", "business-registration", "healthcare", "everyday-living"]
+          }
+        },
+        "languages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "enum": ["en", "uz", "ru"] }
+        },
+        "crawl_policy": {
+          "type": "string",
+          "enum": ["allowed", "manual_only", "blocked", "pending_review"]
+        },
+        "adapter_key": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "trust_tier": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "status": { "type": "string", "enum": ["draft", "approved", "rejected"] },
+        "owner": { "type": ["string", "null"], "minLength": 1 },
+        "reviewed_at": { "type": ["string", "null"], "format": "date-time" },
+        "production_eligible": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "crawl_policy": { "const": "allowed" } }, "required": ["crawl_policy"] },
+          "then": { "properties": { "status": { "const": "approved" } } }
+        },
+        {
+          "if": { "properties": { "production_eligible": { "const": true } }, "required": ["production_eligible"] },
+          "then": {
+            "properties": {
+              "status": { "const": "approved" },
+              "crawl_policy": { "enum": ["allowed", "manual_only"] },
+              "owner": { "type": "string", "minLength": 1 },
+              "reviewed_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "approved" } }, "required": ["status"] },
+          "then": {
+            "properties": {
+              "owner": { "type": "string", "minLength": 1 },
+              "reviewed_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

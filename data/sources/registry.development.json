@@ -1,0 +1,29 @@
+{
+  "registry_version": "1.0",
+  "environment": "development",
+  "sources": [
+    {
+      "id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+      "slug": "non-production-fixture",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000000200",
+        "slug": "uzbekistan-os-development",
+        "name": "Uzbekistan OS Development",
+        "website_url": "https://example.invalid",
+        "is_official": false
+      },
+      "title": "Non-production fixture",
+      "url": "https://example.invalid/non-production-fixture",
+      "source_type": "html",
+      "domains": ["immigration"],
+      "languages": ["en"],
+      "crawl_policy": "pending_review",
+      "adapter_key": "generic-html",
+      "trust_tier": 3,
+      "status": "draft",
+      "owner": null,
+      "reviewed_at": null,
+      "production_eligible": false
+    }
+  ]
+}

@@ -1,18 +1,18 @@
 # Uzbekistan OS MVP Execution Plan
 
-> Implementation status (2026-07-31): the Phase 1 foundation and the first
-> Phase 2 database slice are complete. The repository now includes the web/API
-> skeleton, local service topology, CI, initial OpenAPI and knowledge contracts,
-> design tokens, PostgreSQL namespaces, the versioned knowledge model, an
-> Alembic foundation migration, deterministic seeds, and database runbooks.
-> Local lint, tests, builds, contract validation, and offline migration SQL
-> compilation are green. Docker-backed migration and restore drills remain
-> pending because Docker is not installed in the current workspace. The next
-> delivery slice is the Phase 3 source registry and ingestion vertical slice.
+> Implementation status (2026-07-31): the Phase 1 foundation, first Phase 2
+> database slice, and first Phase 3 ingestion-safety slice are complete. The
+> schema-backed source registry, crawl-eligibility rules, exact-URL fetch port,
+> deterministic HTML/text normalization, content-addressed snapshot storage,
+> change detection, idempotent jobs, and bounded retry/dead-letter states are
+> implemented. No real source is authorized yet. Docker-backed migration and
+> restore drills remain pending because Docker is unavailable in this workspace.
+> The next delivery slice is production source approval and adapters, object
+> storage, structured parsing, and the reviewer queue.
 
 ## 1. Executive summary
 
-The project is currently a specification-only greenfield initiative: the folder contains eight two-page product, architecture, data, AI, API, knowledge, UX, and design-system PDFs, but no repository, executable contracts, source inventory, implementation, tests, deployment configuration, or benchmark data.
+The project began as a specification-only greenfield initiative. It now has a working monorepo foundation, executable contracts, database migrations, and the first fail-closed ingestion boundary; product decisions, approved source inventory, production infrastructure, reviewer tooling, retrieval, workflows, and benchmark data remain incomplete.
 
 The recommended delivery approach is a 16-week MVP program for an 8-10 person cross-functional team. Build one complete, evidence-backed vertical slice first, prove retrieval and citation quality, then expand content and workflows across the five PRD domains. Treat knowledge quality and evaluation as product-critical workstreams rather than post-build QA.
 
@@ -131,6 +131,8 @@ PostgreSQL with pgvector is the system of record. Redis supports ephemeral sessi
 **Exit gate:** contract tests, schema fixtures, migration up/down tests, accessibility smoke tests, and backup restoration pass.
 
 ### Phase 3 - Knowledge ingestion vertical slice (weeks 3-6)
+
+**Current progress:** registry validation, fetch/snapshot ports, HTML/text normalization, change detection, job idempotency, bounded retries, dead-letter states, and lineage metadata are implemented against a non-production fixture. Production sources, S3-compatible storage, the worker loop, structured parsing, reviewer APIs, PDF adapters, and embeddings remain.
 
 **Deliverables**
 
@@ -283,7 +285,7 @@ Define exact sample sizes and confidence intervals in week 1. Recommended minimu
 
 1. Name accountable product, technical, content, design, security, and operations owners.
 2. Approve the five-domain boundary and rank 10-15 launch workflows.
-3. Create the source registry and select the first two vertical-slice workflows.
+3. Create the source registry and select the first two vertical-slice workflows. **Registry contract complete; production sources and workflows still require approval.**
 4. Write ADRs for repository/tooling, hosting, auth, AI providers, multilingual policy, and retention.
 5. Scaffold the monorepo and local Docker stack.
 6. Draft OpenAPI, knowledge JSON Schema, answer schema, SSE events, and authorization matrix.

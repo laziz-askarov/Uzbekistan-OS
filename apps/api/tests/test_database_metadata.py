@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, ForeignKeyConstraint
+from sqlalchemy import CheckConstraint, ForeignKeyConstraint, UniqueConstraint
 
 from app.database import Base
 
@@ -69,3 +69,39 @@ def test_embeddings_are_model_keyed_without_a_premature_fixed_dimension() -> Non
 
     assert getattr(vector_type, "dim", None) is None
 
+
+def test_ingestion_jobs_encode_idempotency_retry_and_lineage() -> None:
+    jobs = Base.metadata.tables["ingestion.crawl_jobs"]
+    snapshots = Base.metadata.tables["ingestion.source_snapshots"]
+
+    assert {
+        "source_snapshot_id",
+        "idempotency_key",
+        "attempt_count",
+        "max_attempts",
+        "error",
+        "result",
+    } <= set(jobs.c.keys())
+    assert {"normalized_sha256", "byte_size"} <= set(snapshots.c.keys())
+
+    job_checks = {
+        constraint.name
+        for constraint in jobs.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+    job_uniques = {
+        constraint.name
+        for constraint in jobs.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+    snapshot_uniques = {
+        constraint.name
+        for constraint in snapshots.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert "ck_crawl_jobs_status_allowed" in job_checks
+    assert "ck_crawl_jobs_attempt_count_range" in job_checks
+    assert "ck_crawl_jobs_max_attempts_positive" in job_checks
+    assert "uq_crawl_jobs_source_key" in job_uniques
+    assert "uq_source_snapshots_source_sha256" in snapshot_uniques

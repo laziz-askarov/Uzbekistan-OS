@@ -4,7 +4,7 @@ Evidence-backed, multilingual guidance for navigating official Uzbekistan proced
 
 ## Repository status
 
-The repository foundation and first persistence slice are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health endpoints, local infrastructure definitions, initial contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge and ingestion tables, deterministic seeds, Alembic migrations, and database operations documentation. The source registry and ingestion pipeline are the next implementation slice; product workflows, retrieval, and authentication follow.
+The repository foundation, persistence slice, and safe ingestion core are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health endpoints, local infrastructure definitions, initial contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable snapshots, change detection, and idempotent retry/dead-letter semantics. Production source adapters and review tooling are the next implementation slice; product workflows, retrieval, and authentication follow.
 
 See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for decisions that require accountable owners.
 
@@ -43,6 +43,8 @@ python -m alembic -c alembic.ini upgrade head
 ```
 
 Database operating procedures are documented in [docs/runbooks/database.md](./docs/runbooks/database.md).
+
+The development source registry is intentionally ineligible for production crawling. Its policy and ingestion operations are documented in [data/sources/README.md](./data/sources/README.md) and [docs/runbooks/ingestion.md](./docs/runbooks/ingestion.md).
 
 ## Complete local stack
 
