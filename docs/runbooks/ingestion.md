@@ -34,6 +34,24 @@ Raw source responses and canonical extraction artifacts share the S3-compatible 
 
 Each changed snapshot produces one schema-versioned extraction artifact and one `pending` review item. Unchanged responses do not create new review work.
 
+## Reviewer controls
+
+The application review service accepts only a trusted context with a verified actor UUID and the `content_reviewer` or `admin` role. Do not build this context from request headers or body fields.
+
+Legal transitions are:
+
+```text
+pending -> in_review -> approved
+                     -> rejected
+```
+
+- The row must be locked and the review update plus audit insert committed together.
+- Only the assigned reviewer may approve or reject the item.
+- Record a concise decision reason without personal or applicant information.
+- Approval confirms extraction quality only; it does not publish knowledge.
+- Audit events cannot be updated or deleted. Corrections require a new compensating event.
+- Artifact comparison verifies stored bytes against database lineage before producing a section-level diff.
+
 ## Failure triage
 
 1. Confirm the registry entry remains approved and that its crawl policy has not changed.
@@ -44,4 +62,4 @@ Each changed snapshot produces one schema-versioned extraction artifact and one 
 
 ## Current limitations
 
-The Redis-backed worker loop, PDF extraction, authenticated review/decision APIs, compare UI, transactional publication, and production source entries are not implemented yet. The local and S3-compatible storage adapters are implemented, but live MinIO validation remains pending while Docker is unavailable.
+The Redis-backed worker loop, PDF extraction, authentication middleware and reviewer HTTP routes, compare UI, transactional publication, and production source entries are not implemented yet. The role-gated review service and comparison engine are implemented, but live PostgreSQL/MinIO validation remains pending while Docker is unavailable.

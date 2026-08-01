@@ -147,6 +147,19 @@ class ReviewItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="status_allowed",
         ),
         CheckConstraint("priority BETWEEN 0 AND 100", name="priority_range"),
+        CheckConstraint(
+            "(status = 'pending' AND assigned_user_id IS NULL) OR "
+            "(status IN ('in_review', 'approved', 'rejected') AND assigned_user_id IS NOT NULL) OR "
+            "status = 'cancelled'",
+            name="assignment_consistent",
+        ),
+        CheckConstraint(
+            "(status IN ('approved', 'rejected') AND decision_reason IS NOT NULL "
+            "AND length(btrim(decision_reason)) > 0 AND decided_at IS NOT NULL) OR "
+            "(status NOT IN ('approved', 'rejected') AND decision_reason IS NULL "
+            "AND decided_at IS NULL)",
+            name="decision_fields_consistent",
+        ),
         Index("ix_review_items_queue", "status", "priority", "created_at"),
         {"schema": "ingestion"},
     )

@@ -127,4 +127,6 @@ def test_extraction_artifacts_are_review_gated() -> None:
 
     assert "ck_review_items_status_allowed" in review_checks
     assert "ck_review_items_priority_range" in review_checks
+    assert "ck_review_items_assignment_consistent" in review_checks
+    assert "ck_review_items_decision_fields_consistent" in review_checks
     assert "ck_extraction_artifacts_section_count_positive" in artifact_checks

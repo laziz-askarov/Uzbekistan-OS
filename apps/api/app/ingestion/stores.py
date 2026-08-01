@@ -47,6 +47,23 @@ class LocalSnapshotStore:
             temporary_path = Path(temporary.name)
         temporary_path.replace(target)
 
+    def get(self, storage_key: str) -> bytes:
+        key = PurePosixPath(storage_key)
+        if key.is_absolute() or ".." in key.parts:
+            raise IngestionError(
+                "invalid_storage_key",
+                "snapshot storage key must stay inside the configured root",
+                retryable=False,
+            )
+        target = self.root.joinpath(*key.parts)
+        if not target.is_file():
+            raise IngestionError(
+                "object_missing",
+                "snapshot object does not exist",
+                retryable=False,
+            )
+        return target.read_bytes()
+
 
 class S3Client(Protocol):
     def head_bucket(self, **kwargs: object) -> dict[str, object]: ...
@@ -56,6 +73,8 @@ class S3Client(Protocol):
     def head_object(self, **kwargs: object) -> dict[str, object]: ...
 
     def put_object(self, **kwargs: object) -> dict[str, object]: ...
+
+    def get_object(self, **kwargs: object) -> dict[str, object]: ...
 
 
 class S3SnapshotStore:
@@ -154,3 +173,45 @@ class S3SnapshotStore:
                 "could not persist the snapshot object",
                 retryable=True,
             ) from error
+
+    def get(self, storage_key: str) -> bytes:
+        key = PurePosixPath(storage_key)
+        if key.is_absolute() or ".." in key.parts:
+            raise IngestionError(
+                "invalid_storage_key",
+                "snapshot storage key must stay inside the configured bucket",
+                retryable=False,
+            )
+        try:
+            response = self.client.get_object(Bucket=self.bucket, Key=storage_key)
+        except ClientError as error:
+            code = str(error.response.get("Error", {}).get("Code", ""))
+            if code in {"404", "NoSuchKey", "NotFound"}:
+                raise IngestionError(
+                    "object_missing",
+                    "snapshot object does not exist",
+                    retryable=False,
+                ) from error
+            raise IngestionError(
+                "object_store_unavailable",
+                "could not read the snapshot object",
+                retryable=True,
+            ) from error
+
+        body = response.get("Body")
+        if body is None or not hasattr(body, "read"):
+            raise IngestionError(
+                "invalid_object_response",
+                "object store returned an unreadable response",
+                retryable=True,
+            )
+        content = body.read()
+        metadata = response.get("Metadata", {})
+        expected = metadata.get("sha256") if isinstance(metadata, dict) else None
+        if not isinstance(content, bytes) or expected != sha256(content).hexdigest():
+            raise IngestionError(
+                "object_integrity_failure",
+                "snapshot object checksum verification failed",
+                retryable=False,
+            )
+        return content

@@ -1,4 +1,5 @@
 from hashlib import sha256
+from io import BytesIO
 
 import pytest
 from botocore.exceptions import ClientError
@@ -44,6 +45,15 @@ class FakeS3Client:
         }
         return {}
 
+    def get_object(self, **kwargs: object) -> dict[str, object]:
+        stored = self.objects.get(str(kwargs["Key"]))
+        if stored is None:
+            raise missing("NoSuchKey", "GetObject")
+        return {
+            "Metadata": stored["Metadata"],
+            "Body": BytesIO(stored["Body"]),
+        }
+
 
 def test_s3_store_creates_a_missing_development_bucket() -> None:
     client = FakeS3Client()
@@ -69,6 +79,7 @@ def test_s3_store_is_idempotent_for_identical_content() -> None:
         "Body": content,
         "ContentType": "text/plain",
     }
+    assert store.get("sources/source/snapshot.bin") == content
 
 
 def test_s3_store_rejects_content_address_collisions() -> None:

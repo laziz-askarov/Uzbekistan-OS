@@ -86,6 +86,9 @@ class MemorySnapshotStore:
         del content_type
         self.objects.setdefault(storage_key, content)
 
+    def get(self, storage_key: str) -> bytes:
+        return self.objects[storage_key]
+
 
 @dataclass
 class FakeJob:
