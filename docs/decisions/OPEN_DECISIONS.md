@@ -15,7 +15,8 @@ These decisions block later milestones but do not block the repository foundatio
 | D-009 | Dark mode | Tokens now; release only after equivalent accessibility QA | Design + product | Week 2 |
 | D-010 | Reliability | Define SLO, RTO, RPO, and error budget | Platform + product | Week 2 |
 
+The provider-neutral identity model and fail-closed Bearer verification boundary do not resolve D-003. The selected login/token provider, verification adapter, session lifecycle, and account-recovery policy still require product and security approval.
+
 ## Required decision record
 
 For each decision, record context, options considered, chosen option, consequences, owner, approval date, and the artifacts that must change.
-

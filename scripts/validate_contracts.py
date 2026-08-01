@@ -36,6 +36,17 @@ def validate_openapi_skeleton() -> None:
         raise ValueError("OpenAPI contract must define at least one path")
     if not contract.get("components", {}).get("schemas"):
         raise ValueError("OpenAPI contract must define component schemas")
+    implemented_paths = {
+        "/auth/me",
+        "/admin/reviews/{review_item_id}/claim",
+        "/admin/reviews/{review_item_id}/decision",
+        "/admin/artifacts/{artifact_id}/comparison",
+        "/admin/publications",
+    }
+    if not implemented_paths.issubset(contract["paths"]):
+        raise ValueError("OpenAPI contract is missing implemented administration paths")
+    if "BearerAuth" not in contract.get("components", {}).get("securitySchemes", {}):
+        raise ValueError("OpenAPI contract must define BearerAuth")
 
 
 def validate_source_registry() -> None:

@@ -13,6 +13,8 @@ tags:
   - name: conversations
   - name: knowledge
   - name: workflows
+  - name: authentication
+  - name: administration
 paths:
   /health:
     get:
@@ -118,10 +120,129 @@ paths:
                 $ref: "#/components/schemas/WorkflowListResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /auth/me:
+    get:
+      tags: [authentication]
+      operationId: getAuthenticatedPrincipal
+      summary: Get the authenticated internal principal
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Authenticated principal and application roles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrincipalResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /admin/reviews/{review_item_id}/claim:
+    post:
+      tags: [administration]
+      operationId: claimReviewItem
+      summary: Claim a pending review item
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ReviewItemId"
+      responses:
+        "200":
+          description: Review item claimed or same-reviewer claim replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewItemResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /admin/reviews/{review_item_id}/decision:
+    post:
+      tags: [administration]
+      operationId: decideReviewItem
+      summary: Approve or reject an assigned review item
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ReviewItemId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewDecisionRequest"
+      responses:
+        "200":
+          description: Review decision persisted with immutable audit lineage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewItemResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /admin/artifacts/{artifact_id}/comparison:
+    get:
+      tags: [administration]
+      operationId: compareExtractionArtifact
+      summary: Compare an extraction artifact with its previous approved version
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ArtifactId"
+      responses:
+        "200":
+          description: Section-level artifact comparison
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactComparisonResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /admin/publications:
+    post:
+      tags: [administration]
+      operationId: publishKnowledgeCandidate
+      summary: Publish an approved knowledge candidate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicationCandidate"
+      responses:
+        "200":
+          description: Candidate published or exact publication replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicationResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Token verified by a configured trusted identity adapter. The API never
+        trusts principal IDs or roles supplied directly by the caller.
   parameters:
     ConversationId:
       name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReviewItemId:
+      name: review_item_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ArtifactId:
+      name: artifact_id
       in: path
       required: true
       schema:
@@ -138,6 +259,9 @@ components:
     LanguageCode:
       type: string
       enum: [en, uz, ru]
+    DomainSlug:
+      type: string
+      enum: [immigration, tourism, business-registration, healthcare, everyday-living]
     ResponseMeta:
       type: object
       properties:
@@ -229,6 +353,182 @@ components:
           items: { $ref: "#/components/schemas/WorkflowSummary" }
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
+    PrincipalData:
+      type: object
+      required: [id, roles]
+      properties:
+        id: { type: string, format: uuid }
+        roles:
+          type: array
+          items: { type: string }
+          uniqueItems: true
+      additionalProperties: false
+    PrincipalResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/PrincipalData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ReviewDecisionRequest:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject]
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      additionalProperties: false
+    ReviewItemData:
+      type: object
+      required:
+        - id
+        - extraction_artifact_id
+        - status
+        - priority
+        - assigned_principal_id
+        - decision_reason
+        - decided_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        extraction_artifact_id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [pending, in_review, approved, rejected, cancelled]
+        priority: { type: integer, minimum: 0, maximum: 100 }
+        assigned_principal_id: { type: [string, "null"], format: uuid }
+        decision_reason: { type: [string, "null"] }
+        decided_at: { type: [string, "null"], format: date-time }
+        updated_at: { type: string, format: date-time }
+      additionalProperties: false
+    ReviewItemResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ReviewItemData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    SectionChange:
+      type: object
+      required: [section_id, change_type, previous_heading, current_heading]
+      properties:
+        section_id: { type: string }
+        change_type:
+          type: string
+          enum: [added, removed, modified, unchanged]
+        previous_heading: { type: [string, "null"] }
+        current_heading: { type: [string, "null"] }
+      additionalProperties: false
+    ArtifactComparisonData:
+      type: object
+      required: [current_artifact_id, previous_artifact_id, changed, changes]
+      properties:
+        current_artifact_id: { type: string, format: uuid }
+        previous_artifact_id: { type: [string, "null"], format: uuid }
+        changed: { type: boolean }
+        changes:
+          type: array
+          items: { $ref: "#/components/schemas/SectionChange" }
+      additionalProperties: false
+    ArtifactComparisonResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ArtifactComparisonData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    CandidateVersion:
+      type: object
+      required: [major]
+      properties:
+        major: { type: integer, minimum: 1 }
+        minor: { type: integer, minimum: 0, default: 0 }
+        revision: { type: integer, minimum: 0, default: 0 }
+      additionalProperties: false
+    CandidateCitation:
+      type: object
+      required: [source_id, locator]
+      properties:
+        source_id: { type: string, format: uuid }
+        locator: { type: string, minLength: 1 }
+        quote: { type: [string, "null"] }
+      additionalProperties: false
+    CandidateSection:
+      type: object
+      required: [id, heading, body, citations]
+      properties:
+        id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        heading: { type: string, minLength: 1 }
+        body: { type: string, minLength: 1 }
+        citations:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/CandidateCitation" }
+      additionalProperties: false
+    PublicationCandidate:
+      type: object
+      required:
+        - review_item_id
+        - slug
+        - domain
+        - language
+        - version
+        - title
+        - summary
+        - sections
+        - effective_from
+      properties:
+        review_item_id: { type: string, format: uuid }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        domain: { $ref: "#/components/schemas/DomainSlug" }
+        language: { $ref: "#/components/schemas/LanguageCode" }
+        version: { $ref: "#/components/schemas/CandidateVersion" }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        summary: { type: string, minLength: 1 }
+        audiences:
+          type: array
+          items: { type: string }
+          uniqueItems: true
+          default: []
+        keywords:
+          type: array
+          items: { type: string }
+          uniqueItems: true
+          default: []
+        sections:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/CandidateSection" }
+        effective_from: { type: string, format: date }
+        effective_until: { type: [string, "null"], format: date }
+        translation_of_id: { type: [string, "null"], format: uuid }
+      additionalProperties: false
+    PublicationResult:
+      type: object
+      required:
+        - publication_id
+        - document_id
+        - document_version_id
+        - candidate_sha256
+        - published_at
+      properties:
+        publication_id: { type: string, format: uuid }
+        document_id: { type: string, format: uuid }
+        document_version_id: { type: string, format: uuid }
+        candidate_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+        published_at: { type: string, format: date-time }
+      additionalProperties: false
+    PublicationResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/PublicationResult" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
     ErrorDetail:
       type: object
       required: [code, message, details]
@@ -244,4 +544,3 @@ components:
         error: { $ref: "#/components/schemas/ErrorDetail" }
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
-

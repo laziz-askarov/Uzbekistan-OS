@@ -4,7 +4,7 @@ Evidence-backed, multilingual guidance for navigating official Uzbekistan proced
 
 ## Repository status
 
-The repository foundation, persistence slice, and first four safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health endpoints, local infrastructure definitions, initial contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading-preserving extraction artifacts, change detection, idempotent retry/dead-letter semantics, a review queue, role-gated reviewer transitions, provider-neutral principal/role mapping, section-level comparison, transactional evidence-bound publication, and immutable audit events. Authentication middleware/routes, production source adapters, the worker loop, and PostgreSQL-backed integration tests are next; product workflows and retrieval follow.
+The repository foundation, persistence slice, and first five safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health and fail-closed authenticated administration endpoints, local infrastructure definitions, executable contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading-preserving extraction artifacts, change detection, idempotent retry/dead-letter semantics, a review queue, role-gated reviewer transitions, provider-neutral principal/role mapping, section-level comparison, transactional evidence-bound publication, and immutable audit events. An approved token-verifier adapter, production source adapters, the worker loop, reviewer UI, and PostgreSQL-backed integration tests are next; product workflows and retrieval follow.
 
 See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for decisions that require accountable owners.
 
@@ -44,7 +44,7 @@ python -m alembic -c alembic.ini upgrade head
 
 Database operating procedures are documented in [docs/runbooks/database.md](./docs/runbooks/database.md).
 
-The development source registry is intentionally ineligible for production crawling. Its policy and ingestion operations are documented in [data/sources/README.md](./data/sources/README.md), [docs/runbooks/ingestion.md](./docs/runbooks/ingestion.md), and [docs/runbooks/publication.md](./docs/runbooks/publication.md).
+The development source registry is intentionally ineligible for production crawling. Its policy and operations are documented in [data/sources/README.md](./data/sources/README.md), [docs/runbooks/ingestion.md](./docs/runbooks/ingestion.md), [docs/runbooks/publication.md](./docs/runbooks/publication.md), and [docs/runbooks/admin-api.md](./docs/runbooks/admin-api.md).
 
 ## Complete local stack
 

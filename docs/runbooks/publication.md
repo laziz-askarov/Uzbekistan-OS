@@ -63,4 +63,4 @@ The SQL-only migration check verifies compilation, not live constraint or concur
 
 ## Current limitations
 
-Authentication/token verification, reviewer and publisher HTTP routes, multi-source evidence packages, and live PostgreSQL integration tests are not implemented. The identity model does not resolve the open launch authentication decision. Docker-backed validation is pending because Docker is unavailable in this workspace.
+Reviewer and publisher HTTP routes now exist behind a fail-closed Bearer verification boundary. A production token-verifier adapter, multi-source evidence packages, reviewer UI, and live PostgreSQL integration tests are not implemented. The identity model does not resolve the open launch authentication decision. See [admin-api.md](./admin-api.md). Docker-backed validation is pending because Docker is unavailable in this workspace.

@@ -5,7 +5,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.errors import install_exception_handlers
 from app.middleware import request_id_middleware
+from app.routes.admin import router as admin_router
+from app.routes.auth import router as auth_router
+from app.routes.health import get_health
 from app.routes.health import router as health_router
 
 
@@ -35,8 +39,16 @@ def create_app() -> FastAPI:
         allow_headers=["authorization", "content-type", "x-request-id"],
     )
     application.middleware("http")(request_id_middleware)
-    application.include_router(health_router)
+    install_exception_handlers(application)
     application.include_router(health_router, prefix="/api/v1")
+    application.add_api_route(
+        "/health",
+        get_health,
+        methods=["GET"],
+        include_in_schema=False,
+    )
+    application.include_router(auth_router, prefix="/api/v1")
+    application.include_router(admin_router, prefix="/api/v1")
     return application
 
 
