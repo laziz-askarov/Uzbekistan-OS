@@ -4,12 +4,19 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models.ingestion import CrawlJob, SourceSnapshot
+from app.database.models.ingestion import (
+    CrawlJob,
+    ExtractionArtifact,
+    ReviewItem,
+    SourceSnapshot,
+)
 from app.ingestion.errors import IngestionError
 from app.ingestion.types import (
+    ExtractionArtifactMetadata,
     IngestionOutcome,
     JobClaim,
     JobStatus,
+    ReviewItemMetadata,
     SnapshotMetadata,
 )
 
@@ -118,6 +125,33 @@ class SqlAlchemyIngestionRepository:
                 etag=snapshot.etag,
                 last_modified=snapshot.last_modified,
                 fetched_at=snapshot.fetched_at,
+            )
+        )
+        self.session.flush()
+
+    def record_extraction_artifact(self, artifact: ExtractionArtifactMetadata) -> None:
+        self.session.add(
+            ExtractionArtifact(
+                id=artifact.id,
+                source_snapshot_id=artifact.source_snapshot_id,
+                adapter_key=artifact.adapter_key,
+                schema_version=artifact.schema_version,
+                storage_key=artifact.storage_key,
+                sha256=artifact.sha256,
+                normalized_sha256=artifact.normalized_sha256,
+                section_count=artifact.section_count,
+                details=dict(artifact.details),
+            )
+        )
+        self.session.flush()
+
+    def enqueue_review(self, review_item: ReviewItemMetadata) -> None:
+        self.session.add(
+            ReviewItem(
+                id=review_item.id,
+                extraction_artifact_id=review_item.extraction_artifact_id,
+                priority=review_item.priority,
+                status="pending",
             )
         )
         self.session.flush()

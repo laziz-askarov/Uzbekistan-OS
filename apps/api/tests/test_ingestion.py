@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from json import loads
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -15,10 +16,12 @@ from app.ingestion.service import IngestionService
 from app.ingestion.stores import LocalSnapshotStore
 from app.ingestion.types import (
     ChangeStatus,
+    ExtractionArtifactMetadata,
     FetchResponse,
     IngestionOutcome,
     JobClaim,
     JobStatus,
+    ReviewItemMetadata,
     SnapshotMetadata,
 )
 
@@ -73,7 +76,14 @@ class MemorySnapshotStore:
     def __init__(self) -> None:
         self.objects: dict[str, bytes] = {}
 
-    def put(self, storage_key: str, content: bytes) -> None:
+    def put(
+        self,
+        storage_key: str,
+        content: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+    ) -> None:
+        del content_type
         self.objects.setdefault(storage_key, content)
 
 
@@ -93,6 +103,8 @@ class MemoryRepository:
         self.jobs: dict[tuple[UUID, str], FakeJob] = {}
         self.jobs_by_id: dict[UUID, FakeJob] = {}
         self.snapshots: list[SnapshotMetadata] = []
+        self.artifacts: list[ExtractionArtifactMetadata] = []
+        self.review_items: list[ReviewItemMetadata] = []
 
     def claim_job(self, source_id: UUID, idempotency_key: str, max_attempts: int) -> JobClaim:
         key = (source_id, idempotency_key)
@@ -123,6 +135,12 @@ class MemoryRepository:
 
     def record_snapshot(self, snapshot: SnapshotMetadata) -> None:
         self.snapshots.append(snapshot)
+
+    def record_extraction_artifact(self, artifact: ExtractionArtifactMetadata) -> None:
+        self.artifacts.append(artifact)
+
+    def enqueue_review(self, review_item: ReviewItemMetadata) -> None:
+        self.review_items.append(review_item)
 
     def mark_succeeded(self, job_id: UUID, outcome: IngestionOutcome) -> None:
         job = self.jobs_by_id[job_id]
@@ -218,7 +236,39 @@ def test_changed_snapshot_is_stored_and_same_job_is_replayed() -> None:
     assert replay == first
     assert len(fetcher.calls) == 1
     assert len(repository.snapshots) == 1
+    assert len(repository.artifacts) == 1
+    assert len(repository.review_items) == 1
     assert store.objects[first.storage_key] == b"<p>Current rule</p>"
+    artifact = repository.artifacts[0]
+    assert store.objects[artifact.storage_key].startswith(b'{"adapter_key":"generic-html"')
+    assert repository.review_items[0].extraction_artifact_id == artifact.id
+
+
+def test_extraction_artifact_preserves_heading_sections() -> None:
+    source = approved_source()
+    body = (
+        b"<h1>Overview</h1><p>Entry guidance.</p>"
+        b"<h2>Requirements</h2><p>Passport required.</p>"
+    )
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+
+    outcome = service(FakeFetcher([response(source, body)]), repository, store).run(
+        source,
+        idempotency_key="scheduled:sections",
+    )
+
+    artifact = repository.artifacts[0]
+    payload = loads(store.objects[artifact.storage_key])
+    assert payload["snapshot_id"] == str(outcome.snapshot_id)
+    assert payload["sections"] == [
+        {"body": "Entry guidance.", "heading": "Overview", "id": "overview"},
+        {
+            "body": "Passport required.",
+            "heading": "Requirements",
+            "id": "requirements",
+        },
+    ]
 
 
 def test_identical_content_is_unchanged_and_uses_conditional_headers() -> None:

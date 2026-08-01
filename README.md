@@ -4,7 +4,7 @@ Evidence-backed, multilingual guidance for navigating official Uzbekistan proced
 
 ## Repository status
 
-The repository foundation, persistence slice, and safe ingestion core are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health endpoints, local infrastructure definitions, initial contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable snapshots, change detection, and idempotent retry/dead-letter semantics. Production source adapters and review tooling are the next implementation slice; product workflows, retrieval, and authentication follow.
+The repository foundation, persistence slice, and first two safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health endpoints, local infrastructure definitions, initial contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading-preserving extraction artifacts, change detection, idempotent retry/dead-letter semantics, and a review queue. Authenticated reviewer actions, production source adapters, and the worker loop are next; product workflows and retrieval follow.
 
 See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for decisions that require accountable owners.
 

@@ -10,6 +10,8 @@ FIXTURE_PATH = ROOT / "packages/knowledge/examples/minimal-immigration-document.
 OPENAPI_PATH = ROOT / "packages/contracts/openapi.yaml"
 SOURCE_REGISTRY_SCHEMA_PATH = ROOT / "data/sources/source-registry.schema.json"
 SOURCE_REGISTRY_PATH = ROOT / "data/sources/registry.development.json"
+EXTRACTION_SCHEMA_PATH = ROOT / "packages/knowledge/schemas/extraction-artifact.schema.json"
+EXTRACTION_FIXTURE_PATH = ROOT / "packages/knowledge/examples/minimal-extraction-artifact.json"
 
 
 def read_json(path: Path) -> object:
@@ -49,8 +51,16 @@ def validate_source_registry() -> None:
             raise ValueError(f"Source registry contains duplicate {field} values")
 
 
+def validate_extraction_fixture() -> None:
+    schema = read_json(EXTRACTION_SCHEMA_PATH)
+    fixture = read_json(EXTRACTION_FIXTURE_PATH)
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema, format_checker=FormatChecker()).validate(fixture)
+
+
 if __name__ == "__main__":
     validate_knowledge_fixture()
     validate_openapi_skeleton()
     validate_source_registry()
+    validate_extraction_fixture()
     print("Contracts validated successfully.")

@@ -3,7 +3,12 @@
 from app.database.base import Base
 from app.database.models.audit import AuditEvent
 from app.database.models.geography import Country, Language
-from app.database.models.ingestion import CrawlJob, SourceSnapshot
+from app.database.models.ingestion import (
+    CrawlJob,
+    ExtractionArtifact,
+    ReviewItem,
+    SourceSnapshot,
+)
 from app.database.models.knowledge import (
     Chunk,
     Document,
@@ -26,9 +31,10 @@ __all__ = [
     "DocumentVersion",
     "Domain",
     "Embedding",
+    "ExtractionArtifact",
     "Language",
+    "ReviewItem",
     "Source",
     "SourceOrganization",
     "SourceSnapshot",
 ]
-

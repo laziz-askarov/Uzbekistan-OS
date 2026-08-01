@@ -14,7 +14,7 @@ def test_migration_history_has_one_linear_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert script.get_bases() == ["20260731_0001"]
-    assert script.get_heads() == ["20260731_0002"]
+    assert script.get_heads() == ["20260731_0003"]
 
 
 def test_foundation_migration_compiles_to_postgresql_sql() -> None:
@@ -46,6 +46,8 @@ def test_foundation_migration_compiles_to_postgresql_sql() -> None:
     assert "idempotency_key VARCHAR(128)" in sql
     assert "retry_scheduled" in sql
     assert "dead_lettered" in sql
+    assert "CREATE TABLE ingestion.extraction_artifacts" in sql
+    assert "CREATE TABLE ingestion.review_items" in sql
 
 
 def test_foundation_downgrade_compiles_to_postgresql_sql() -> None:
@@ -57,7 +59,7 @@ def test_foundation_downgrade_compiles_to_postgresql_sql() -> None:
             "-c",
             str(ALEMBIC_CONFIG),
             "downgrade",
-            "20260731_0002:base",
+            "20260731_0003:base",
             "--sql",
         ],
         cwd=ROOT,

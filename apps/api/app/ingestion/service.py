@@ -3,10 +3,17 @@ from hashlib import sha256
 from uuid import uuid4
 
 from app.ingestion.errors import IngestionError, SourceNotEligibleError
+from app.ingestion.extractors import extract_artifact
 from app.ingestion.models import SourceRegistryEntry
 from app.ingestion.normalizers import normalize_response
 from app.ingestion.ports import IngestionRepository, SnapshotStore, SourceFetcher
-from app.ingestion.types import ChangeStatus, IngestionOutcome, SnapshotMetadata
+from app.ingestion.types import (
+    ChangeStatus,
+    ExtractionArtifactMetadata,
+    IngestionOutcome,
+    ReviewItemMetadata,
+    SnapshotMetadata,
+)
 
 
 class IngestionService:
@@ -113,8 +120,44 @@ class IngestionService:
             fetched_at=response.fetched_at,
             byte_size=len(response.body),
         )
-        self.snapshot_store.put(storage_key, response.body)
+        artifact = extract_artifact(source, snapshot, response, normalized)
+        artifact_id = uuid4()
+        artifact_bytes = artifact.canonical_bytes()
+        artifact_storage_key = (
+            f"sources/{source.id}/{raw_sha256}.{source.adapter_key}.extraction.json"
+        )
+        review_item_id = uuid4()
+        self.snapshot_store.put(
+            storage_key,
+            response.body,
+            content_type=response.header("content-type") or "application/octet-stream",
+        )
+        self.snapshot_store.put(
+            artifact_storage_key,
+            artifact_bytes,
+            content_type="application/json",
+        )
         self.repository.record_snapshot(snapshot)
+        self.repository.record_extraction_artifact(
+            ExtractionArtifactMetadata(
+                id=artifact_id,
+                source_snapshot_id=snapshot_id,
+                adapter_key=source.adapter_key,
+                schema_version=artifact.schema_version,
+                storage_key=artifact_storage_key,
+                sha256=artifact.sha256,
+                normalized_sha256=normalized.sha256,
+                section_count=len(artifact.sections),
+                details={"media_type": artifact.media_type},
+            )
+        )
+        self.repository.enqueue_review(
+            ReviewItemMetadata(
+                id=review_item_id,
+                extraction_artifact_id=artifact_id,
+                priority=50,
+            )
+        )
         return IngestionOutcome(
             status=ChangeStatus.CHANGED,
             source_id=source.id,
@@ -122,6 +165,8 @@ class IngestionService:
             sha256=raw_sha256,
             normalized_sha256=normalized.sha256,
             storage_key=storage_key,
+            extraction_artifact_id=artifact_id,
+            review_item_id=review_item_id,
         )
 
     @staticmethod

@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
-from app.database.mixins import UUIDPrimaryKeyMixin
+from app.database.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class SourceSnapshot(UUIDPrimaryKeyMixin, Base):
@@ -100,3 +100,65 @@ class CrawlJob(UUIDPrimaryKeyMixin, Base):
         nullable=False,
         server_default=text("'{}'::jsonb"),
     )
+
+
+class ExtractionArtifact(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "extraction_artifacts"
+    __table_args__ = (
+        CheckConstraint("section_count > 0", name="section_count_positive"),
+        UniqueConstraint(
+            "source_snapshot_id",
+            "adapter_key",
+            "schema_version",
+            name="uq_extraction_artifacts_snapshot_adapter_version",
+        ),
+        {"schema": "ingestion"},
+    )
+
+    source_snapshot_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("ingestion.source_snapshots.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    adapter_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    schema_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    storage_key: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    normalized_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    section_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    details: Mapped[dict[str, object]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class ReviewItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "review_items"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'in_review', 'approved', 'rejected', 'cancelled')",
+            name="status_allowed",
+        ),
+        CheckConstraint("priority BETWEEN 0 AND 100", name="priority_range"),
+        Index("ix_review_items_queue", "status", "priority", "created_at"),
+        {"schema": "ingestion"},
+    )
+
+    extraction_artifact_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("ingestion.extraction_artifacts.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="pending")
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, server_default="50")
+    assigned_user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), index=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

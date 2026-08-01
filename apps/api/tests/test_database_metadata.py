@@ -16,6 +16,8 @@ EXPECTED_TABLES = {
     "knowledge.embeddings",
     "ingestion.source_snapshots",
     "ingestion.crawl_jobs",
+    "ingestion.extraction_artifacts",
+    "ingestion.review_items",
     "audit.events",
 }
 
@@ -105,3 +107,24 @@ def test_ingestion_jobs_encode_idempotency_retry_and_lineage() -> None:
     assert "ck_crawl_jobs_max_attempts_positive" in job_checks
     assert "uq_crawl_jobs_source_key" in job_uniques
     assert "uq_source_snapshots_source_sha256" in snapshot_uniques
+
+
+def test_extraction_artifacts_are_review_gated() -> None:
+    artifacts = Base.metadata.tables["ingestion.extraction_artifacts"]
+    review_items = Base.metadata.tables["ingestion.review_items"]
+
+    assert review_items.c.extraction_artifact_id.unique is True
+    review_checks = {
+        constraint.name
+        for constraint in review_items.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+    artifact_checks = {
+        constraint.name
+        for constraint in artifacts.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+
+    assert "ck_review_items_status_allowed" in review_checks
+    assert "ck_review_items_priority_range" in review_checks
+    assert "ck_extraction_artifacts_section_count_positive" in artifact_checks

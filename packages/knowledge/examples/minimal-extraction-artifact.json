@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "source_id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+  "snapshot_id": "00000000-0000-0000-0000-000000003001",
+  "adapter_key": "generic-html",
+  "media_type": "text/html",
+  "raw_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "normalized_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "extracted_at": "2026-07-31T00:00:00Z",
+  "sections": [
+    {
+      "id": "overview",
+      "heading": "Overview",
+      "body": "Non-production extraction fixture."
+    }
+  ]
+}

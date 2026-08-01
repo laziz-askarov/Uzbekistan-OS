@@ -21,5 +21,5 @@ Source ingestion handles externally controlled bytes and can accidentally publis
 
 - Retries cannot silently create duplicate snapshot records or repeat a completed fetch.
 - Exact source bytes and change decisions remain auditable.
-- The generic adapter intentionally supports only HTML and text. PDF extraction, structured parsing, reviewer actions, scheduling, and production object storage remain later Phase 3 work.
+- The generic adapter intentionally supports only HTML and text. ADR 0005 adds structured artifacts, S3-compatible storage, and queue creation; PDF extraction, reviewer actions, and scheduling remain later Phase 3 work.
 - No real source is authorized by this ADR; accountable owners must still resolve launch workflow, crawl permission, precedence, and freshness decisions.
