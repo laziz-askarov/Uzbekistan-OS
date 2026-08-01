@@ -22,10 +22,19 @@
     "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
     "domain": {
       "type": "string",
-      "enum": ["immigration", "tourism", "business-registration", "healthcare", "everyday-living"]
+      "enum": [
+        "immigration",
+        "tourism",
+        "business-registration",
+        "healthcare",
+        "everyday-living"
+      ]
     },
     "language": { "type": "string", "enum": ["en", "uz", "ru"] },
-    "status": { "type": "string", "enum": ["draft", "in_review", "published", "expired", "archived"] },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "in_review", "published", "expired", "archived"]
+    },
     "version": {
       "type": "object",
       "required": ["major", "minor", "revision"],
@@ -38,8 +47,34 @@
     },
     "title": { "type": "string", "minLength": 1 },
     "summary": { "type": "string", "minLength": 1 },
-    "audiences": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
-    "keywords": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "audiences": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "entities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entity" },
+      "uniqueItems": true
+    },
+    "applicability": { "$ref": "#/$defs/applicability" },
+    "requirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirement" }
+    },
+    "steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "fees": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fee" }
+    },
     "sections": {
       "type": "array",
       "minItems": 1,
@@ -53,9 +88,179 @@
     "effective_from": { "type": "string", "format": "date" },
     "effective_until": { "type": ["string", "null"], "format": "date" },
     "reviewed_at": { "type": "string", "format": "date-time" },
-    "translation_of": { "type": ["string", "null"], "format": "uuid" }
+    "translation_of": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "deprecated": true
+    },
+    "translation": { "$ref": "#/$defs/translation" },
+    "domain_data": { "type": ["object", "null"] }
   },
   "$defs": {
+    "entity": {
+      "type": "object",
+      "required": ["id", "type", "name"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "type": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "applicability": {
+      "type": "object",
+      "properties": {
+        "audiences": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "nationalities": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z]{2}$" },
+          "uniqueItems": true
+        },
+        "residency_statuses": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "locations": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "conditions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "title", "description", "mandatory", "citations"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "mandatory": { "type": "boolean" },
+        "applies_when": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/citation" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "required": ["id", "ordinal", "title", "description", "citations"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "ordinal": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "requirement_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "uniqueItems": true
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/citation" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fee": {
+      "type": "object",
+      "required": ["id", "label", "amount_type", "citations"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "amount_type": {
+          "type": "string",
+          "enum": ["exact", "range", "variable", "unknown"]
+        },
+        "amount": { "type": ["number", "null"], "minimum": 0 },
+        "minimum_amount": { "type": ["number", "null"], "minimum": 0 },
+        "maximum_amount": { "type": ["number", "null"], "minimum": 0 },
+        "currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+        "conditions": { "type": ["string", "null"] },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/citation" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "amount_type": { "const": "exact" } },
+            "required": ["amount_type"]
+          },
+          "then": { "required": ["amount", "currency"] }
+        },
+        {
+          "if": {
+            "properties": { "amount_type": { "const": "range" } },
+            "required": ["amount_type"]
+          },
+          "then": {
+            "required": ["minimum_amount", "maximum_amount", "currency"]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "translation": {
+      "type": "object",
+      "required": ["status", "canonical_language"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "original",
+            "human_reviewed",
+            "machine_assisted_reviewed",
+            "pending_review"
+          ]
+        },
+        "canonical_language": { "type": "string", "enum": ["en", "uz", "ru"] },
+        "source_document_id": { "type": ["string", "null"], "format": "uuid" },
+        "reviewed_at": { "type": ["string", "null"], "format": "date-time" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": ["human_reviewed", "machine_assisted_reviewed"]
+              }
+            },
+            "required": ["status"]
+          },
+          "then": { "required": ["reviewed_at"] }
+        }
+      ],
+      "additionalProperties": false
+    },
     "citation": {
       "type": "object",
       "required": ["source_id", "locator"],
@@ -83,7 +288,14 @@
     },
     "source": {
       "type": "object",
-      "required": ["id", "organization", "title", "url", "retrieved_at", "snapshot_sha256"],
+      "required": [
+        "id",
+        "organization",
+        "title",
+        "url",
+        "retrieved_at",
+        "snapshot_sha256"
+      ],
       "properties": {
         "id": { "type": "string", "format": "uuid" },
         "organization": { "type": "string", "minLength": 1 },
@@ -97,4 +309,3 @@
   },
   "additionalProperties": false
 }
-

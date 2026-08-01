@@ -1,0 +1,13 @@
+@import "./tokens.css";
+
+@theme inline {
+  --color-brand: var(--color-primary);
+  --color-canvas: var(--color-background);
+  --color-panel: var(--color-surface);
+  --color-foreground: var(--color-text-primary);
+  --color-muted: var(--color-text-secondary);
+  --color-danger: var(--color-error);
+  --font-sans: var(--font-sans);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+}

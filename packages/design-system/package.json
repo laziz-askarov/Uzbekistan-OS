@@ -2,7 +2,22 @@
   "name": "@uzbekistan-os/design-system",
   "version": "0.1.0",
   "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens.css",
+    "./components.css": "./components.css",
+    "./tailwind.css": "./tailwind.css"
+  },
   "files": [
+    "components.css",
+    "src",
+    "tailwind.css",
     "tokens.css"
-  ]
+  ],
+  "devDependencies": {
+    "@types/react": "19.2.18"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
 }

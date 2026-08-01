@@ -67,7 +67,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker compose -f docker-compose.yml config --quiet
       - run: docker compose -f infra/staging/docker-compose.yml config --quiet
-      - run: bash -n scripts/deploy_staging.sh scripts/smoke_staging.sh
+      - run: bash -n scripts/deploy_staging.sh scripts/smoke_staging.sh scripts/drill_database_restore.sh
+      - run: python3 scripts/validate_design_system.py
 
   deploy-staging:
     needs: [web, api, infrastructure]

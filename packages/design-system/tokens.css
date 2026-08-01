@@ -1,23 +1,51 @@
 :root {
-  color-scheme: light;
-  --color-primary: #0a6fe8;
-  --color-success: #178a46;
-  --color-warning: #a85d00;
-  --color-error: #c7332c;
-  --color-info: #64d2ff;
-  --color-background: #f6f7f9;
-  --color-surface: #ffffff;
-  --color-ink: #101317;
-  --color-text-primary: #101317;
-  --color-text-secondary: #565d68;
-  --color-text-tertiary: #747d89;
-  --color-border: #dfe3e8;
+  color-scheme: light dark;
 
+  /* Semantic color: calm, high-contrast, and consistent across every surface. */
+  --color-primary: light-dark(#0668d7, #68a9ff);
+  --color-primary-hover: light-dark(#055bbd, #82b8ff);
+  --color-primary-active: light-dark(#064d9d, #4d98fa);
+  --color-primary-soft: light-dark(#e7f1ff, #122b4b);
+  --color-success: light-dark(#16794a, #4ac981);
+  --color-warning: light-dark(#9a5a00, #f4b657);
+  --color-error: light-dark(#c72c3b, #ff6b76);
+  --color-info: light-dark(#007eaa, #5ac8fa);
+  --color-background: light-dark(#f3f4f7, #0f1012);
+  --color-background-deep: light-dark(#e7e9ef, #08090a);
+  --color-surface: light-dark(#ffffff, #1c1d20);
+  --color-surface-muted: light-dark(#f8f8fa, #24262a);
+  --color-surface-raised: light-dark(#ffffff, #282a2f);
+  --color-material: light-dark(rgb(255 255 255 / 76%), rgb(32 34 38 / 78%));
+  --color-ink: light-dark(#15171a, #f5f6f8);
+  --color-text-primary: light-dark(#15171a, #f5f6f8);
+  --color-text-secondary: light-dark(#5d616a, #b6bac3);
+  --color-text-tertiary: light-dark(#7f8490, #8d929d);
+  --color-border: light-dark(rgb(21 23 26 / 9%), rgb(255 255 255 / 10%));
+  --color-border-strong: light-dark(
+    rgb(21 23 26 / 18%),
+    rgb(255 255 255 / 20%)
+  );
+  --color-separator: light-dark(rgb(21 23 26 / 12%), rgb(255 255 255 / 13%));
+  --color-focus: light-dark(#006ee6, #7cb5ff);
+  --color-error-surface: light-dark(#fff0f1, #3a1b20);
+  --color-warning-surface: light-dark(#fff7e9, #392812);
+  --color-success-surface: light-dark(#edf8f1, #153224);
+  --color-info-surface: light-dark(#eaf7fb, #132f3d);
+
+  /* A platform-native stack preserves familiarity on every operating system. */
   --font-sans:
-    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter,
+    ui-sans-serif, sans-serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter,
+    ui-sans-serif, sans-serif;
   --text-xs: 0.8125rem;
   --text-sm: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.125rem;
+  --text-display: clamp(3rem, 7vw, 5.75rem);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -26,15 +54,40 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-8: 3rem;
+  --space-10: 4rem;
+  --space-12: 6rem;
 
-  --radius-control: 0.75rem;
-  --radius-card: 1.5rem;
+  --radius-small: 0.625rem;
+  --radius-control: 0.875rem;
+  --radius-card: 1.375rem;
   --radius-panel: 2rem;
+  --radius-pill: 999px;
+  --control-min-size: 2.75rem;
+  --control-comfortable-size: 3rem;
 
-  --shadow-1: 0 1px 2px rgb(16 19 23 / 5%);
-  --shadow-2: 0 16px 48px rgb(16 19 23 / 8%);
+  --shadow-1: light-dark(
+    0 1px 2px rgb(22 28 45 / 4%),
+    0 1px 2px rgb(0 0 0 / 24%)
+  );
+  --shadow-2: light-dark(
+    0 18px 50px rgb(22 28 45 / 10%),
+    0 18px 50px rgb(0 0 0 / 32%)
+  );
+  --shadow-float: light-dark(
+    0 28px 90px rgb(22 28 45 / 16%),
+    0 28px 90px rgb(0 0 0 / 42%)
+  );
 
-  --motion-fast: 150ms;
-  --motion-standard: 200ms;
-  --motion-slow: 300ms;
+  --motion-fast: 140ms;
+  --motion-standard: 220ms;
+  --motion-slow: 420ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
 }

@@ -9,6 +9,61 @@
   "summary": "A non-production fixture demonstrating the canonical document shape.",
   "audiences": ["international-visitor"],
   "keywords": ["example", "entry"],
+  "entities": [
+    {
+      "id": "fixture-authority",
+      "type": "organization",
+      "name": "Uzbekistan OS Development"
+    }
+  ],
+  "applicability": {
+    "audiences": ["international-visitor"],
+    "conditions": ["Non-production fixture only"]
+  },
+  "requirements": [
+    {
+      "id": "fixture-requirement",
+      "title": "Use fixture data only",
+      "description": "This requirement exists only to validate the schema.",
+      "mandatory": true,
+      "citations": [
+        {
+          "source_id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+          "locator": "Fixture section"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "fixture-step",
+      "ordinal": 1,
+      "title": "Validate the fixture",
+      "description": "Run the repository contract validator.",
+      "requirement_ids": ["fixture-requirement"],
+      "citations": [
+        {
+          "source_id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+          "locator": "Fixture section"
+        }
+      ]
+    }
+  ],
+  "fees": [
+    {
+      "id": "fixture-fee",
+      "label": "Fixture fee",
+      "amount_type": "exact",
+      "amount": 0,
+      "currency": "UZS",
+      "citations": [
+        {
+          "source_id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+          "locator": "Fixture section"
+        }
+      ]
+    }
+  ],
   "sections": [
     {
       "id": "overview",
@@ -35,6 +90,16 @@
   "effective_from": "2026-07-31",
   "effective_until": null,
   "reviewed_at": "2026-07-31T00:00:00Z",
-  "translation_of": null
+  "translation_of": null,
+  "translation": {
+    "status": "original",
+    "canonical_language": "en",
+    "source_document_id": null,
+    "reviewed_at": null
+  },
+  "domain_data": {
+    "topic": "Non-production immigration fixture",
+    "applicant_categories": ["fixture-applicant"],
+    "permit_types": ["fixture-permit"]
+  }
 }
-

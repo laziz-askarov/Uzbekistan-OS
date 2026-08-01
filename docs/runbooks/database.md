@@ -34,7 +34,20 @@ Record the application version, migration head, backup timestamp, database engin
 
 ## Restore drill
 
-Restore only into an empty, isolated database:
+For the local Compose stack, run the repository-owned drill:
+
+```bash
+scripts/drill_database_restore.sh
+```
+
+The script creates only the isolated
+`uzbekistan_os_phase2_restore_test` database, compares the migration head and
+critical table counts, queries the retrieval-eligibility view, and removes the
+temporary database and backup when it exits. Override the target only with a
+validated disposable database name through `RESTORE_DATABASE`.
+
+For a manually managed environment, restore only into an empty, isolated
+database using the following procedure:
 
 ```bash
 createdb uzbekistan_os_restore_test
@@ -49,5 +62,16 @@ After restoration:
 4. Run API integration and retrieval smoke tests.
 5. Destroy the isolated restore database after recording the drill result.
 
-Production RPO, RTO, retention, and backup frequency remain blocked on D-010.
+ADR 0016 sets the MVP PostgreSQL target at a one-hour RPO and four-hour RTO using
+managed point-in-time recovery with a seven-day PITR window and 30-day daily-backup
+retention. Exercise this database restore monthly and the full service recovery
+quarterly. Evidence objects have a 24-hour RPO and eight-hour RTO with versioning,
+checksum inventory, and publication blocked until restored evidence verifies.
 
+## Validation record
+
+The local Compose drill passed on 2026-08-01 against PostgreSQL 17 at migration
+`20260731_0005`. It restored the development fixture database into
+`uzbekistan_os_phase2_restore_test`, matched the migration/table-count signature,
+queried `knowledge.retrievable_chunks`, downgraded to `20260731_0004`, upgraded
+back to head, and removed the disposable database and backup.

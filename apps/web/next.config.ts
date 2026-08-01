@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  transpilePackages: ["@uzbekistan-os/design-system"],
   turbopack: {
     root: repositoryRoot,
   },

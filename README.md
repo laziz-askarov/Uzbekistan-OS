@@ -6,7 +6,13 @@ Evidence-backed, multilingual guidance for navigating official Uzbekistan proced
 
 The repository foundation, persistence slice, and first nine safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell and reviewer console, a FastAPI service with versioned health and fail-closed authenticated administration endpoints, prioritized review-queue and checksum-verified artifact reads, a Redis Stream ingestion worker with stale recovery and delayed retries, environment-bound source-registry synchronization, opt-in deterministic crawl scheduling, local infrastructure definitions, executable contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading/page-preserving HTML, text, and PDF extraction artifacts, change detection, idempotent database-authoritative retry/dead-letter semantics, role-gated reviewer transitions, provider-neutral principal/role mapping, section-level comparison, transactional evidence-bound publication, and immutable audit events. An approved token-verifier adapter, approved production sources and source-specific adapters, reviewer publication/expiry/re-index controls, and infrastructure-backed integration tests are next; product workflows and retrieval follow.
 
-See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap, [docs/phase-1-acceptance.md](./docs/phase-1-acceptance.md) for the Phase 1 evidence checklist, and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for decisions that require accountable owners.
+See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap,
+[docs/phase-1-acceptance.md](./docs/phase-1-acceptance.md) and
+[docs/phase-2-acceptance.md](./docs/phase-2-acceptance.md) for phase evidence,
+[docs/product/launch-workflows.md](./docs/product/launch-workflows.md) for the
+approved 15-flow MVP portfolio,
+and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for
+decisions that require accountable owners.
 
 ## Prerequisites
 

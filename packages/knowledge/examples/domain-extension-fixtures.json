@@ -1,0 +1,42 @@
+{
+  "immigration": {
+    "valid": {
+      "topic": "Non-production immigration fixture",
+      "applicant_categories": ["fixture-applicant"],
+      "permit_types": ["fixture-permit"]
+    },
+    "invalid": { "topic": "" }
+  },
+  "tourism": {
+    "valid": {
+      "topic": "Non-production tourism fixture",
+      "traveler_categories": ["fixture-traveler"],
+      "visit_purposes": ["fixture-purpose"]
+    },
+    "invalid": { "topic": "" }
+  },
+  "business-registration": {
+    "valid": {
+      "topic": "Non-production business registration fixture",
+      "entity_types": ["fixture-entity"],
+      "registration_authorities": ["fixture-authority"]
+    },
+    "invalid": { "topic": "" }
+  },
+  "healthcare": {
+    "valid": {
+      "topic": "Non-production healthcare fixture",
+      "patient_categories": ["fixture-patient"],
+      "care_settings": ["fixture-setting"]
+    },
+    "invalid": { "topic": "" }
+  },
+  "everyday-living": {
+    "valid": {
+      "topic": "Non-production everyday living fixture",
+      "resident_categories": ["fixture-resident"],
+      "service_categories": ["fixture-service"]
+    },
+    "invalid": { "topic": "" }
+  }
+}

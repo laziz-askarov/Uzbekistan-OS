@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uzbekistan-os.local/schemas/immigration-document.schema.json",
+  "title": "Immigration knowledge document",
+  "allOf": [
+    {
+      "$ref": "https://uzbekistan-os.local/schemas/knowledge-document.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["domain_data"],
+      "properties": {
+        "domain": { "const": "immigration" },
+        "domain_data": {
+          "type": "object",
+          "required": ["topic"],
+          "properties": {
+            "topic": { "type": "string", "minLength": 1 },
+            "applicant_categories": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            },
+            "permit_types": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

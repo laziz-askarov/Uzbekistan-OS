@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uzbekistan-os.local/schemas/everyday-living-document.schema.json",
+  "title": "Everyday living knowledge document",
+  "allOf": [
+    {
+      "$ref": "https://uzbekistan-os.local/schemas/knowledge-document.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["domain_data"],
+      "properties": {
+        "domain": { "const": "everyday-living" },
+        "domain_data": {
+          "type": "object",
+          "required": ["topic"],
+          "properties": {
+            "topic": { "type": "string", "minLength": 1 },
+            "resident_categories": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            },
+            "service_categories": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

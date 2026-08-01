@@ -18,6 +18,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@uzbekistan-os/design-system':
+        specifier: workspace:*
+        version: link:../../packages/design-system
       next:
         specifier: 16.2.12
         version: 16.2.12(@babel/core@7.29.7)(@types/node@26.1.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -49,7 +52,15 @@ importers:
 
   packages/contracts: {}
 
-  packages/design-system: {}
+  packages/design-system:
+    dependencies:
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.18
+        version: 19.2.18
 
   packages/knowledge: {}
 
