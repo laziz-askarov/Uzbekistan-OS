@@ -6,11 +6,7 @@ overrides:
   postcss: 8.5.18
   sharp: 0.35.3
 
-onlyBuiltDependencies:
-  - sharp
-  - unrs-resolver
-
 confirmModulesPurge: false
 allowBuilds:
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  sharp: true
+  unrs-resolver: true
