@@ -39,5 +39,5 @@ jobs:
       - run: python -m pip install -e '.[dev]'
       - run: python -m ruff check . ../../scripts/validate_contracts.py
       - run: python -m pytest
+      - run: python -m alembic -c alembic.ini upgrade head --sql > /tmp/uzbekistan-os-migration.sql
       - run: python ../../scripts/validate_contracts.py
-

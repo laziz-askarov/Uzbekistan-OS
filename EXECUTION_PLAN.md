@@ -1,11 +1,14 @@
 # Uzbekistan OS MVP Execution Plan
 
-> Implementation status (2026-07-31): the Phase 1 foundation is complete. The
-> repository now includes the web/API skeleton, local service topology, CI,
-> initial OpenAPI and knowledge contracts, design tokens, ADRs, and green local
-> validation. Docker runtime validation remains pending because Docker is not
-> installed in the current workspace. The next delivery slice is Phase 2 data
-> modeling and the first ingestion vertical slice.
+> Implementation status (2026-07-31): the Phase 1 foundation and the first
+> Phase 2 database slice are complete. The repository now includes the web/API
+> skeleton, local service topology, CI, initial OpenAPI and knowledge contracts,
+> design tokens, PostgreSQL namespaces, the versioned knowledge model, an
+> Alembic foundation migration, deterministic seeds, and database runbooks.
+> Local lint, tests, builds, contract validation, and offline migration SQL
+> compilation are green. Docker-backed migration and restore drills remain
+> pending because Docker is not installed in the current workspace. The next
+> delivery slice is the Phase 3 source registry and ingestion vertical slice.
 
 ## 1. Executive summary
 
@@ -284,7 +287,7 @@ Define exact sample sizes and confidence intervals in week 1. Recommended minimu
 4. Write ADRs for repository/tooling, hosting, auth, AI providers, multilingual policy, and retention.
 5. Scaffold the monorepo and local Docker stack.
 6. Draft OpenAPI, knowledge JSON Schema, answer schema, SSE events, and authorization matrix.
-7. Draft database ERD and initial migration sequence from the DDS schemas.
+7. Draft database ERD and initial migration sequence from the DDS schemas. **Foundation migration complete; ERD and later bounded-context migrations remain.**
 8. Create 30-50 golden benchmark questions before tuning retrieval or prompts.
 9. Establish design tokens and prototype the streaming/citation interaction.
 10. Deploy the empty stack to staging and prove CI, migrations, observability, rollback, and backup restoration.

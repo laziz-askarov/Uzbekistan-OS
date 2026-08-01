@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "Public and internal API for the Uzbekistan OS MVP"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "alembic==1.18.5",
   "fastapi==0.141.1",
+  "pgvector==0.5.0",
+  "psycopg[binary]==3.3.4",
   "pydantic-settings==2.14.2",
   "sqlalchemy==2.0.51",
   "uvicorn[standard]==0.52.0",

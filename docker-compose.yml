@@ -50,7 +50,7 @@ services:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://uzbekistan_os:local-development-only@postgres:5432/uzbekistan_os}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-uzbekistan_os}:${POSTGRES_PASSWORD:-local-development-only}@postgres:5432/${POSTGRES_DB:-uzbekistan_os}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
       API_CORS_ORIGINS: ${API_CORS_ORIGINS:-http://localhost:3000}
@@ -77,4 +77,3 @@ volumes:
   postgres-data:
   redis-data:
   minio-data:
-

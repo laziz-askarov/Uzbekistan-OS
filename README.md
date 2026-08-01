@@ -4,7 +4,7 @@ Evidence-backed, multilingual guidance for navigating official Uzbekistan proced
 
 ## Repository status
 
-The repository foundation is in place. The first runnable slice contains a responsive Next.js shell, a FastAPI service with versioned health endpoints, local infrastructure definitions, initial contracts, design tokens, and decision records. Product workflows, ingestion, retrieval, authentication, and persistence are the next implementation slices.
+The repository foundation and first persistence slice are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health endpoints, local infrastructure definitions, initial contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge and ingestion tables, deterministic seeds, Alembic migrations, and database operations documentation. The source registry and ingestion pipeline are the next implementation slice; product workflows, retrieval, and authentication follow.
 
 See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for decisions that require accountable owners.
 
@@ -36,6 +36,14 @@ uvicorn app.main:app --reload
 
 The API is served at `http://localhost:8000`; health is available at `/health` and `/api/v1/health`.
 
+Apply the PostgreSQL foundation migration after the database is available:
+
+```bash
+python -m alembic -c alembic.ini upgrade head
+```
+
+Database operating procedures are documented in [docs/runbooks/database.md](./docs/runbooks/database.md).
+
 ## Complete local stack
 
 Copy `.env.example` to `.env`, then run:
@@ -65,4 +73,3 @@ python -m pytest
 - Provider independent: external AI and storage providers sit behind adapters.
 - Auditable: source snapshots, document versions, prompts, retrievals, citations, and reviews retain lineage.
 - Accessible and multilingual: WCAG 2.2 AA and English, Uzbek, and Russian are baseline requirements.
-

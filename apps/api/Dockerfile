@@ -6,8 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY apps/api/pyproject.toml ./
 COPY apps/api/app ./app
+COPY apps/api/alembic.ini ./
+COPY apps/api/alembic ./alembic
 RUN python -m pip install --no-cache-dir .
 
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
