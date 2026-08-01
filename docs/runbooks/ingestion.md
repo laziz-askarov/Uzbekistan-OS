@@ -34,6 +34,17 @@ Raw source responses and canonical extraction artifacts share the S3-compatible 
 
 Each changed snapshot produces one schema-versioned extraction artifact and one `pending` review item. Unchanged responses do not create new review work.
 
+## PDF controls
+
+A PDF source must be registered explicitly with `source_type: pdf`, and the approved URL must return `application/pdf`. A mismatched source type, missing PDF signature, malformed file, encrypted file, or PDF with no extractable text is a terminal failure.
+
+- `INGESTION_MAX_RESPONSE_BYTES` limits raw response size before parsing.
+- `INGESTION_MAX_PDF_PAGES` defaults to 250.
+- `INGESTION_MAX_NORMALIZED_CHARACTERS` defaults to 2,000,000 across supported source types.
+- Non-empty PDF pages become `Page N` extraction sections so reviewers retain physical-page provenance.
+- OCR is intentionally disabled. Do not manually publish text from scanned or password-protected files; obtain an approved accessible source or add a separately reviewed adapter.
+- Review complex tables, columns, and reading order against the stored source before approval.
+
 ## Reviewer controls
 
 The application review service accepts only a trusted context with a verified actor UUID and the `content_reviewer` or `admin` role. Do not build this context from request headers or body fields.
@@ -57,7 +68,7 @@ pending -> in_review -> approved
 1. Confirm the registry entry remains approved and that its crawl policy has not changed.
 2. Inspect the job's structured `error`, attempt count, and source URL without logging response bodies.
 3. Treat timeouts, HTTP 408/425/429, and HTTP 5xx as candidates for bounded retry.
-4. Treat redirects, unsupported content, oversized responses, changed destination URLs, and approval failures as permanent until reviewed.
+4. Treat redirects, unsupported or mismatched content, oversized responses, malformed/encrypted/image-only PDFs, changed destination URLs, and approval failures as permanent until reviewed.
 5. Never move a snapshot into the publication path manually. Requeue through the same idempotent job boundary after correcting the cause.
 
 ## Registry synchronization and scheduling
@@ -68,4 +79,4 @@ Only approved, production-eligible, automatically crawlable entries with a non-n
 
 ## Current limitations
 
-The Redis-backed worker loop, manual enqueue boundary, environment-bound registry synchronization, and opt-in scheduler are implemented. PDF extraction, a production authentication adapter, compare UI, source-specific production adapters, and approved production source entries are not implemented yet. The role-gated review and comparison services, provider-neutral identity mapping, administration routes, and transactional publication core are implemented. Worker and publication operations are documented in [worker.md](./worker.md) and [publication.md](./publication.md). Live Redis/PostgreSQL/MinIO validation remains pending while Docker is unavailable.
+The Redis-backed worker loop, manual enqueue boundary, environment-bound registry synchronization, opt-in scheduler, first reviewer compare/claim/decision console, and bounded text-first PDF extraction are implemented. OCR, a production authentication adapter, reviewer publication/expiry/re-index controls, source-specific production adapters, and approved production source entries are not implemented yet. The role-gated review and comparison services, provider-neutral identity mapping, administration routes, and transactional publication core are implemented. Worker and publication operations are documented in [worker.md](./worker.md) and [publication.md](./publication.md). Live Redis/PostgreSQL/MinIO validation remains pending while Docker is unavailable.

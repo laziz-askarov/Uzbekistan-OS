@@ -1,15 +1,18 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from io import BytesIO
 from json import loads
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 from pydantic import ValidationError
+from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from app.ingestion.errors import IngestionError, SourceNotEligibleError
-from app.ingestion.models import SourceRegistryEntry
+from app.ingestion.models import SourceRegistryEntry, SourceType
 from app.ingestion.normalizers import normalize_response
 from app.ingestion.registry import load_source_registry
 from app.ingestion.service import IngestionService
@@ -56,6 +59,54 @@ def approved_source() -> SourceRegistryEntry:
             "production_eligible": True,
         }
     )
+
+
+def approved_pdf_source() -> SourceRegistryEntry:
+    source = approved_source()
+    return source.model_copy(
+        update={
+            "slug": "approved-pdf-source",
+            "url": "https://government.example/source.pdf",
+            "source_type": SourceType.PDF,
+            "adapter_key": "generic-pdf",
+        }
+    )
+
+
+def pdf_bytes(*pages: str, password: str | None = None) -> bytes:
+    writer = PdfWriter()
+    font = DictionaryObject(
+        {
+            NameObject("/Type"): NameObject("/Font"),
+            NameObject("/Subtype"): NameObject("/Type1"),
+            NameObject("/BaseFont"): NameObject("/Helvetica"),
+        }
+    )
+    font_reference = writer._add_object(font)
+    for page_text in pages:
+        page = writer.add_blank_page(width=612, height=792)
+        page[NameObject("/Resources")] = DictionaryObject(
+            {
+                NameObject("/Font"): DictionaryObject(
+                    {NameObject("/F1"): font_reference}
+                )
+            }
+        )
+        commands = ["BT", "/F1 12 Tf", "72 720 Td"]
+        for line_number, line in enumerate(page_text.splitlines()):
+            if line_number:
+                commands.append("0 -18 Td")
+            escaped = line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+            commands.append(f"({escaped}) Tj")
+        commands.append("ET")
+        stream = DecodedStreamObject()
+        stream.set_data("\n".join(commands).encode("latin-1"))
+        page[NameObject("/Contents")] = writer._add_object(stream)
+    if password is not None:
+        writer.encrypt(password)
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
 
 
 class FakeFetcher:
@@ -168,13 +219,19 @@ class MemoryRepository:
         return job.status
 
 
-def response(source: SourceRegistryEntry, body: bytes, status: int = 200) -> FetchResponse:
+def response(
+    source: SourceRegistryEntry,
+    body: bytes,
+    status: int = 200,
+    *,
+    content_type: str = "text/html; charset=utf-8",
+) -> FetchResponse:
     return FetchResponse(
         url=str(source.url),
         status_code=status,
         body=body,
         fetched_at=datetime(2026, 7, 31, 12, tzinfo=UTC),
-        headers={"Content-Type": "text/html; charset=utf-8", "ETag": '"fixture-v1"'},
+        headers={"Content-Type": content_type, "ETag": '"fixture-v1"'},
     )
 
 
@@ -280,6 +337,101 @@ def test_extraction_artifact_preserves_heading_sections() -> None:
             "id": "requirements",
         },
     ]
+
+
+def test_pdf_normalization_and_artifact_preserve_page_boundaries() -> None:
+    source = approved_pdf_source()
+    body = pdf_bytes(
+        "Entry guidance\nApplicants must use the official form.",
+        "Required documents\nPassport\nApplication receipt",
+    )
+    fetched = response(source, body, content_type="application/pdf")
+
+    normalized = normalize_response(fetched)
+
+    assert normalized.media_type == "application/pdf"
+    assert normalized.sections == (
+        ("Page 1", "Entry guidance\nApplicants must use the official form."),
+        ("Page 2", "Required documents\nPassport\nApplication receipt"),
+    )
+
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+    outcome = service(FakeFetcher([fetched]), repository, store).run(
+        source,
+        idempotency_key="scheduled:pdf",
+    )
+    artifact = repository.artifacts[0]
+    payload = loads(store.objects[artifact.storage_key])
+    assert outcome.status is ChangeStatus.CHANGED
+    assert artifact.adapter_key == "generic-pdf"
+    assert artifact.details == {"media_type": "application/pdf"}
+    assert payload["sections"] == [
+        {
+            "body": "Entry guidance\nApplicants must use the official form.",
+            "heading": "Page 1",
+            "id": "page-1",
+        },
+        {
+            "body": "Required documents\nPassport\nApplication receipt",
+            "heading": "Page 2",
+            "id": "page-2",
+        },
+    ]
+
+
+def test_pdf_parser_rejects_encrypted_scanned_and_oversized_documents() -> None:
+    source = approved_pdf_source()
+
+    with pytest.raises(IngestionError, match="encrypted PDF") as encrypted:
+        normalize_response(
+            response(
+                source,
+                pdf_bytes("Protected", password="secret"),
+                content_type="application/pdf",
+            )
+        )
+    assert encrypted.value.code == "encrypted_pdf_unsupported"
+
+    with pytest.raises(IngestionError, match="OCR is not enabled") as scanned:
+        normalize_response(
+            response(source, pdf_bytes(""), content_type="application/pdf")
+        )
+    assert scanned.value.code == "pdf_text_unavailable"
+
+    with pytest.raises(IngestionError, match="1 page limit") as oversized:
+        normalize_response(
+            response(source, pdf_bytes("One", "Two"), content_type="application/pdf"),
+            max_pdf_pages=1,
+        )
+    assert oversized.value.code == "pdf_page_limit_exceeded"
+
+
+def test_registered_source_type_must_match_pdf_response() -> None:
+    pdf_source = approved_pdf_source()
+    repository = MemoryRepository()
+    with pytest.raises(IngestionError, match="did not return application/pdf") as html_error:
+        service(
+            FakeFetcher([response(pdf_source, b"<p>HTML error page</p>")]),
+            repository,
+        ).run(pdf_source, idempotency_key="pdf-returned-html")
+    assert html_error.value.code == "source_content_type_mismatch"
+
+    html_source = approved_source()
+    with pytest.raises(IngestionError, match="registered with type pdf") as pdf_error:
+        service(
+            FakeFetcher(
+                [
+                    response(
+                        html_source,
+                        pdf_bytes("Unexpected PDF"),
+                        content_type="application/pdf",
+                    )
+                ]
+            ),
+            MemoryRepository(),
+        ).run(html_source, idempotency_key="html-returned-pdf")
+    assert pdf_error.value.code == "source_content_type_mismatch"
 
 
 def test_identical_content_is_unchanged_and_uses_conditional_headers() -> None:

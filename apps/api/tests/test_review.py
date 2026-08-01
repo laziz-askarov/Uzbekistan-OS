@@ -12,6 +12,7 @@ from app.ingestion.review import (
     ReviewerContext,
     ReviewerRole,
     ReviewError,
+    ReviewQueueRecord,
     ReviewRecord,
     ReviewService,
     ReviewStatus,
@@ -25,6 +26,18 @@ class MemoryReviewRepository:
         self.audits: list[AuditRecord] = []
         self.references: dict[UUID, ArtifactReference] = {}
         self.previous: ArtifactReference | None = None
+        self.queue: tuple[ReviewQueueRecord, ...] = ()
+
+    def list_queue(
+        self,
+        *,
+        status: ReviewStatus | None,
+        limit: int,
+    ) -> tuple[ReviewQueueRecord, ...]:
+        records = self.queue
+        if status is not None:
+            records = tuple(record for record in records if record.review.status is status)
+        return records[:limit]
 
     def get_for_update(self, review_item_id: UUID) -> ReviewRecord | None:
         return self.record if self.record.id == review_item_id else None
@@ -137,6 +150,34 @@ def test_unprivileged_actor_cannot_claim_review_work() -> None:
     assert repository.audits == []
 
 
+def test_review_queue_is_role_gated_and_returns_source_context() -> None:
+    record = pending_record()
+    repository = MemoryReviewRepository(record)
+    repository.queue = (
+        ReviewQueueRecord(
+            review=record,
+            source_id=uuid4(),
+            source_title="Official entry guidance",
+            source_url="https://government.example/entry",
+            fetched_at=datetime(2026, 8, 1, tzinfo=UTC),
+            section_count=3,
+        ),
+    )
+    service = ReviewService(repository=repository, object_store=MemoryObjectStore())
+
+    records = service.list_queue(
+        context(ReviewerRole.CONTENT_REVIEWER),
+        status=ReviewStatus.PENDING,
+        limit=25,
+    )
+
+    assert records == repository.queue
+    with pytest.raises(ReviewError, match="role is required"):
+        service.list_queue(context())
+    with pytest.raises(ReviewError, match="between 1 and 100"):
+        service.list_queue(context(ReviewerRole.ADMIN), limit=101)
+
+
 def test_only_assigned_reviewer_can_decide() -> None:
     record = pending_record()
     repository = MemoryReviewRepository(record)
@@ -203,6 +244,26 @@ def test_artifact_comparison_reports_added_removed_and_modified_sections() -> No
         "fees": SectionChangeType.ADDED,
         "overview": SectionChangeType.MODIFIED,
     }
+
+
+def test_artifact_detail_verifies_checksum_before_returning_content() -> None:
+    record = pending_record()
+    repository = MemoryReviewRepository(record)
+    store = MemoryObjectStore()
+    extracted = artifact(uuid4(), [("overview", "Overview", "Verified body")])
+    store.put("current.json", extracted.canonical_bytes())
+    repository.references[record.extraction_artifact_id] = ArtifactReference(
+        id=record.extraction_artifact_id,
+        storage_key="current.json",
+        sha256=sha256(extracted.canonical_bytes()).hexdigest(),
+    )
+
+    result = ReviewService(repository=repository, object_store=store).artifact(
+        context(ReviewerRole.CONTENT_REVIEWER),
+        record.extraction_artifact_id,
+    )
+
+    assert result == extracted
 
 
 def test_artifact_comparison_rejects_database_object_checksum_mismatch() -> None:

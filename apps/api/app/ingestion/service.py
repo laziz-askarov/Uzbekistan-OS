@@ -4,12 +4,13 @@ from uuid import uuid4
 
 from app.ingestion.errors import IngestionError, SourceNotEligibleError
 from app.ingestion.extractors import extract_artifact
-from app.ingestion.models import SourceRegistryEntry
-from app.ingestion.normalizers import normalize_response
+from app.ingestion.models import SourceRegistryEntry, SourceType
+from app.ingestion.normalizers import PDF_MEDIA_TYPES, normalize_response
 from app.ingestion.ports import IngestionRepository, SnapshotStore, SourceFetcher
 from app.ingestion.types import (
     ChangeStatus,
     ExtractionArtifactMetadata,
+    FetchResponse,
     IngestionOutcome,
     JobStatus,
     ReviewItemMetadata,
@@ -25,11 +26,15 @@ class IngestionService:
         snapshot_store: SnapshotStore,
         repository: IngestionRepository,
         max_response_bytes: int = 10_000_000,
+        max_pdf_pages: int = 250,
+        max_normalized_characters: int = 2_000_000,
     ) -> None:
         self.fetcher = fetcher
         self.snapshot_store = snapshot_store
         self.repository = repository
         self.max_response_bytes = max_response_bytes
+        self.max_pdf_pages = max_pdf_pages
+        self.max_normalized_characters = max_normalized_characters
 
     def run(
         self,
@@ -110,11 +115,17 @@ class IngestionService:
                 retryable=False,
             )
 
+        self._validate_source_media_type(source, response)
+
         raw_sha256 = sha256(response.body).hexdigest()
         if previous is not None and previous.sha256 == raw_sha256:
             return self._unchanged(source, previous)
 
-        normalized = normalize_response(response)
+        normalized = normalize_response(
+            response,
+            max_pdf_pages=self.max_pdf_pages,
+            max_normalized_characters=self.max_normalized_characters,
+        )
         snapshot_id = uuid4()
         storage_key = f"sources/{source.id}/{raw_sha256}.bin"
         snapshot = SnapshotMetadata(
@@ -189,6 +200,26 @@ class IngestionService:
         if previous.last_modified:
             headers["If-Modified-Since"] = previous.last_modified
         return headers
+
+    @staticmethod
+    def _validate_source_media_type(
+        source: SourceRegistryEntry,
+        response: FetchResponse,
+    ) -> None:
+        media_type = (response.header("content-type") or "").split(";", 1)[0].strip().casefold()
+        is_pdf = media_type in PDF_MEDIA_TYPES
+        if source.source_type is SourceType.PDF and not is_pdf:
+            raise IngestionError(
+                "source_content_type_mismatch",
+                "registered PDF source did not return application/pdf",
+                retryable=False,
+            )
+        if source.source_type is not SourceType.PDF and is_pdf:
+            raise IngestionError(
+                "source_content_type_mismatch",
+                "PDF response requires a source registered with type pdf",
+                retryable=False,
+            )
 
     @staticmethod
     def _unchanged(

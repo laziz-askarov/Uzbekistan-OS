@@ -11,11 +11,13 @@ from app.dependencies import (
 )
 from app.identity.authentication import AuthenticationError
 from app.identity.service import AuthenticatedPrincipal, VerifiedIdentity
+from app.ingestion.artifacts import ExtractedSection, ExtractionArtifact
 from app.ingestion.review import (
     ArtifactComparison,
     ReviewDecision,
     ReviewerContext,
     ReviewError,
+    ReviewQueueRecord,
     ReviewRecord,
     ReviewStatus,
     SectionChange,
@@ -53,6 +55,47 @@ class StubReviewService:
         self.record = record
         self.contexts: list[ReviewerContext] = []
         self.fail_decision = False
+
+    def list_queue(
+        self,
+        context: ReviewerContext,
+        *,
+        status: ReviewStatus | None,
+        limit: int,
+    ) -> tuple[ReviewQueueRecord, ...]:
+        self.contexts.append(context)
+        assert status in {None, self.record.status}
+        assert 1 <= limit <= 100
+        return (
+            ReviewQueueRecord(
+                review=self.record,
+                source_id=SOURCE_ID,
+                source_title="Official entry guidance",
+                source_url="https://government.example/entry",
+                fetched_at=datetime(2026, 8, 1, tzinfo=UTC),
+                section_count=1,
+            ),
+        )
+
+    def artifact(self, context: ReviewerContext, artifact_id: UUID) -> ExtractionArtifact:
+        assert artifact_id == self.record.extraction_artifact_id
+        self.contexts.append(context)
+        return ExtractionArtifact(
+            source_id=SOURCE_ID,
+            snapshot_id=uuid4(),
+            adapter_key="generic-html",
+            media_type="text/html",
+            raw_sha256="0" * 64,
+            normalized_sha256="1" * 64,
+            extracted_at=datetime(2026, 8, 1, tzinfo=UTC),
+            sections=[
+                ExtractedSection(
+                    id="overview",
+                    heading="Overview",
+                    body="Verified entry guidance.",
+                )
+            ],
+        )
 
     def claim(self, context: ReviewerContext, review_item_id: UUID) -> ReviewRecord:
         assert review_item_id == self.record.id
@@ -289,6 +332,26 @@ def test_reviewer_can_claim_decide_and_compare_through_http() -> None:
     assert comparison.status_code == 200
     assert comparison.json()["data"]["changed"] is True
     assert comparison.json()["data"]["changes"][0]["change_type"] == "modified"
+    assert all(context.request_id == "admin-request" for context in review_service.contexts)
+
+
+def test_reviewer_can_list_queue_and_read_verified_artifact_through_http() -> None:
+    client, _, review_service, _ = configured_client()
+
+    queue = client.get(
+        "/api/v1/admin/reviews?status=pending&limit=25",
+        headers=auth_headers(),
+    )
+    detail = client.get(
+        f"/api/v1/admin/artifacts/{review_service.record.extraction_artifact_id}",
+        headers=auth_headers(),
+    )
+
+    assert queue.status_code == 200
+    assert queue.json()["data"][0]["source_title"] == "Official entry guidance"
+    assert queue.json()["data"][0]["review"]["status"] == "pending"
+    assert detail.status_code == 200
+    assert detail.json()["data"]["sections"][0]["body"] == "Verified entry guidance."
     assert all(context.request_id == "admin-request" for context in review_service.contexts)
 
 

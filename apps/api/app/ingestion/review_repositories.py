@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.database.models.audit import AuditEvent
 from app.database.models.ingestion import ExtractionArtifact, ReviewItem, SourceSnapshot
+from app.database.models.knowledge import Source
 from app.ingestion.review import (
     ArtifactReference,
     AuditRecord,
+    ReviewQueueRecord,
     ReviewRecord,
     ReviewStatus,
 )
@@ -16,6 +18,41 @@ from app.ingestion.review import (
 class SqlAlchemyReviewRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    def list_queue(
+        self,
+        *,
+        status: ReviewStatus | None,
+        limit: int,
+    ) -> tuple[ReviewQueueRecord, ...]:
+        statement = (
+            select(ReviewItem, ExtractionArtifact, SourceSnapshot, Source)
+            .join(
+                ExtractionArtifact,
+                ExtractionArtifact.id == ReviewItem.extraction_artifact_id,
+            )
+            .join(
+                SourceSnapshot,
+                SourceSnapshot.id == ExtractionArtifact.source_snapshot_id,
+            )
+            .join(Source, Source.id == SourceSnapshot.source_id)
+            .order_by(ReviewItem.priority.desc(), ReviewItem.created_at.asc(), ReviewItem.id.asc())
+            .limit(limit)
+        )
+        if status is not None:
+            statement = statement.where(ReviewItem.status == status.value)
+        rows = self.session.execute(statement).all()
+        return tuple(
+            ReviewQueueRecord(
+                review=self._to_record(review_item),
+                source_id=source.id,
+                source_title=source.title,
+                source_url=source.url,
+                fetched_at=snapshot.fetched_at,
+                section_count=artifact.section_count,
+            )
+            for review_item, artifact, snapshot, source in rows
+        )
 
     def get_for_update(self, review_item_id: UUID) -> ReviewRecord | None:
         item = self.session.scalar(

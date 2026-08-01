@@ -60,6 +60,16 @@ class ReviewRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class ReviewQueueRecord:
+    review: ReviewRecord
+    source_id: UUID
+    source_title: str
+    source_url: str
+    fetched_at: datetime
+    section_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class AuditRecord:
     actor_user_id: UUID
     action: str
@@ -97,6 +107,13 @@ class ArtifactComparison:
 
 
 class ReviewRepository(Protocol):
+    def list_queue(
+        self,
+        *,
+        status: ReviewStatus | None,
+        limit: int,
+    ) -> tuple[ReviewQueueRecord, ...]: ...
+
     def get_for_update(self, review_item_id: UUID) -> ReviewRecord | None: ...
 
     def save(self, record: ReviewRecord) -> None: ...
@@ -112,6 +129,28 @@ class ReviewService:
     def __init__(self, *, repository: ReviewRepository, object_store: SnapshotStore) -> None:
         self.repository = repository
         self.object_store = object_store
+
+    def list_queue(
+        self,
+        context: ReviewerContext,
+        *,
+        status: ReviewStatus | None = None,
+        limit: int = 50,
+    ) -> tuple[ReviewQueueRecord, ...]:
+        self._authorize(context)
+        if not 1 <= limit <= 100:
+            raise ReviewError(
+                "invalid_review_limit",
+                "review queue limit must be between 1 and 100",
+            )
+        return self.repository.list_queue(status=status, limit=limit)
+
+    def artifact(self, context: ReviewerContext, artifact_id: UUID) -> ExtractionArtifact:
+        self._authorize(context)
+        reference = self.repository.artifact_for_comparison(artifact_id)
+        if reference is None:
+            raise ReviewError("artifact_not_found", "extraction artifact does not exist")
+        return self._load_artifact(reference)
 
     def claim(self, context: ReviewerContext, review_item_id: UUID) -> ReviewRecord:
         self._authorize(context)

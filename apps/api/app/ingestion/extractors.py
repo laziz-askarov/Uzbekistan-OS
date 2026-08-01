@@ -92,7 +92,9 @@ def extract_artifact(
     normalized_content: NormalizedContent,
 ) -> ExtractionArtifact:
     media_type = normalized_content.media_type
-    if media_type in HTML_MEDIA_TYPES:
+    if normalized_content.sections:
+        raw_sections = list(normalized_content.sections)
+    elif media_type in HTML_MEDIA_TYPES:
         parser = _StructuredHTMLParser()
         parser.feed(response.body.decode("utf-8", errors="replace"))
         parser.close()

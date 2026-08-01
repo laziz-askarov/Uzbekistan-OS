@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel, ConfigDict, Field
+from fastapi import APIRouter, Depends, Query, Request
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 
 from app.dependencies import (
     get_authenticated_principal,
@@ -14,6 +14,7 @@ from app.identity.service import AuthenticatedPrincipal
 from app.ingestion.review import (
     ArtifactComparison,
     ReviewDecision,
+    ReviewQueueRecord,
     ReviewRecord,
     ReviewService,
     ReviewStatus,
@@ -38,7 +39,7 @@ class ReviewItemData(BaseModel):
     id: UUID
     extraction_artifact_id: UUID
     status: ReviewStatus
-    priority: int
+    priority: int = Field(ge=0, le=100)
     assigned_principal_id: UUID | None
     decision_reason: str | None
     decided_at: datetime | None
@@ -56,6 +57,50 @@ class ReviewItemData(BaseModel):
             decided_at=record.decided_at,
             updated_at=record.updated_at,
         )
+
+
+class ReviewQueueItemData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    review: ReviewItemData
+    source_id: UUID
+    source_title: str
+    source_url: AnyHttpUrl
+    fetched_at: datetime
+    section_count: int = Field(ge=1)
+
+    @classmethod
+    def from_record(cls, record: ReviewQueueRecord) -> "ReviewQueueItemData":
+        return cls(
+            review=ReviewItemData.from_record(record.review),
+            source_id=record.source_id,
+            source_title=record.source_title,
+            source_url=record.source_url,
+            fetched_at=record.fetched_at,
+            section_count=record.section_count,
+        )
+
+
+class ArtifactSectionData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    heading: str
+    body: str
+
+
+class ArtifactDetailData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: UUID
+    source_id: UUID
+    snapshot_id: UUID
+    adapter_key: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    media_type: str
+    raw_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    normalized_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    extracted_at: datetime
+    sections: list[ArtifactSectionData] = Field(min_length=1)
 
 
 class SectionChangeData(BaseModel):
@@ -91,6 +136,30 @@ class ArtifactComparisonData(BaseModel):
                 for change in comparison.changes
             ],
         )
+
+
+@router.get(
+    "/reviews",
+    response_model=SuccessResponse[list[ReviewQueueItemData]],
+    operation_id="listReviewQueue",
+    summary="List review queue items",
+)
+def list_review_queue(
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[ReviewService, Depends(get_review_service)],
+    status: Annotated[ReviewStatus | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> SuccessResponse[list[ReviewQueueItemData]]:
+    records = service.list_queue(
+        principal.reviewer_context(),
+        status=status,
+        limit=limit,
+    )
+    return SuccessResponse(
+        data=[ReviewQueueItemData.from_record(record) for record in records],
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
 
 
 @router.post(
@@ -133,6 +202,38 @@ def decide_review_item(
     )
     return SuccessResponse(
         data=ReviewItemData.from_record(record),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.get(
+    "/artifacts/{artifact_id}",
+    response_model=SuccessResponse[ArtifactDetailData],
+    operation_id="getExtractionArtifact",
+    summary="Get a checksum-verified extraction artifact",
+)
+def get_extraction_artifact(
+    artifact_id: UUID,
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[ReviewService, Depends(get_review_service)],
+) -> SuccessResponse[ArtifactDetailData]:
+    artifact = service.artifact(principal.reviewer_context(), artifact_id)
+    return SuccessResponse(
+        data=ArtifactDetailData(
+            id=artifact_id,
+            source_id=artifact.source_id,
+            snapshot_id=artifact.snapshot_id,
+            adapter_key=artifact.adapter_key,
+            media_type=artifact.media_type,
+            raw_sha256=artifact.raw_sha256,
+            normalized_sha256=artifact.normalized_sha256,
+            extracted_at=artifact.extracted_at,
+            sections=[
+                ArtifactSectionData(id=section.id, heading=section.heading, body=section.body)
+                for section in artifact.sections
+            ],
+        ),
         meta=ResponseMeta(request_id=request.state.request_id),
     )
 

@@ -36,7 +36,10 @@ class HttpSourceFetcher:
         request = Request(
             str(source.url),
             headers={
-                "Accept": "text/html, application/xhtml+xml, text/plain, application/xml;q=0.8",
+                "Accept": (
+                    "text/html, application/xhtml+xml, application/pdf, "
+                    "text/plain, application/xml;q=0.8"
+                ),
                 "User-Agent": "UzbekistanOSBot/0.1 (+source-review-required)",
                 **conditional_headers,
             },

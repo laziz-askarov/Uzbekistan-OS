@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     worker_retry_max_seconds: int = Field(default=900, ge=1)
     worker_scheduler_poll_seconds: int = Field(default=60, ge=1, le=3600)
     worker_registry_path: str = "data/sources/registry.development.json"
+    ingestion_max_pdf_pages: int = Field(default=250, ge=1, le=2000)
+    ingestion_max_normalized_characters: int = Field(default=2_000_000, ge=1000)
     s3_endpoint: str = "http://localhost:9000"
     s3_access_key: str = "uzbekistan-os"
     s3_secret_key: str = "local-development-only"

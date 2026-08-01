@@ -9,9 +9,11 @@ CONTRACT_PATH = ROOT / "packages/contracts/openapi.yaml"
 
 IMPLEMENTED_OPERATIONS = {
     "/auth/me": "get",
+    "/admin/reviews": "get",
     "/admin/reviews/{review_item_id}/claim": "post",
     "/admin/reviews/{review_item_id}/decision": "post",
     "/admin/artifacts/{artifact_id}/comparison": "get",
+    "/admin/artifacts/{artifact_id}": "get",
     "/admin/publications": "post",
 }
 

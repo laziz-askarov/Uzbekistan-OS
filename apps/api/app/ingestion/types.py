@@ -43,6 +43,7 @@ class NormalizedContent:
     text: str
     sha256: str
     media_type: str
+    sections: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

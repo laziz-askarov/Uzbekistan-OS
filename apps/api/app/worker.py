@@ -86,6 +86,8 @@ def build_worker(
             fetcher=fetcher,
             snapshot_store=snapshot_store,
             repository=SqlAlchemyIngestionRepository(session),
+            max_pdf_pages=settings.ingestion_max_pdf_pages,
+            max_normalized_characters=settings.ingestion_max_normalized_characters,
         )
 
     return IngestionWorker(

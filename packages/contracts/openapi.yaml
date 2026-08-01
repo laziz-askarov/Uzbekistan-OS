@@ -136,6 +136,35 @@ paths:
                 $ref: "#/components/schemas/PrincipalResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /admin/reviews:
+    get:
+      tags: [administration]
+      operationId: listReviewQueue
+      summary: List review queue items
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_review, approved, rejected, cancelled]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Prioritized review queue with source context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewQueueResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
   /admin/reviews/{review_item_id}/claim:
     post:
       tags: [administration]
@@ -176,6 +205,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReviewItemResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /admin/artifacts/{artifact_id}:
+    get:
+      tags: [administration]
+      operationId: getExtractionArtifact
+      summary: Get a checksum-verified extraction artifact
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ArtifactId"
+      responses:
+        "200":
+          description: Checksum-verified artifact content and evidence lineage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactDetailResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
   /admin/artifacts/{artifact_id}/comparison:
@@ -410,6 +457,73 @@ components:
       required: [data, meta]
       properties:
         data: { $ref: "#/components/schemas/ReviewItemData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ReviewQueueItemData:
+      type: object
+      required:
+        - review
+        - source_id
+        - source_title
+        - source_url
+        - fetched_at
+        - section_count
+      properties:
+        review: { $ref: "#/components/schemas/ReviewItemData" }
+        source_id: { type: string, format: uuid }
+        source_title: { type: string }
+        source_url: { type: string, format: uri }
+        fetched_at: { type: string, format: date-time }
+        section_count: { type: integer, minimum: 1 }
+      additionalProperties: false
+    ReviewQueueResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewQueueItemData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ArtifactSectionData:
+      type: object
+      required: [id, heading, body]
+      properties:
+        id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        heading: { type: string, minLength: 1 }
+        body: { type: string, minLength: 1 }
+      additionalProperties: false
+    ArtifactDetailData:
+      type: object
+      required:
+        - id
+        - source_id
+        - snapshot_id
+        - adapter_key
+        - media_type
+        - raw_sha256
+        - normalized_sha256
+        - extracted_at
+        - sections
+      properties:
+        id: { type: string, format: uuid }
+        source_id: { type: string, format: uuid }
+        snapshot_id: { type: string, format: uuid }
+        adapter_key: { type: string }
+        media_type: { type: string }
+        raw_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+        normalized_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+        extracted_at: { type: string, format: date-time }
+        sections:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/ArtifactSectionData" }
+      additionalProperties: false
+    ArtifactDetailResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ArtifactDetailData" }
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
     SectionChange:

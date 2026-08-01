@@ -4,7 +4,7 @@ Evidence-backed, multilingual guidance for navigating official Uzbekistan proced
 
 ## Repository status
 
-The repository foundation, persistence slice, and first seven safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health and fail-closed authenticated administration endpoints, a Redis Stream ingestion worker with stale recovery and delayed retries, environment-bound source-registry synchronization, opt-in deterministic crawl scheduling, local infrastructure definitions, executable contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading-preserving extraction artifacts, change detection, idempotent database-authoritative retry/dead-letter semantics, a review queue, role-gated reviewer transitions, provider-neutral principal/role mapping, section-level comparison, transactional evidence-bound publication, and immutable audit events. An approved token-verifier adapter, approved production sources and source-specific adapters, reviewer UI, PDF extraction, and infrastructure-backed integration tests are next; product workflows and retrieval follow.
+The repository foundation, persistence slice, and first nine safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell and reviewer console, a FastAPI service with versioned health and fail-closed authenticated administration endpoints, prioritized review-queue and checksum-verified artifact reads, a Redis Stream ingestion worker with stale recovery and delayed retries, environment-bound source-registry synchronization, opt-in deterministic crawl scheduling, local infrastructure definitions, executable contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading/page-preserving HTML, text, and PDF extraction artifacts, change detection, idempotent database-authoritative retry/dead-letter semantics, role-gated reviewer transitions, provider-neutral principal/role mapping, section-level comparison, transactional evidence-bound publication, and immutable audit events. An approved token-verifier adapter, approved production sources and source-specific adapters, reviewer publication/expiry/re-index controls, and infrastructure-backed integration tests are next; product workflows and retrieval follow.
 
 See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for decisions that require accountable owners.
 
@@ -23,6 +23,8 @@ pnpm dev
 ```
 
 The application is served at `http://localhost:3000`.
+
+The internal reviewer console is available at `http://localhost:3000/admin/reviews`. It remains fail-closed until a reviewed token-verifier adapter and authorized principal are configured.
 
 ## API setup
 
