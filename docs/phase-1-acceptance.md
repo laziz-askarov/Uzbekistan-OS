@@ -7,17 +7,33 @@ Date assessed: 2026-08-01
 | Phase 1 requirement | Repository evidence | Status |
 |---|---|---|
 | Git monorepo, conventions, and ownership | `pnpm-workspace.yaml`, `AGENTS.md`, `CONTRIBUTING.md`, `.github/CODEOWNERS`, `SECURITY.md` | Complete |
-| Reproducible local web/API/worker/PostgreSQL/Redis/object-store stack | Pinned service images and dependency lockfiles in `docker-compose.yml`, service Dockerfiles, deterministic migration/registry/object-store initialization | Complete in code; local Docker execution unavailable in this workspace |
+| Reproducible local web/API/worker/PostgreSQL/Redis/object-store stack | Pinned service images and dependency lockfiles in `docker-compose.yml`, service Dockerfiles, deterministic migration/registry/object-store initialization | Complete; exercised locally with Docker Compose |
 | CI format, lint, typecheck, tests, dependency scanning, migration checks, contracts, and builds | `.github/workflows/ci.yml`, Ruff/Prettier configuration, `pnpm audit`, and `pip-audit` | Complete |
 | Environment and secret-handling rules | `.env.example`, `infra/staging/.env.example`, `SECURITY.md`, ignored local secret files, protected-environment documentation | Complete |
 | Structured logging and request IDs | `app.observability`, HTTP middleware, worker logging, and observability tests | Complete |
 | Health and readiness | Liveness endpoints plus PostgreSQL/Redis/evidence-bucket readiness endpoints and tests | Complete |
 | Staging deployment and rollback skeleton | Commit-SHA GHCR images, protected GitHub environment, SSH deployment, external smoke test, previous-image rollback, and empty staging registry | Complete in code |
 
+## Local acceptance exercise
+
+The complete Compose stack was built and exercised on 2026-08-01. PostgreSQL,
+Redis, MinIO, the API, worker, scheduler, and web application started
+successfully; migrations `0001` through `0005`, object-store initialization,
+and registry synchronization completed successfully.
+
+| Check | Result |
+|---|---|
+| API liveness at `/health` | Passed with a structured response and request ID |
+| API readiness at `/ready` and `/api/v1/ready` | Passed for PostgreSQL, Redis, and object storage |
+| Web application and `/api/health` proxy | Passed |
+| Reviewer workspace without a trusted verifier | Passed; access remained fail-closed |
+| Responsive home page at 390 x 844 | Passed with no horizontal overflow |
+| Worker idle polling | Passed across repeated blocking intervals without false Redis timeout errors |
+
 ## Exit gate
 
 - New-developer bootstrap instructions: complete in `README.md` and `CONTRIBUTING.md`.
-- Local equivalent CI checks: must pass before the Phase 1 checkpoint is committed.
+- Local equivalent CI checks: must pass before the Phase 1 checkpoint is committed and are recorded in the checkpoint handoff.
 - GitHub CI: must pass on the Phase 1 checkpoint.
 - Live staging smoke and rollback: pending host/environment configuration and one recorded successful exercise under `docs/runbooks/staging.md`.
 

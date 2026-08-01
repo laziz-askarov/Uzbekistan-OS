@@ -30,7 +30,13 @@ from app.observability import configure_logging
 
 
 def build_queue(settings: Settings) -> RedisStreamIngestionQueue:
-    redis_client = Redis.from_url(settings.redis_url, decode_responses=True)
+    block_seconds = settings.worker_block_ms / 1000
+    redis_client = Redis.from_url(
+        settings.redis_url,
+        decode_responses=True,
+        socket_connect_timeout=settings.readiness_timeout_seconds,
+        socket_timeout=block_seconds + 1,
+    )
     consumer = settings.worker_consumer_name or f"{socket.gethostname()}-{os.getpid()}"
     queue = RedisStreamIngestionQueue(
         client=redis_client,

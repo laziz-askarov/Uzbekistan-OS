@@ -22,6 +22,33 @@ ROOT = Path(__file__).resolve().parents[3]
 REGISTRY_PATH = ROOT / "data/sources/registry.development.json"
 
 
+def test_worker_redis_timeout_exceeds_blocking_reservation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class StubRedisClient:
+        def xgroup_create(self, *args, **kwargs) -> None:
+            del args, kwargs
+
+    class StubRedis:
+        @classmethod
+        def from_url(cls, url: str, **kwargs):
+            captured.update(url=url, **kwargs)
+            return StubRedisClient()
+
+    monkeypatch.setattr(worker_module, "Redis", StubRedis)
+
+    worker_module.build_queue(Settings(readiness_timeout_seconds=2, worker_block_ms=5000))
+
+    assert captured == {
+        "url": "redis://localhost:6379/0",
+        "decode_responses": True,
+        "socket_connect_timeout": 2,
+        "socket_timeout": 6,
+    }
+
+
 def approved_registry():
     registry = load_source_registry(REGISTRY_PATH)
     approved = registry.sources[0].model_copy(
