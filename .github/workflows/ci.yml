@@ -68,3 +68,16 @@ jobs:
       - run: docker compose -f docker-compose.yml config --quiet
       - run: docker compose -f infra/staging/docker-compose.yml config --quiet
       - run: bash -n scripts/deploy_staging.sh scripts/smoke_staging.sh
+
+  deploy-staging:
+    needs: [web, api, infrastructure]
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/staging' &&
+      vars.STAGING_ENABLED == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/staging.yml
+    with:
+      image_tag: ${{ github.sha }}

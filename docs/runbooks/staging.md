@@ -36,7 +36,7 @@ Protect `main` and `staging` with required CI checks and CODEOWNERS review. Neve
 
 ## Deployment and smoke test
 
-Push to `staging`. After CI succeeds, `.github/workflows/staging.yml` publishes commit-SHA images and invokes `scripts/deploy_staging.sh`. The remote deployment:
+Push to `staging`. The CI workflow runs the reusable `.github/workflows/staging.yml` deployment job only after its web, API, and infrastructure jobs succeed. The deployment publishes commit-SHA images and invokes `scripts/deploy_staging.sh`. The remote deployment:
 
 1. pulls the immutable image set;
 2. starts PostgreSQL, Redis, and MinIO;

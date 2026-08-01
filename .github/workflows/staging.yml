@@ -1,10 +1,12 @@
 name: Deploy staging
 
 on:
-  workflow_run:
-    workflows: [CI]
-    branches: [staging]
-    types: [completed]
+  workflow_call:
+    inputs:
+      image_tag:
+        description: Commit SHA or existing immutable image tag
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       image_tag:
@@ -22,13 +24,11 @@ concurrency:
 
 jobs:
   deploy:
-    if: >-
-      vars.STAGING_ENABLED == 'true' &&
-      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    if: vars.STAGING_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: staging
     env:
-      RELEASE_SHA: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
+      RELEASE_SHA: ${{ inputs.image_tag || github.sha }}
       GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
       STAGING_HOST: ${{ secrets.STAGING_HOST }}
       STAGING_USER: ${{ secrets.STAGING_USER }}
