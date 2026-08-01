@@ -2,8 +2,11 @@ from sqlalchemy import CheckConstraint, ForeignKeyConstraint, UniqueConstraint
 
 from app.database import Base
 
-EXPECTED_SCHEMAS = {"geography", "knowledge", "ingestion", "audit"}
+EXPECTED_SCHEMAS = {"identity", "geography", "knowledge", "ingestion", "audit"}
 EXPECTED_TABLES = {
+    "identity.principals",
+    "identity.roles",
+    "identity.principal_roles",
     "geography.languages",
     "geography.countries",
     "knowledge.domains",
@@ -14,6 +17,7 @@ EXPECTED_TABLES = {
     "knowledge.document_sources",
     "knowledge.chunks",
     "knowledge.embeddings",
+    "knowledge.publication_records",
     "ingestion.source_snapshots",
     "ingestion.crawl_jobs",
     "ingestion.extraction_artifacts",
@@ -130,3 +134,15 @@ def test_extraction_artifacts_are_review_gated() -> None:
     assert "ck_review_items_assignment_consistent" in review_checks
     assert "ck_review_items_decision_fields_consistent" in review_checks
     assert "ck_extraction_artifacts_section_count_positive" in artifact_checks
+
+
+def test_identity_roles_and_publication_lineage_are_explicit() -> None:
+    principals = Base.metadata.tables["identity.principals"]
+    principal_roles = Base.metadata.tables["identity.principal_roles"]
+    publications = Base.metadata.tables["knowledge.publication_records"]
+
+    assert {"provider", "subject", "status"} <= set(principals.c.keys())
+    assert {"principal_id", "role_id"} == set(principal_roles.primary_key.columns.keys())
+    assert publications.c.review_item_id.unique is True
+    assert publications.c.document_version_id.unique is True
+    assert publications.c.published_by_principal_id.foreign_keys

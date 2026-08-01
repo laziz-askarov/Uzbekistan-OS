@@ -62,4 +62,4 @@ pending -> in_review -> approved
 
 ## Current limitations
 
-The Redis-backed worker loop, PDF extraction, authentication middleware and reviewer HTTP routes, compare UI, transactional publication, and production source entries are not implemented yet. The role-gated review service and comparison engine are implemented, but live PostgreSQL/MinIO validation remains pending while Docker is unavailable.
+The Redis-backed worker loop, PDF extraction, authentication middleware, reviewer/publisher HTTP routes, compare UI, and production source entries are not implemented yet. The role-gated review and comparison services, provider-neutral identity mapping, and transactional publication core are implemented. Publication operations are documented in [publication.md](./publication.md). Live PostgreSQL/MinIO validation remains pending while Docker is unavailable.

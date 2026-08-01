@@ -172,6 +172,10 @@ class ReviewItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="pending")
     priority: Mapped[int] = mapped_column(Integer, nullable=False, server_default="50")
-    assigned_user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), index=True)
+    assigned_user_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("identity.principals.id", ondelete="RESTRICT"),
+        index=True,
+    )
     decision_reason: Mapped[str | None] = mapped_column(Text)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

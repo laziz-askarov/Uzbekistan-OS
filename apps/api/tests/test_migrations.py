@@ -14,7 +14,7 @@ def test_migration_history_has_one_linear_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert script.get_bases() == ["20260731_0001"]
-    assert script.get_heads() == ["20260731_0004"]
+    assert script.get_heads() == ["20260731_0005"]
 
 
 def test_foundation_migration_compiles_to_postgresql_sql() -> None:
@@ -50,6 +50,9 @@ def test_foundation_migration_compiles_to_postgresql_sql() -> None:
     assert "CREATE TABLE ingestion.review_items" in sql
     assert "CREATE TRIGGER trg_audit_events_immutable" in sql
     assert "ck_review_items_decision_fields_consistent" in sql
+    assert "CREATE TABLE identity.principals" in sql
+    assert "knowledge_publisher" in sql
+    assert "CREATE TABLE knowledge.publication_records" in sql
 
 
 def test_foundation_downgrade_compiles_to_postgresql_sql() -> None:
@@ -61,7 +64,7 @@ def test_foundation_downgrade_compiles_to_postgresql_sql() -> None:
             "-c",
             str(ALEMBIC_CONFIG),
             "downgrade",
-            "20260731_0004:base",
+            "20260731_0005:base",
             "--sql",
         ],
         cwd=ROOT,

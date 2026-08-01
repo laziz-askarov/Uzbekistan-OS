@@ -260,3 +260,33 @@ class Embedding(UUIDPrimaryKeyMixin, Base):
         nullable=False,
         server_default=func.now(),
     )
+
+
+class PublicationRecord(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "publication_records"
+    __table_args__ = ({"schema": "knowledge"},)
+
+    review_item_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("ingestion.review_items.id", ondelete="RESTRICT"),
+        nullable=False,
+        unique=True,
+    )
+    document_version_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("knowledge.document_versions.id", ondelete="RESTRICT"),
+        nullable=False,
+        unique=True,
+    )
+    published_by_principal_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("identity.principals.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    candidate_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
