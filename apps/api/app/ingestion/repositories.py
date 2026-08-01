@@ -165,7 +165,13 @@ class SqlAlchemyIngestionRepository:
         job.completed_at = datetime.now(UTC)
         self.session.flush()
 
-    def mark_failed(self, job_id: UUID, error: Exception, *, retryable: bool) -> None:
+    def mark_failed(
+        self,
+        job_id: UUID,
+        error: Exception,
+        *,
+        retryable: bool,
+    ) -> JobStatus:
         job = self._get_job(job_id)
         job.error = {
             "code": getattr(error, "code", "ingestion_error"),
@@ -179,6 +185,7 @@ class SqlAlchemyIngestionRepository:
             job.status = JobStatus.DEAD_LETTERED
             job.completed_at = datetime.now(UTC)
         self.session.flush()
+        return JobStatus(job.status)
 
     def _get_job(self, job_id: UUID) -> CrawlJob:
         job = self.session.get(CrawlJob, job_id)

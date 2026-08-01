@@ -11,6 +11,7 @@ from app.ingestion.types import (
     ChangeStatus,
     ExtractionArtifactMetadata,
     IngestionOutcome,
+    JobStatus,
     ReviewItemMetadata,
     SnapshotMetadata,
 )
@@ -59,11 +60,20 @@ class IngestionService:
         try:
             outcome = self._fetch_and_snapshot(source)
         except IngestionError as error:
-            self.repository.mark_failed(claim.id, error, retryable=error.retryable)
+            status = self.repository.mark_failed(
+                claim.id,
+                error,
+                retryable=error.retryable,
+            )
+            error.retryable = status is JobStatus.RETRY_SCHEDULED
             raise
         except Exception as error:
-            self.repository.mark_failed(claim.id, error, retryable=True)
-            raise
+            status = self.repository.mark_failed(claim.id, error, retryable=True)
+            raise IngestionError(
+                "ingestion_error",
+                "ingestion failed unexpectedly",
+                retryable=status is JobStatus.RETRY_SCHEDULED,
+            ) from error
 
         self.repository.mark_succeeded(claim.id, outcome)
         return outcome

@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     api_cors_origins: str = "http://localhost:3000"
     database_url: str = "postgresql+psycopg://uzbekistan_os:local-development-only@localhost:5432/uzbekistan_os"
     redis_url: str = "redis://localhost:6379/0"
+    worker_stream: str = "uzbekistan-os:ingestion"
+    worker_group: str = "ingestion-workers"
+    worker_consumer_name: str | None = None
+    worker_dead_letter_stream: str = "uzbekistan-os:ingestion:dead"
+    worker_retry_set: str = "uzbekistan-os:ingestion:retries"
+    worker_block_ms: int = Field(default=5000, ge=1)
+    worker_stale_after_ms: int = Field(default=120000, ge=1000)
+    worker_retry_base_seconds: int = Field(default=30, ge=1)
+    worker_retry_max_seconds: int = Field(default=900, ge=1)
+    worker_registry_path: str = "data/sources/registry.development.json"
     s3_endpoint: str = "http://localhost:9000"
     s3_access_key: str = "uzbekistan-os"
     s3_secret_key: str = "local-development-only"

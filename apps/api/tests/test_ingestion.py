@@ -150,7 +150,13 @@ class MemoryRepository:
         job.status = JobStatus.SUCCEEDED
         job.outcome = outcome
 
-    def mark_failed(self, job_id: UUID, error: Exception, *, retryable: bool) -> None:
+    def mark_failed(
+        self,
+        job_id: UUID,
+        error: Exception,
+        *,
+        retryable: bool,
+    ) -> JobStatus:
         del error
         job = self.jobs_by_id[job_id]
         job.status = (
@@ -158,6 +164,7 @@ class MemoryRepository:
             if retryable and job.attempt_count < job.max_attempts
             else JobStatus.DEAD_LETTERED
         )
+        return job.status
 
 
 def response(source: SourceRegistryEntry, body: bytes, status: int = 200) -> FetchResponse:

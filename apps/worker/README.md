@@ -1,5 +1,15 @@
 # Worker
 
-The ingestion core now defines source eligibility, exact-URL fetching, normalization, content-addressed local/S3 storage, heading-preserving extraction artifacts, change detection, review-queue creation, idempotent job claims, bounded retries, and dead-letter states in `apps/api/app/ingestion`. The shared logic is kept independent of FastAPI routes so this deployable can call it without duplicating business rules.
+The ingestion worker is implemented as the `app.worker` entrypoint in the shared Python package so it uses the same deterministic ingestion, repository, evidence-storage, and validation code as the API.
 
-The worker process and Redis queue consumer remain intentionally absent until the first production sources, scheduling policy, and deployment ownership are approved. See `docs/adr/0004-safe-idempotent-ingestion-boundary.md` and `docs/runbooks/ingestion.md`.
+The deployable in this directory joins a Redis Stream consumer group, reclaims stale deliveries, schedules delayed retries, and dead-letters terminal work. PostgreSQL remains authoritative for idempotency, attempt counts, and terminal job state.
+
+Run it through Docker Compose:
+
+```bash
+docker compose up --build worker
+```
+
+Manual enqueue is intentionally fail-closed and accepts only sources approved for automatic production ingestion. See [the worker runbook](../../docs/runbooks/worker.md) and [ADR 0009](../../docs/adr/0009-redis-stream-ingestion-worker.md).
+
+Automated scheduling, a production source registry, registry-to-database synchronization, and live infrastructure drills remain pending.

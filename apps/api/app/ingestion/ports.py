@@ -8,6 +8,7 @@ from app.ingestion.types import (
     FetchResponse,
     IngestionOutcome,
     JobClaim,
+    JobStatus,
     ReviewItemMetadata,
     SnapshotMetadata,
 )
@@ -46,4 +47,10 @@ class IngestionRepository(Protocol):
 
     def mark_succeeded(self, job_id: UUID, outcome: IngestionOutcome) -> None: ...
 
-    def mark_failed(self, job_id: UUID, error: Exception, *, retryable: bool) -> None: ...
+    def mark_failed(
+        self,
+        job_id: UUID,
+        error: Exception,
+        *,
+        retryable: bool,
+    ) -> JobStatus: ...

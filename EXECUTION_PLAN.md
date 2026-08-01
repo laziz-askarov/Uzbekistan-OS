@@ -1,19 +1,20 @@
 # Uzbekistan OS MVP Execution Plan
 
 > Implementation status (2026-07-31): the Phase 1 foundation, first Phase 2
-> database slice, and first five Phase 3 ingestion slices are complete. The
+> database slice, and first six Phase 3 ingestion slices are complete. The
 > schema-backed source registry, crawl-eligibility rules, exact-URL fetch port,
 > deterministic HTML/text normalization, content-addressed snapshot storage,
 > change detection, idempotent jobs, bounded retry/dead-letter states,
 > S3-compatible evidence storage, structured extraction artifacts, and review
 > queue persistence, role-gated review transitions, artifact comparison,
 > provider-neutral principal/role mapping, fail-closed authenticated reviewer
-> and publisher HTTP APIs, transactional evidence-bound publication, and
-> immutable audit events are implemented. No real source is
+> and publisher HTTP APIs, a Redis Stream worker with stale recovery and
+> delayed retries, transactional evidence-bound publication, and immutable
+> audit events are implemented. No real source is
 > authorized yet. Docker-backed migration and
 > restore drills remain pending because Docker is unavailable in this workspace.
-> The next delivery slice is an approved token-verifier adapter, the worker
-> loop, reviewer UI, and production source approval/adapters.
+> The next delivery slice is production source approval/adapters and
+> scheduling, an approved token-verifier adapter, and reviewer UI.
 
 ## 1. Executive summary
 
@@ -137,7 +138,7 @@ PostgreSQL with pgvector is the system of record. Redis supports ephemeral sessi
 
 ### Phase 3 - Knowledge ingestion vertical slice (weeks 3-6)
 
-**Current progress:** registry validation, fetch/snapshot ports, HTML/text normalization, change detection, job idempotency, bounded retries, dead-letter states, S3-compatible storage, heading-preserving extraction artifacts, review-queue persistence, role-gated claim/decision services, section comparison, provider-neutral identity/role mapping, fail-closed Bearer-authenticated administration routes, transactional evidence-bound publication, immutable audit, and lineage metadata are implemented against a non-production fixture. Production sources, the worker loop, an approved token-verifier adapter, reviewer UI, PDF adapters, PostgreSQL-backed integration tests, and embeddings remain.
+**Current progress:** registry validation, fetch/snapshot ports, HTML/text normalization, change detection, job idempotency, database-authoritative bounded retries/dead-letter states, Redis Stream delivery with stale recovery and delayed retry promotion, S3-compatible storage, heading-preserving extraction artifacts, review-queue persistence, role-gated claim/decision services, section comparison, provider-neutral identity/role mapping, fail-closed Bearer-authenticated administration routes, transactional evidence-bound publication, immutable audit, and lineage metadata are implemented against a non-production fixture. Production sources and scheduling, registry-to-database synchronization, an approved token-verifier adapter, reviewer UI, PDF adapters, infrastructure-backed integration tests, and embeddings remain.
 
 **Deliverables**
 
