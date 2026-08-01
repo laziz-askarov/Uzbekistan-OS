@@ -1,0 +1,247 @@
+openapi: 3.1.0
+info:
+  title: Uzbekistan OS API
+  version: 0.1.0
+  description: >-
+    Contract skeleton for the Uzbekistan OS public API. Paths marked with
+    x-implementation-status: planned are not implemented yet.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development
+tags:
+  - name: system
+  - name: conversations
+  - name: knowledge
+  - name: workflows
+paths:
+  /health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      summary: Get API health
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /conversations:
+    post:
+      tags: [conversations]
+      operationId: createConversation
+      summary: Create a conversation
+      x-implementation-status: planned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationRequest"
+      responses:
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /conversations/{conversationId}/messages:
+    post:
+      tags: [conversations]
+      operationId: sendMessage
+      summary: Send a message and stream the assistant response
+      description: >-
+        Emits application-owned SSE events: start, chunk, citation, workflow,
+        done, and error. Provider-specific stream events are never exposed.
+      x-implementation-status: planned
+      parameters:
+        - $ref: "#/components/parameters/ConversationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "200":
+          description: SSE response stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /knowledge/search:
+    get:
+      tags: [knowledge]
+      operationId: searchKnowledge
+      summary: Search eligible published knowledge
+      x-implementation-status: planned
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - name: language
+          in: query
+          schema:
+            $ref: "#/components/schemas/LanguageCode"
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /workflows:
+    get:
+      tags: [workflows]
+      operationId: listWorkflows
+      summary: List published workflows
+      x-implementation-status: planned
+      responses:
+        "200":
+          description: Workflow list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowListResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+components:
+  parameters:
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    ErrorResponse:
+      description: Request failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    LanguageCode:
+      type: string
+      enum: [en, uz, ru]
+    ResponseMeta:
+      type: object
+      properties:
+        request_id:
+          type: [string, "null"]
+        next_cursor:
+          type: [string, "null"]
+      additionalProperties: false
+    HealthData:
+      type: object
+      required: [service, status, version, environment]
+      properties:
+        service: { type: string, const: api }
+        status: { type: string, const: ok }
+        version: { type: string }
+        environment: { type: string }
+      additionalProperties: false
+    HealthResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/HealthData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    CreateConversationRequest:
+      type: object
+      properties:
+        language: { $ref: "#/components/schemas/LanguageCode" }
+        title: { type: [string, "null"], maxLength: 160 }
+      additionalProperties: false
+    Conversation:
+      type: object
+      required: [id, language, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        language: { $ref: "#/components/schemas/LanguageCode" }
+        title: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      additionalProperties: false
+    ConversationResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/Conversation" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    SendMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 12000 }
+        language: { $ref: "#/components/schemas/LanguageCode" }
+      additionalProperties: false
+    KnowledgeSearchItem:
+      type: object
+      required: [id, title, summary, language, source_organization]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        summary: { type: string }
+        language: { $ref: "#/components/schemas/LanguageCode" }
+        source_organization: { type: string }
+      additionalProperties: false
+    SearchResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/KnowledgeSearchItem" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    WorkflowSummary:
+      type: object
+      required: [id, slug, title, language]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        title: { type: string }
+        language: { $ref: "#/components/schemas/LanguageCode" }
+      additionalProperties: false
+    WorkflowListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/WorkflowSummary" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ErrorDetail:
+      type: object
+      required: [code, message, details]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object }
+      additionalProperties: false
+    ErrorResponse:
+      type: object
+      required: [error, meta]
+      properties:
+        error: { $ref: "#/components/schemas/ErrorDetail" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+

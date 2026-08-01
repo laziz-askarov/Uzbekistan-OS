@@ -1,0 +1,7 @@
+{
+  "name": "@uzbekistan-os/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "files": ["tokens.css"]
+}
+

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uzbekistan-os.local/schemas/knowledge-document.schema.json",
+  "title": "Knowledge document",
+  "type": "object",
+  "required": [
+    "id",
+    "slug",
+    "domain",
+    "language",
+    "status",
+    "version",
+    "title",
+    "summary",
+    "sections",
+    "sources",
+    "effective_from",
+    "reviewed_at"
+  ],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "domain": {
+      "type": "string",
+      "enum": ["immigration", "tourism", "business-registration", "healthcare", "everyday-living"]
+    },
+    "language": { "type": "string", "enum": ["en", "uz", "ru"] },
+    "status": { "type": "string", "enum": ["draft", "in_review", "published", "expired", "archived"] },
+    "version": {
+      "type": "object",
+      "required": ["major", "minor", "revision"],
+      "properties": {
+        "major": { "type": "integer", "minimum": 1 },
+        "minor": { "type": "integer", "minimum": 0 },
+        "revision": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "audiences": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "keywords": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/section" }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "effective_from": { "type": "string", "format": "date" },
+    "effective_until": { "type": ["string", "null"], "format": "date" },
+    "reviewed_at": { "type": "string", "format": "date-time" },
+    "translation_of": { "type": ["string", "null"], "format": "uuid" }
+  },
+  "$defs": {
+    "citation": {
+      "type": "object",
+      "required": ["source_id", "locator"],
+      "properties": {
+        "source_id": { "type": "string", "format": "uuid" },
+        "locator": { "type": "string", "minLength": 1 },
+        "quote": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "section": {
+      "type": "object",
+      "required": ["id", "heading", "body", "citations"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "heading": { "type": "string", "minLength": 1 },
+        "body": { "type": "string", "minLength": 1 },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/citation" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["id", "organization", "title", "url", "retrieved_at", "snapshot_sha256"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "organization": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "retrieved_at": { "type": "string", "format": "date-time" },
+        "snapshot_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
+

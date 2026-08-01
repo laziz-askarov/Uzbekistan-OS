@@ -1,0 +1,40 @@
+{
+  "id": "110b91d8-fcaf-4a29-8804-a62e070604b7",
+  "slug": "example-entry-requirement",
+  "domain": "immigration",
+  "language": "en",
+  "status": "draft",
+  "version": { "major": 1, "minor": 0, "revision": 0 },
+  "title": "Example entry requirement",
+  "summary": "A non-production fixture demonstrating the canonical document shape.",
+  "audiences": ["international-visitor"],
+  "keywords": ["example", "entry"],
+  "sections": [
+    {
+      "id": "overview",
+      "heading": "Overview",
+      "body": "This fixture contains no procedural guidance and must not be published.",
+      "citations": [
+        {
+          "source_id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+          "locator": "Fixture section"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+      "organization": "Uzbekistan OS Development",
+      "title": "Non-production fixture",
+      "url": "https://example.invalid/non-production-fixture",
+      "retrieved_at": "2026-07-31T00:00:00Z",
+      "snapshot_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "effective_from": "2026-07-31",
+  "effective_until": null,
+  "reviewed_at": "2026-07-31T00:00:00Z",
+  "translation_of": null
+}
+

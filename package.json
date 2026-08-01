@@ -1,0 +1,15 @@
+{
+  "name": "uzbekistan-os",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "pnpm --filter @uzbekistan-os/web build",
+    "dev": "pnpm --filter @uzbekistan-os/web dev",
+    "lint": "pnpm --filter @uzbekistan-os/web lint",
+    "typecheck": "pnpm --filter @uzbekistan-os/web typecheck"
+  }
+}

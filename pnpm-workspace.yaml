@@ -1,0 +1,12 @@
+packages:
+  - "apps/web"
+  - "packages/*"
+
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
+
+confirmModulesPurge: false
+allowBuilds:
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false
