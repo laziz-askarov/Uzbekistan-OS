@@ -60,6 +60,12 @@ pending -> in_review -> approved
 4. Treat redirects, unsupported content, oversized responses, changed destination URLs, and approval failures as permanent until reviewed.
 5. Never move a snapshot into the publication path manually. Requeue through the same idempotent job boundary after correcting the cause.
 
+## Registry synchronization and scheduling
+
+Registry version 1.1 is synchronized into PostgreSQL before the worker and scheduler start. Synchronization fails if the registry environment does not match `APP_ENV`, if an organization country is not seeded, or if stable IDs conflict with an existing slug or URL. Entries absent from the configured environment registry are marked inactive, never deleted.
+
+Only approved, production-eligible, automatically crawlable entries with a non-null schedule receive UTC interval slots. Redis deduplicates a source/slot atomically, while `(source_id, idempotency_key)` remains the database concurrency guard. Missed slots are not backfilled automatically.
+
 ## Current limitations
 
-The Redis-backed worker loop and manual enqueue boundary are implemented. Automated scheduling, PDF extraction, a production authentication adapter, compare UI, registry-to-database synchronization, and production source entries are not implemented yet. The role-gated review and comparison services, provider-neutral identity mapping, administration routes, and transactional publication core are implemented. Worker and publication operations are documented in [worker.md](./worker.md) and [publication.md](./publication.md). Live Redis/PostgreSQL/MinIO validation remains pending while Docker is unavailable.
+The Redis-backed worker loop, manual enqueue boundary, environment-bound registry synchronization, and opt-in scheduler are implemented. PDF extraction, a production authentication adapter, compare UI, source-specific production adapters, and approved production source entries are not implemented yet. The role-gated review and comparison services, provider-neutral identity mapping, administration routes, and transactional publication core are implemented. Worker and publication operations are documented in [worker.md](./worker.md) and [publication.md](./publication.md). Live Redis/PostgreSQL/MinIO validation remains pending while Docker is unavailable.

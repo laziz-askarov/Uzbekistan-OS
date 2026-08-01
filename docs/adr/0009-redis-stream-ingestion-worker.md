@@ -20,6 +20,8 @@ The ingestion domain already provides exact-URL fetching, evidence storage, idem
 - Move terminal and invalid deliveries to a dedicated Redis dead-letter Stream and acknowledge the original in one Redis transaction.
 - Do not automatically schedule real sources yet. Operators may use the explicit enqueue command after the source registry and matching database source row are approved.
 
+The scheduling deferral above was superseded by the fail-closed, opt-in design in [ADR 0010](./0010-registry-sync-and-crawl-scheduling.md). No production source was approved as part of that later slice.
+
 ## Consequences
 
 - Worker replicas can share one consumer group without bypassing database idempotency or concurrency locks.

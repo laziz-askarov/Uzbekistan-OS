@@ -17,7 +17,10 @@ from app.ingestion.fetchers import HttpSourceFetcher
 from app.ingestion.models import SourceRegistry
 from app.ingestion.queue import IngestionQueue, IngestionTask, RedisStreamIngestionQueue
 from app.ingestion.registry import load_source_registry
+from app.ingestion.registry_repositories import SqlAlchemySourceRegistryRepository
+from app.ingestion.registry_sync import RegistrySyncResult, RegistrySyncService
 from app.ingestion.repositories import SqlAlchemyIngestionRepository
+from app.ingestion.scheduler import IngestionScheduler
 from app.ingestion.service import IngestionService
 from app.ingestion.stores import S3SnapshotStore
 from app.ingestion.worker import IngestionWorker
@@ -38,9 +41,42 @@ def build_queue(settings: Settings) -> RedisStreamIngestionQueue:
     return queue
 
 
-def build_worker() -> IngestionWorker:
-    settings = get_settings()
+def load_runtime_registry(settings: Settings) -> SourceRegistry:
     registry = load_source_registry(Path(settings.worker_registry_path))
+    if registry.environment != settings.app_env:
+        raise ValueError(
+            f"registry environment {registry.environment!r} does not match "
+            f"APP_ENV {settings.app_env!r}"
+        )
+    return registry
+
+
+def synchronize_registry(
+    settings: Settings,
+    registry: SourceRegistry,
+) -> RegistrySyncResult:
+    session = get_session_factory()()
+    try:
+        result = RegistrySyncService(
+            repository=SqlAlchemySourceRegistryRepository(session),
+            environment=settings.app_env,
+        ).synchronize(registry)
+        session.commit()
+        return result
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def build_worker(
+    *,
+    settings: Settings | None = None,
+    registry: SourceRegistry | None = None,
+) -> IngestionWorker:
+    settings = settings or get_settings()
+    registry = registry or load_runtime_registry(settings)
     queue = build_queue(settings)
     snapshot_store = S3SnapshotStore.from_settings(settings)
     fetcher = HttpSourceFetcher()
@@ -103,6 +139,9 @@ def build_ingestion_task(
 
 
 def run_worker() -> None:
+    settings = get_settings()
+    registry = load_runtime_registry(settings)
+    synchronize_registry(settings, registry)
     stop_event = Event()
 
     def stop_worker(signum: int, frame: object) -> None:
@@ -111,7 +150,26 @@ def run_worker() -> None:
 
     signal.signal(signal.SIGTERM, stop_worker)
     signal.signal(signal.SIGINT, stop_worker)
-    build_worker().run_forever(stop_event)
+    build_worker(settings=settings, registry=registry).run_forever(stop_event)
+
+
+def run_scheduler() -> None:
+    settings = get_settings()
+    registry = load_runtime_registry(settings)
+    synchronize_registry(settings, registry)
+    stop_event = Event()
+
+    def stop_scheduler(signum: int, frame: object) -> None:
+        del signum, frame
+        stop_event.set()
+
+    signal.signal(signal.SIGTERM, stop_scheduler)
+    signal.signal(signal.SIGINT, stop_scheduler)
+    IngestionScheduler(
+        queue=build_queue(settings),
+        registry=registry,
+        poll_seconds=settings.worker_scheduler_poll_seconds,
+    ).run_forever(stop_event)
 
 
 def main() -> None:
@@ -122,6 +180,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Uzbekistan OS ingestion worker")
     subcommands = parser.add_subparsers(dest="command")
     subcommands.add_parser("run", help="run the ingestion consumer loop")
+    subcommands.add_parser("schedule", help="run the approved-source scheduler")
+    subcommands.add_parser("sync-registry", help="synchronize the registry to PostgreSQL")
     enqueue = subcommands.add_parser("enqueue", help="enqueue one approved source")
     enqueue.add_argument("--source-id", required=True, type=UUID)
     enqueue.add_argument("--idempotency-key", required=True)
@@ -131,9 +191,19 @@ def main() -> None:
     if arguments.command in {None, "run"}:
         run_worker()
         return
+    if arguments.command == "schedule":
+        run_scheduler()
+        return
 
     settings = get_settings()
-    registry = load_source_registry(Path(settings.worker_registry_path))
+    registry = load_runtime_registry(settings)
+    sync_result = synchronize_registry(settings, registry)
+    if arguments.command == "sync-registry":
+        logging.getLogger(__name__).info(
+            "registry synchronization complete: %s",
+            sync_result,
+        )
+        return
     task = build_ingestion_task(
         registry=registry,
         source_id=arguments.source_id,

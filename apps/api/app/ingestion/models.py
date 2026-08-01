@@ -42,7 +42,15 @@ class SourceOrganizationEntry(BaseModel):
     slug: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     name: str = Field(min_length=1)
     website_url: HttpUrl
+    country_iso2: str = Field(pattern=r"^[A-Z]{2}$")
     is_official: bool
+
+
+class SourceSchedule(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    interval_minutes: int = Field(ge=5, le=43_200)
+    max_attempts: int = Field(default=3, ge=1, le=20)
 
 
 class SourceRegistryEntry(BaseModel):
@@ -63,6 +71,7 @@ class SourceRegistryEntry(BaseModel):
     owner: str | None = Field(default=None, min_length=1)
     reviewed_at: datetime | None = None
     production_eligible: bool = False
+    schedule: SourceSchedule | None = None
 
     @model_validator(mode="after")
     def validate_approval_state(self) -> "SourceRegistryEntry":
@@ -75,9 +84,15 @@ class SourceRegistryEntry(BaseModel):
         if self.production_eligible and (
             self.status is not RegistryStatus.APPROVED
             or self.crawl_policy not in {CrawlPolicy.ALLOWED, CrawlPolicy.MANUAL_ONLY}
+            or not self.organization.is_official
         ):
             raise ValueError(
-                "production-eligible sources must be approved for crawling or manual use"
+                "production-eligible sources must be official and approved for crawling "
+                "or manual use"
+            )
+        if self.schedule is not None and not self.automatic_fetch_eligible:
+            raise ValueError(
+                "scheduled sources must be approved for automatic production ingestion"
             )
         if len(self.domains) != len(set(self.domains)):
             raise ValueError("source domains must be unique")
@@ -91,13 +106,14 @@ class SourceRegistryEntry(BaseModel):
             self.status is RegistryStatus.APPROVED
             and self.crawl_policy is CrawlPolicy.ALLOWED
             and self.production_eligible
+            and self.organization.is_official
         )
 
 
 class SourceRegistry(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    registry_version: Literal["1.0"]
+    registry_version: Literal["1.1"]
     environment: Literal["development", "staging", "production"]
     sources: list[SourceRegistryEntry]
 

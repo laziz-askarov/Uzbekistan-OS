@@ -39,6 +39,7 @@ def approved_source() -> SourceRegistryEntry:
                 "slug": "test-organization",
                 "name": "Test Organization",
                 "website_url": "https://government.example",
+                "country_iso2": "UZ",
                 "is_official": True,
             },
             "title": "Approved test source",

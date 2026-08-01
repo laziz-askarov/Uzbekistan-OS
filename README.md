@@ -4,7 +4,7 @@ Evidence-backed, multilingual guidance for navigating official Uzbekistan proced
 
 ## Repository status
 
-The repository foundation, persistence slice, and first six safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health and fail-closed authenticated administration endpoints, a Redis Stream ingestion worker with stale recovery and delayed retries, local infrastructure definitions, executable contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading-preserving extraction artifacts, change detection, idempotent database-authoritative retry/dead-letter semantics, a review queue, role-gated reviewer transitions, provider-neutral principal/role mapping, section-level comparison, transactional evidence-bound publication, and immutable audit events. An approved token-verifier adapter, production source adapters and scheduling, reviewer UI, and infrastructure-backed integration tests are next; product workflows and retrieval follow.
+The repository foundation, persistence slice, and first seven safe-ingestion slices are in place. The runnable system contains a responsive Next.js shell, a FastAPI service with versioned health and fail-closed authenticated administration endpoints, a Redis Stream ingestion worker with stale recovery and delayed retries, environment-bound source-registry synchronization, opt-in deterministic crawl scheduling, local infrastructure definitions, executable contracts, design tokens, PostgreSQL/pgvector models, versioned knowledge tables, deterministic seeds, Alembic migrations, a schema-backed source registry, exact-URL fetching, immutable local/S3-compatible evidence storage, heading-preserving extraction artifacts, change detection, idempotent database-authoritative retry/dead-letter semantics, a review queue, role-gated reviewer transitions, provider-neutral principal/role mapping, section-level comparison, transactional evidence-bound publication, and immutable audit events. An approved token-verifier adapter, approved production sources and source-specific adapters, reviewer UI, PDF extraction, and infrastructure-backed integration tests are next; product workflows and retrieval follow.
 
 See [EXECUTION_PLAN.md](./EXECUTION_PLAN.md) for the full delivery roadmap and [docs/decisions/OPEN_DECISIONS.md](./docs/decisions/OPEN_DECISIONS.md) for decisions that require accountable owners.
 
@@ -54,7 +54,7 @@ Copy `.env.example` to `.env`, then run:
 docker compose up --build
 ```
 
-This starts the web app, API, PostgreSQL with pgvector, Redis, and MinIO. Local credentials in `.env.example` are development-only.
+This starts PostgreSQL with pgvector, applies migrations, synchronizes the development registry, then starts the web app, API, worker, scheduler, Redis, and MinIO. Local credentials in `.env.example` are development-only. The committed registry contains no schedulable production source, so the scheduler remains idle by design.
 
 ## Validation
 

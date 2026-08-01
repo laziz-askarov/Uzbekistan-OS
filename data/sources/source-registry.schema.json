@@ -5,7 +5,7 @@
   "type": "object",
   "required": ["registry_version", "environment", "sources"],
   "properties": {
-    "registry_version": { "const": "1.0" },
+    "registry_version": { "const": "1.1" },
     "environment": { "type": "string", "enum": ["development", "staging", "production"] },
     "sources": {
       "type": "array",
@@ -15,12 +15,13 @@
   "$defs": {
     "organization": {
       "type": "object",
-      "required": ["id", "slug", "name", "website_url", "is_official"],
+      "required": ["id", "slug", "name", "website_url", "country_iso2", "is_official"],
       "properties": {
         "id": { "type": "string", "format": "uuid" },
         "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
         "name": { "type": "string", "minLength": 1 },
         "website_url": { "type": "string", "format": "uri" },
+        "country_iso2": { "type": "string", "pattern": "^[A-Z]{2}$" },
         "is_official": { "type": "boolean" }
       },
       "additionalProperties": false
@@ -42,7 +43,8 @@
         "status",
         "owner",
         "reviewed_at",
-        "production_eligible"
+        "production_eligible",
+        "schedule"
       ],
       "properties": {
         "id": { "type": "string", "format": "uuid" },
@@ -75,7 +77,16 @@
         "status": { "type": "string", "enum": ["draft", "approved", "rejected"] },
         "owner": { "type": ["string", "null"], "minLength": 1 },
         "reviewed_at": { "type": ["string", "null"], "format": "date-time" },
-        "production_eligible": { "type": "boolean" }
+        "production_eligible": { "type": "boolean" },
+        "schedule": {
+          "type": ["object", "null"],
+          "properties": {
+            "interval_minutes": { "type": "integer", "minimum": 5, "maximum": 43200 },
+            "max_attempts": { "type": "integer", "minimum": 1, "maximum": 20, "default": 3 }
+          },
+          "required": ["interval_minutes", "max_attempts"],
+          "additionalProperties": false
+        }
       },
       "allOf": [
         {
@@ -88,6 +99,9 @@
             "properties": {
               "status": { "const": "approved" },
               "crawl_policy": { "enum": ["allowed", "manual_only"] },
+              "organization": {
+                "properties": { "is_official": { "const": true } }
+              },
               "owner": { "type": "string", "minLength": 1 },
               "reviewed_at": { "type": "string", "format": "date-time" }
             }
@@ -99,6 +113,19 @@
             "properties": {
               "owner": { "type": "string", "minLength": 1 },
               "reviewed_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "schedule": { "type": "object" } },
+            "required": ["schedule"]
+          },
+          "then": {
+            "properties": {
+              "status": { "const": "approved" },
+              "crawl_policy": { "const": "allowed" },
+              "production_eligible": { "const": true }
             }
           }
         }

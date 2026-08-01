@@ -1,5 +1,5 @@
 {
-  "registry_version": "1.0",
+  "registry_version": "1.1",
   "environment": "development",
   "sources": [
     {
@@ -10,6 +10,7 @@
         "slug": "uzbekistan-os-development",
         "name": "Uzbekistan OS Development",
         "website_url": "https://example.invalid",
+        "country_iso2": "UZ",
         "is_official": false
       },
       "title": "Non-production fixture",
@@ -23,7 +24,8 @@
       "status": "draft",
       "owner": null,
       "reviewed_at": null,
-      "production_eligible": false
+      "production_eligible": false,
+      "schedule": null
     }
   ]
 }

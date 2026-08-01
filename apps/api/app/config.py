@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     worker_stale_after_ms: int = Field(default=120000, ge=1000)
     worker_retry_base_seconds: int = Field(default=30, ge=1)
     worker_retry_max_seconds: int = Field(default=900, ge=1)
+    worker_scheduler_poll_seconds: int = Field(default=60, ge=1, le=3600)
     worker_registry_path: str = "data/sources/registry.development.json"
     s3_endpoint: str = "http://localhost:9000"
     s3_access_key: str = "uzbekistan-os"

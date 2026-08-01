@@ -49,6 +49,13 @@ class QueueDelivery:
 class IngestionQueue(Protocol):
     def publish(self, task: IngestionTask) -> str: ...
 
+    def publish_scheduled(
+        self,
+        task: IngestionTask,
+        *,
+        deduplication_ttl: timedelta,
+    ) -> str | None: ...
+
     def promote_due(self, *, now: datetime, limit: int = 100) -> int: ...
 
     def reserve(self, *, block_ms: int) -> QueueDelivery | None: ...
@@ -87,6 +94,14 @@ for _, payload in ipairs(items) do
 end
 return promoted
 """
+    _PUBLISH_SCHEDULED_SCRIPT = """
+if redis.call('EXISTS', KEYS[1]) == 1 then
+  return nil
+end
+local message_id = redis.call('XADD', KEYS[2], '*', 'payload', ARGV[1])
+redis.call('SET', KEYS[1], message_id, 'EX', ARGV[2])
+return message_id
+"""
 
     def __init__(
         self,
@@ -114,6 +129,26 @@ return promoted
 
     def publish(self, task: IngestionTask) -> str:
         return self._text(self.client.xadd(self.stream, {"payload": task.canonical_json()}))
+
+    def publish_scheduled(
+        self,
+        task: IngestionTask,
+        *,
+        deduplication_ttl: timedelta,
+    ) -> str | None:
+        ttl_seconds = int(deduplication_ttl.total_seconds())
+        if ttl_seconds < 1:
+            raise ValueError("scheduled delivery deduplication TTL must be positive")
+        key = f"{self.stream}:scheduled:{task.source_id}:{task.idempotency_key}"
+        result = self.client.eval(
+            self._PUBLISH_SCHEDULED_SCRIPT,
+            2,
+            key,
+            self.stream,
+            task.canonical_json(),
+            ttl_seconds,
+        )
+        return self._text(result) if result is not None else None
 
     def promote_due(self, *, now: datetime, limit: int = 100) -> int:
         if now.tzinfo is None or now.utcoffset() is None:

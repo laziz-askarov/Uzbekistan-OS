@@ -24,6 +24,9 @@ def approved_registry():
     registry = load_source_registry(REGISTRY_PATH)
     approved = registry.sources[0].model_copy(
         update={
+            "organization": registry.sources[0].organization.model_copy(
+                update={"is_official": True}
+            ),
             "crawl_policy": CrawlPolicy.ALLOWED,
             "status": RegistryStatus.APPROVED,
             "owner": "content-team",
@@ -65,6 +68,15 @@ class MemoryQueue:
     def publish(self, message: IngestionTask) -> str:
         self.published.append(message)
         return "2-0"
+
+    def publish_scheduled(
+        self,
+        message: IngestionTask,
+        *,
+        deduplication_ttl: timedelta,
+    ) -> str | None:
+        del deduplication_ttl
+        return self.publish(message)
 
     def promote_due(self, *, now: datetime, limit: int = 100) -> int:
         del now, limit
@@ -338,6 +350,16 @@ class RetryClient:
         return self.recording_pipeline
 
 
+class ScheduledPublishClient:
+    def __init__(self, result) -> None:
+        self.result = result
+        self.calls: list[tuple[object, ...]] = []
+
+    def eval(self, *args):
+        self.calls.append(args)
+        return self.result
+
+
 def test_redis_stream_delivery_decodes_bytes_and_validates_payload() -> None:
     queued_task = task()
     queue = RedisStreamIngestionQueue(
@@ -380,3 +402,34 @@ def test_redis_retry_schedule_and_ack_share_one_transaction() -> None:
         "xack",
         "execute",
     ]
+
+
+def test_redis_scheduled_publish_atomically_deduplicates_a_slot() -> None:
+    client = ScheduledPublishClient(b"12-0")
+    queue = RedisStreamIngestionQueue(
+        client=client,
+        stream="stream",
+        group="group",
+        consumer="consumer",
+        retry_set="retries",
+        dead_letter_stream="dead",
+    )
+
+    message_id = queue.publish_scheduled(task(), deduplication_ttl=timedelta(days=1))
+
+    assert message_id == "12-0"
+    expected_key = f"stream:scheduled:{task().source_id}:scheduled:2026-08-01"
+    assert client.calls[0][1:4] == (2, expected_key, "stream")
+    assert client.calls[0][-1] == 86400
+
+    duplicate_queue = RedisStreamIngestionQueue(
+        client=ScheduledPublishClient(None),
+        stream="stream",
+        group="group",
+        consumer="consumer",
+        retry_set="retries",
+        dead_letter_stream="dead",
+    )
+    assert duplicate_queue.publish_scheduled(
+        task(), deduplication_ttl=timedelta(days=1)
+    ) is None

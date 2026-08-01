@@ -16,6 +16,24 @@ apps/api/.venv/bin/python -m app.worker run
 
 The worker creates or joins the configured Redis consumer group, promotes due retries, reclaims stale pending messages, then blocks for new work.
 
+## Synchronize and schedule approved sources
+
+Run an explicit synchronization during deployment:
+
+```bash
+apps/api/.venv/bin/python -m app.worker sync-registry
+```
+
+The command fails closed unless `APP_ENV` exactly matches the registry environment. It upserts stable registry organization/source UUIDs and deactivates database rows absent from the configured registry without deleting lineage. Docker Compose runs migrations and then the one-shot `registry-sync` service before the worker and scheduler.
+
+Start the scheduler directly with:
+
+```bash
+apps/api/.venv/bin/python -m app.worker schedule
+```
+
+The scheduler enqueues only sources that are approved, production-eligible, configured with `crawl_policy: allowed`, and have a non-null schedule. Each source uses a deterministic UTC interval slot and bounded attempt count. Redis atomically deduplicates repeated polls and scheduler replicas. Missed slots are intentionally not backfilled.
+
 ## Enqueue one approved source
 
 ```bash
@@ -25,7 +43,7 @@ apps/api/.venv/bin/python -m app.worker enqueue \
   --max-attempts 3
 ```
 
-The command fails closed unless the source exists in `WORKER_REGISTRY_PATH` and is approved, production-eligible, and configured with `crawl_policy: allowed`. The same source UUID must already exist in `knowledge.sources`; registry-to-database synchronization is not automatic yet.
+The command first synchronizes `WORKER_REGISTRY_PATH`, then fails closed unless the source is approved, production-eligible, and configured with `crawl_policy: allowed`. The registry environment must match `APP_ENV`.
 
 Use a stable idempotency key for a logical fetch. Reusing a key replays a completed result and does not create duplicate snapshots or review items.
 
@@ -37,6 +55,7 @@ Use a stable idempotency key for a logical fetch. Reusing a key replays a comple
 - The locked database crawl job decides whether retry attempts remain.
 - Invalid, unknown-source, ineligible, exhausted, and otherwise permanent work moves to `WORKER_DEAD_LETTER_STREAM`.
 - `job_in_progress` is retried without consuming queue attempt metadata because another worker may still commit the same logical job.
+- Scheduled work is deduplicated per source and UTC interval slot before it enters the Stream; PostgreSQL job uniqueness is still authoritative.
 
 Do not manually change a crawl job from `dead_lettered` to a runnable state. Correct the source, registry, adapter, or infrastructure issue and enqueue a new reviewed operation with a new idempotency key.
 
