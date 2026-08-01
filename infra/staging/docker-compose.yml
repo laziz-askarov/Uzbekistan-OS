@@ -1,0 +1,159 @@
+name: uzbekistan-os-staging
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.5-pg17-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-uzbekistan_os}
+      POSTGRES_USER: ${POSTGRES_USER:-uzbekistan_os}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-uzbekistan_os} -d ${POSTGRES_DB:-uzbekistan_os}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8.8.1-alpine3.23
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-10-15T17-29-55Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+    restart: unless-stopped
+    volumes:
+      - minio-data:/data
+
+  migrate:
+    image: ${API_IMAGE:?API_IMAGE is required}
+    command: ["python", "-m", "alembic", "-c", "alembic.ini", "upgrade", "head"]
+    profiles: ["operations"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  object-store-init:
+    image: ${WORKER_IMAGE:?WORKER_IMAGE is required}
+    command: ["python", "-m", "app.worker", "ensure-object-store"]
+    profiles: ["operations"]
+    environment:
+      APP_ENV: staging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET:-uzbekistan-os-ingestion}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_AUTO_CREATE_BUCKET: "false"
+    depends_on:
+      minio:
+        condition: service_started
+
+  registry-sync:
+    image: ${WORKER_IMAGE:?WORKER_IMAGE is required}
+    command: ["python", "-m", "app.worker", "sync-registry"]
+    profiles: ["operations"]
+    environment:
+      APP_ENV: staging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      WORKER_REGISTRY_PATH: data/sources/registry.staging.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: ${API_IMAGE:?API_IMAGE is required}
+    environment:
+      APP_ENV: staging
+      APP_VERSION: ${IMAGE_TAG:?IMAGE_TAG is required}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      API_CORS_ORIGINS: ${API_CORS_ORIGINS:?API_CORS_ORIGINS is required}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET:-uzbekistan-os-ingestion}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_AUTO_CREATE_BUCKET: "false"
+    ports:
+      - "${STAGING_BIND_ADDRESS:-127.0.0.1}:${STAGING_API_PORT:-8000}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  worker:
+    image: ${WORKER_IMAGE:?WORKER_IMAGE is required}
+    environment:
+      APP_ENV: staging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET:-uzbekistan-os-ingestion}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_AUTO_CREATE_BUCKET: "false"
+      WORKER_REGISTRY_PATH: data/sources/registry.staging.json
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  scheduler:
+    image: ${WORKER_IMAGE:?WORKER_IMAGE is required}
+    command: ["python", "-m", "app.worker", "schedule"]
+    environment:
+      APP_ENV: staging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      REDIS_URL: redis://redis:6379/0
+      WORKER_REGISTRY_PATH: data/sources/registry.staging.json
+      WORKER_SCHEDULER_POLL_SECONDS: ${WORKER_SCHEDULER_POLL_SECONDS:-60}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    image: ${WEB_IMAGE:?WEB_IMAGE is required}
+    ports:
+      - "${STAGING_BIND_ADDRESS:-127.0.0.1}:${STAGING_WEB_PORT:-3000}:3000"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

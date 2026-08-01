@@ -1,0 +1,96 @@
+name: Deploy staging
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [staging]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Commit SHA or existing immutable image tag
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      vars.STAGING_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      RELEASE_SHA: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
+      GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+      STAGING_HOST: ${{ secrets.STAGING_HOST }}
+      STAGING_USER: ${{ secrets.STAGING_USER }}
+      STAGING_ROOT: ${{ vars.STAGING_ROOT || '/opt/uzbekistan-os' }}
+      STAGING_WEB_URL: ${{ vars.STAGING_WEB_URL }}
+      STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_SHA }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ${{ env.GHCR_NAMESPACE }}/uzbekistan-os-api:${{ env.RELEASE_SHA }}
+      - name: Build and publish worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: true
+          tags: ${{ env.GHCR_NAMESPACE }}/uzbekistan-os-worker:${{ env.RELEASE_SHA }}
+      - name: Build and publish web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: ${{ env.GHCR_NAMESPACE }}/uzbekistan-os-web:${{ env.RELEASE_SHA }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.STAGING_API_URL }}/api/v1
+      - name: Configure staging SSH identity
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Install deployment files
+        run: |
+          ssh "$STAGING_USER@$STAGING_HOST" "mkdir -p '$STAGING_ROOT'"
+          scp infra/staging/docker-compose.yml "$STAGING_USER@$STAGING_HOST:$STAGING_ROOT/docker-compose.staging.yml"
+          scp scripts/deploy_staging.sh "$STAGING_USER@$STAGING_HOST:$STAGING_ROOT/deploy_staging.sh"
+          ssh "$STAGING_USER@$STAGING_HOST" "chmod 700 '$STAGING_ROOT/deploy_staging.sh'"
+      - name: Deploy immutable release
+        run: >-
+          ssh "$STAGING_USER@$STAGING_HOST"
+          "STAGING_ROOT='$STAGING_ROOT' '$STAGING_ROOT/deploy_staging.sh'
+          deploy '$RELEASE_SHA' '$GHCR_NAMESPACE'"
+      - name: Smoke test and roll back on failure
+        run: |
+          if ! scripts/smoke_staging.sh "$STAGING_WEB_URL" "$STAGING_API_URL"; then
+            ssh "$STAGING_USER@$STAGING_HOST" "STAGING_ROOT='$STAGING_ROOT' '$STAGING_ROOT/deploy_staging.sh' rollback" || true
+            exit 1
+          fi

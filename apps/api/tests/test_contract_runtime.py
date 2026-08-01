@@ -33,3 +33,6 @@ def test_checked_in_admin_contract_matches_runtime_paths_and_security() -> None:
 
     assert contract["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"
     assert runtime["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"
+
+    assert contract["paths"]["/ready"]["get"]["operationId"] == "getReadiness"
+    assert runtime["paths"]["/api/v1/ready"]["get"]["operationId"] == "getReadiness"

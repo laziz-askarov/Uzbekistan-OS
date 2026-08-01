@@ -1,6 +1,6 @@
 # Uzbekistan OS MVP Execution Plan
 
-> Implementation status (2026-08-01): the Phase 1 foundation, first Phase 2
+> Implementation status (2026-08-01): the repository-controlled Phase 1 foundation, first Phase 2
 > database slice, and first nine Phase 3 ingestion slices are complete. The
 > schema-backed source registry, crawl-eligibility rules, exact-URL fetch port,
 > deterministic HTML/text normalization, content-addressed snapshot storage,
@@ -17,6 +17,11 @@
 > transactional evidence-bound publication, and immutable audit events are implemented. No real source is
 > authorized yet. Docker-backed migration and
 > restore drills remain pending because Docker is unavailable in this workspace.
+> Phase 1 now includes CODEOWNERS and contribution/security rules, enforced
+> formatting and dependency audits, structured JSON request logging,
+> dependency-aware readiness, pinned service images, and an automated
+> SHA-image staging deploy/smoke/rollback workflow. Its final operational exit
+> gate still requires staging host secrets plus one observed deploy and rollback.
 > The next delivery slice is production source approval/adapters, an approved
 > token-verifier adapter, and reviewer publication/expiry/re-index controls.
 

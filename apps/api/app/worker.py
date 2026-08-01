@@ -3,9 +3,11 @@ import logging
 import os
 import signal
 import socket
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Event
+from time import sleep
 from uuid import UUID
 
 from redis import Redis
@@ -24,6 +26,7 @@ from app.ingestion.scheduler import IngestionScheduler
 from app.ingestion.service import IngestionService
 from app.ingestion.stores import S3SnapshotStore
 from app.ingestion.worker import IngestionWorker
+from app.observability import configure_logging
 
 
 def build_queue(settings: Settings) -> RedisStreamIngestionQueue:
@@ -174,16 +177,41 @@ def run_scheduler() -> None:
     ).run_forever(stop_event)
 
 
+def ensure_object_store(
+    *,
+    settings: Settings | None = None,
+    attempts: int = 20,
+    delay_seconds: float = 3,
+    sleeper: Callable[[float], None] = sleep,
+) -> None:
+    if attempts < 1:
+        raise ValueError("object-store readiness attempts must be positive")
+    settings = settings or get_settings()
+    logger = logging.getLogger(__name__)
+    for attempt in range(1, attempts + 1):
+        try:
+            S3SnapshotStore.from_settings(settings).ensure_bucket(region=settings.s3_region)
+        except Exception:
+            if attempt == attempts:
+                raise
+            logger.warning(
+                "object store is not ready",
+                extra={"attempt": attempt, "max_attempts": attempts},
+            )
+            sleeper(delay_seconds)
+        else:
+            logger.info("object store bucket is ready")
+            return
+
+
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
+    configure_logging(get_settings().log_level)
     parser = argparse.ArgumentParser(description="Uzbekistan OS ingestion worker")
     subcommands = parser.add_subparsers(dest="command")
     subcommands.add_parser("run", help="run the ingestion consumer loop")
     subcommands.add_parser("schedule", help="run the approved-source scheduler")
     subcommands.add_parser("sync-registry", help="synchronize the registry to PostgreSQL")
+    subcommands.add_parser("ensure-object-store", help="provision the evidence bucket")
     enqueue = subcommands.add_parser("enqueue", help="enqueue one approved source")
     enqueue.add_argument("--source-id", required=True, type=UUID)
     enqueue.add_argument("--idempotency-key", required=True)
@@ -195,6 +223,9 @@ def main() -> None:
         return
     if arguments.command == "schedule":
         run_scheduler()
+        return
+    if arguments.command == "ensure-object-store":
+        ensure_object_store()
         return
 
     settings = get_settings()

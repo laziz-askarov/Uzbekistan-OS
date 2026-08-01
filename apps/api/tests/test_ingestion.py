@@ -30,6 +30,7 @@ from app.ingestion.types import (
 
 ROOT = Path(__file__).resolve().parents[3]
 REGISTRY_PATH = ROOT / "data/sources/registry.development.json"
+STAGING_REGISTRY_PATH = ROOT / "data/sources/registry.staging.json"
 
 
 def approved_source() -> SourceRegistryEntry:
@@ -86,11 +87,7 @@ def pdf_bytes(*pages: str, password: str | None = None) -> bytes:
     for page_text in pages:
         page = writer.add_blank_page(width=612, height=792)
         page[NameObject("/Resources")] = DictionaryObject(
-            {
-                NameObject("/Font"): DictionaryObject(
-                    {NameObject("/F1"): font_reference}
-                )
-            }
+            {NameObject("/Font"): DictionaryObject({NameObject("/F1"): font_reference})}
         )
         commands = ["BT", "/F1 12 Tf", "72 720 Td"]
         for line_number, line in enumerate(page_text.splitlines()):
@@ -255,6 +252,13 @@ def test_development_registry_is_valid_but_not_automatically_eligible() -> None:
     assert registry.sources[0].automatic_fetch_eligible is False
 
 
+def test_staging_registry_is_valid_empty_and_fail_closed() -> None:
+    registry = load_source_registry(STAGING_REGISTRY_PATH)
+
+    assert registry.environment == "staging"
+    assert registry.sources == []
+
+
 def test_allowed_source_requires_approval_metadata() -> None:
     data = approved_source().model_dump(mode="json")
     data.update({"status": "draft", "owner": None, "reviewed_at": None})
@@ -314,10 +318,7 @@ def test_changed_snapshot_is_stored_and_same_job_is_replayed() -> None:
 
 def test_extraction_artifact_preserves_heading_sections() -> None:
     source = approved_source()
-    body = (
-        b"<h1>Overview</h1><p>Entry guidance.</p>"
-        b"<h2>Requirements</h2><p>Passport required.</p>"
-    )
+    body = b"<h1>Overview</h1><p>Entry guidance.</p><h2>Requirements</h2><p>Passport required.</p>"
     repository = MemoryRepository()
     store = MemorySnapshotStore()
 
@@ -394,9 +395,7 @@ def test_pdf_parser_rejects_encrypted_scanned_and_oversized_documents() -> None:
     assert encrypted.value.code == "encrypted_pdf_unsupported"
 
     with pytest.raises(IngestionError, match="OCR is not enabled") as scanned:
-        normalize_response(
-            response(source, pdf_bytes(""), content_type="application/pdf")
-        )
+        normalize_response(response(source, pdf_bytes(""), content_type="application/pdf"))
     assert scanned.value.code == "pdf_text_unavailable"
 
     with pytest.raises(IngestionError, match="1 page limit") as oversized:
@@ -452,9 +451,7 @@ def test_identical_content_is_unchanged_and_uses_conditional_headers() -> None:
 
 def test_not_modified_response_reuses_prior_snapshot() -> None:
     source = approved_source()
-    fetcher = FakeFetcher(
-        [response(source, b"<p>Current rule</p>"), response(source, b"", 304)]
-    )
+    fetcher = FakeFetcher([response(source, b"<p>Current rule</p>"), response(source, b"", 304)])
     repository = MemoryRepository()
     ingestion = service(fetcher, repository)
 

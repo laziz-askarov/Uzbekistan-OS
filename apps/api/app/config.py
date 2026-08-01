@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,8 +15,12 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_name: str = "Uzbekistan OS API"
     app_version: str = "0.1.0"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    readiness_timeout_seconds: int = Field(default=2, ge=1, le=10)
     api_cors_origins: str = "http://localhost:3000"
-    database_url: str = "postgresql+psycopg://uzbekistan_os:local-development-only@localhost:5432/uzbekistan_os"
+    database_url: str = (
+        "postgresql+psycopg://uzbekistan_os:local-development-only@localhost:5432/uzbekistan_os"
+    )
     redis_url: str = "redis://localhost:6379/0"
     worker_stream: str = "uzbekistan-os:ingestion"
     worker_group: str = "ingestion-workers"

@@ -7,6 +7,8 @@ COPY packages/design-system/package.json packages/design-system/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM dependencies AS builder
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 COPY apps/web apps/web
 COPY packages/design-system packages/design-system
 RUN pnpm --filter @uzbekistan-os/web build

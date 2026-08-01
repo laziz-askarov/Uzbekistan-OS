@@ -5,6 +5,8 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
+from app import worker as worker_module
+from app.config import Settings
 from app.ingestion.errors import IngestionError
 from app.ingestion.models import CrawlPolicy, RegistryStatus
 from app.ingestion.queue import (
@@ -430,6 +432,36 @@ def test_redis_scheduled_publish_atomically_deduplicates_a_slot() -> None:
         retry_set="retries",
         dead_letter_stream="dead",
     )
-    assert duplicate_queue.publish_scheduled(
-        task(), deduplication_ttl=timedelta(days=1)
-    ) is None
+    assert duplicate_queue.publish_scheduled(task(), deduplication_ttl=timedelta(days=1)) is None
+
+
+def test_object_store_initialization_retries_transient_startup_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class DelayedStore:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def ensure_bucket(self, *, region: str) -> None:
+            assert region == "us-east-1"
+            self.calls += 1
+            if self.calls < 3:
+                raise ConnectionError("not ready")
+
+    store = DelayedStore()
+    monkeypatch.setattr(
+        worker_module.S3SnapshotStore,
+        "from_settings",
+        lambda settings: store,
+    )
+    delays: list[float] = []
+
+    worker_module.ensure_object_store(
+        settings=Settings(),
+        attempts=3,
+        delay_seconds=0.25,
+        sleeper=delays.append,
+    )
+
+    assert store.calls == 3
+    assert delays == [0.25, 0.25]

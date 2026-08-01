@@ -28,6 +28,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /ready:
+    get:
+      tags: [system]
+      operationId: getReadiness
+      summary: Check service dependencies
+      responses:
+        "200":
+          description: Required service dependencies are available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
   /conversations:
     post:
       tags: [conversations]
@@ -331,6 +345,28 @@ components:
       required: [data, meta]
       properties:
         data: { $ref: "#/components/schemas/HealthData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ReadinessData:
+      type: object
+      required: [service, status, checks]
+      properties:
+        service: { type: string, const: api }
+        status: { type: string, const: ready }
+        checks:
+          type: object
+          required: [postgresql, redis, object_store]
+          properties:
+            postgresql: { type: string, const: ok }
+            redis: { type: string, const: ok }
+            object_store: { type: string, const: ok }
+          additionalProperties: false
+      additionalProperties: false
+    ReadinessResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ReadinessData" }
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
     CreateConversationRequest:

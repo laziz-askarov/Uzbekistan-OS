@@ -1,0 +1,10 @@
+# Default ownership stays explicit until domain teams are established.
+* @laziz-askarov
+
+/.github/ @laziz-askarov
+/apps/api/ @laziz-askarov
+/apps/web/ @laziz-askarov
+/data/sources/ @laziz-askarov
+/infra/ @laziz-askarov
+/packages/contracts/ @laziz-askarov
+/packages/knowledge/ @laziz-askarov

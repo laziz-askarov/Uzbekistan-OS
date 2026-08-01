@@ -9,7 +9,7 @@ SCHEMA_PATH = ROOT / "packages/knowledge/schemas/knowledge-document.schema.json"
 FIXTURE_PATH = ROOT / "packages/knowledge/examples/minimal-immigration-document.json"
 OPENAPI_PATH = ROOT / "packages/contracts/openapi.yaml"
 SOURCE_REGISTRY_SCHEMA_PATH = ROOT / "data/sources/source-registry.schema.json"
-SOURCE_REGISTRY_PATH = ROOT / "data/sources/registry.development.json"
+SOURCE_REGISTRY_PATHS = sorted((ROOT / "data/sources").glob("registry.*.json"))
 EXTRACTION_SCHEMA_PATH = ROOT / "packages/knowledge/schemas/extraction-artifact.schema.json"
 EXTRACTION_FIXTURE_PATH = ROOT / "packages/knowledge/examples/minimal-extraction-artifact.json"
 
@@ -37,6 +37,7 @@ def validate_openapi_skeleton() -> None:
     if not contract.get("components", {}).get("schemas"):
         raise ValueError("OpenAPI contract must define component schemas")
     implemented_paths = {
+        "/ready",
         "/auth/me",
         "/admin/reviews/{review_item_id}/claim",
         "/admin/reviews/{review_item_id}/decision",
@@ -51,15 +52,21 @@ def validate_openapi_skeleton() -> None:
 
 def validate_source_registry() -> None:
     schema = read_json(SOURCE_REGISTRY_SCHEMA_PATH)
-    registry = read_json(SOURCE_REGISTRY_PATH)
     Draft202012Validator.check_schema(schema)
-    Draft202012Validator(schema, format_checker=FormatChecker()).validate(registry)
+    if not SOURCE_REGISTRY_PATHS:
+        raise ValueError("At least one environment source registry is required")
+    for path in SOURCE_REGISTRY_PATHS:
+        registry = read_json(path)
+        Draft202012Validator(schema, format_checker=FormatChecker()).validate(registry)
+        environment = registry["environment"]
+        if path.name != f"registry.{environment}.json":
+            raise ValueError(f"Source registry filename does not match environment: {path}")
 
-    sources = registry["sources"]
-    for field in ("id", "slug", "url"):
-        values = [source[field] for source in sources]
-        if len(values) != len(set(values)):
-            raise ValueError(f"Source registry contains duplicate {field} values")
+        sources = registry["sources"]
+        for field in ("id", "slug", "url"):
+            values = [source[field] for source in sources]
+            if len(values) != len(set(values)):
+                raise ValueError(f"Source registry contains duplicate {field} values")
 
 
 def validate_extraction_fixture() -> None:

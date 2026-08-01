@@ -237,9 +237,7 @@ def test_artifact_comparison_reports_added_removed_and_modified_sections() -> No
     assert comparison.current_artifact_id == current_id
     assert comparison.previous_artifact_id == previous_id
     assert comparison.changed is True
-    assert {
-        change.section_id: change.change_type for change in comparison.changes
-    } == {
+    assert {change.section_id: change.change_type for change in comparison.changes} == {
         "documents": SectionChangeType.REMOVED,
         "fees": SectionChangeType.ADDED,
         "overview": SectionChangeType.MODIFIED,

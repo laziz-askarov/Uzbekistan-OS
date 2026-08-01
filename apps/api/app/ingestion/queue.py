@@ -29,9 +29,7 @@ class IngestionTask(BaseModel):
 
     def retry(self, *, increment_attempt: bool = True) -> "IngestionTask":
         attempt = min(self.attempt + 1, self.max_attempts) if increment_attempt else self.attempt
-        return self.model_copy(
-            update={"attempt": attempt, "enqueued_at": datetime.now(UTC)}
-        )
+        return self.model_copy(update={"attempt": attempt, "enqueued_at": datetime.now(UTC)})
 
     def canonical_json(self) -> str:
         return self.model_dump_json()

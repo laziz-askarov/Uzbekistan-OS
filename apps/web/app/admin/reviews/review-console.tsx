@@ -4,9 +4,11 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import styles from "./review-console.module.css";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-type ReviewStatus = "pending" | "in_review" | "approved" | "rejected" | "cancelled";
+type ReviewStatus =
+  "pending" | "in_review" | "approved" | "rejected" | "cancelled";
 type ReviewDecision = "approve" | "reject";
 
 type ReviewItem = {
@@ -76,7 +78,9 @@ function compactId(value: string) {
 }
 
 function reviewError(error: unknown) {
-  return error instanceof Error ? error.message : "The review service could not complete the request.";
+  return error instanceof Error
+    ? error.message
+    : "The review service could not complete the request.";
 }
 
 export default function ReviewConsole() {
@@ -100,20 +104,23 @@ export default function ReviewConsole() {
     init?: RequestInit,
     bearerToken: string = token,
   ): Promise<T> {
-      const response = await fetch(`${API_BASE}${path}`, {
-        ...init,
-        headers: {
-          authorization: `Bearer ${bearerToken}`,
-          "content-type": "application/json",
-          "x-request-id": crypto.randomUUID(),
-          ...init?.headers,
-        },
-      });
-      const payload = (await response.json()) as Envelope<T> & ErrorEnvelope;
-      if (!response.ok) {
-        throw new Error(payload.error?.message ?? `Request failed with status ${response.status}.`);
-      }
-      return payload.data;
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: {
+        authorization: `Bearer ${bearerToken}`,
+        "content-type": "application/json",
+        "x-request-id": crypto.randomUUID(),
+        ...init?.headers,
+      },
+    });
+    const payload = (await response.json()) as Envelope<T> & ErrorEnvelope;
+    if (!response.ok) {
+      throw new Error(
+        payload.error?.message ??
+          `Request failed with status ${response.status}.`,
+      );
+    }
+    return payload.data;
   }
 
   async function loadQueue(
@@ -135,7 +142,9 @@ export default function ReviewConsole() {
       setPrincipal(identity);
       setItems(queue);
       const nextSelected =
-        queue.find((item) => item.review.id === selected?.review.id) ?? queue[0] ?? null;
+        queue.find((item) => item.review.id === selected?.review.id) ??
+        queue[0] ??
+        null;
       setSelected(nextSelected);
       await loadDetails(nextSelected, bearerToken);
     } catch (caught) {
@@ -148,7 +157,10 @@ export default function ReviewConsole() {
     }
   }
 
-  async function loadDetails(item: QueueItem | null, bearerToken: string = token) {
+  async function loadDetails(
+    item: QueueItem | null,
+    bearerToken: string = token,
+  ) {
     if (!item || !bearerToken) {
       setArtifact(null);
       setComparison(null);
@@ -191,7 +203,10 @@ export default function ReviewConsole() {
   }
 
   const changedSections = useMemo(
-    () => comparison?.changes.filter((change) => change.change_type !== "unchanged") ?? [],
+    () =>
+      comparison?.changes.filter(
+        (change) => change.change_type !== "unchanged",
+      ) ?? [],
     [comparison],
   );
 
@@ -220,9 +235,12 @@ export default function ReviewConsole() {
     setAction("claim");
     setError("");
     try {
-      const review = await request<ReviewItem>(`/admin/reviews/${selected.review.id}/claim`, {
-        method: "POST",
-      });
+      const review = await request<ReviewItem>(
+        `/admin/reviews/${selected.review.id}/claim`,
+        {
+          method: "POST",
+        },
+      );
       const updated = { ...selected, review };
       setSelected(updated);
       setItems((current) =>
@@ -241,17 +259,24 @@ export default function ReviewConsole() {
     setAction(decision);
     setError("");
     try {
-      const review = await request<ReviewItem>(`/admin/reviews/${selected.review.id}/decision`, {
-        method: "POST",
-        body: JSON.stringify({ decision, reason: reason.trim() }),
-      });
+      const review = await request<ReviewItem>(
+        `/admin/reviews/${selected.review.id}/decision`,
+        {
+          method: "POST",
+          body: JSON.stringify({ decision, reason: reason.trim() }),
+        },
+      );
       const updated = { ...selected, review };
       setSelected(updated);
       setItems((current) =>
         current.map((item) => (item.review.id === review.id ? updated : item)),
       );
       setReason("");
-      setMessage(decision === "approve" ? "Extraction approved." : "Extraction rejected.");
+      setMessage(
+        decision === "approve"
+          ? "Extraction approved."
+          : "Extraction rejected.",
+      );
     } catch (caught) {
       setError(reviewError(caught));
     } finally {
@@ -267,7 +292,9 @@ export default function ReviewConsole() {
     <main className={styles.shell}>
       <header className={styles.topbar}>
         <Link className={styles.brand} href="/" aria-label="Uzbekistan OS home">
-          <span className={styles.brandMark} aria-hidden="true">U</span>
+          <span className={styles.brandMark} aria-hidden="true">
+            U
+          </span>
           <span>
             <strong>Uzbekistan OS</strong>
             <small>Knowledge operations</small>
@@ -282,7 +309,11 @@ export default function ReviewConsole() {
             <span className={styles.identity}>Not connected</span>
           )}
           {token && (
-            <button className={styles.quietButton} type="button" onClick={disconnect}>
+            <button
+              className={styles.quietButton}
+              type="button"
+              onClick={disconnect}
+            >
               Disconnect
             </button>
           )}
@@ -290,12 +321,16 @@ export default function ReviewConsole() {
       </header>
 
       {!token ? (
-        <section className={styles.connectPanel} aria-labelledby="connect-title">
+        <section
+          className={styles.connectPanel}
+          aria-labelledby="connect-title"
+        >
           <p className={styles.eyebrow}>Restricted workspace</p>
           <h1 id="connect-title">Connect a reviewer session</h1>
           <p>
-            Enter a verified bearer token with the content reviewer or administrator role. The
-            token stays in memory for this page session and is never added to the URL.
+            Enter a verified bearer token with the content reviewer or
+            administrator role. The token stays in memory for this page session
+            and is never added to the URL.
           </p>
           <form onSubmit={connect} className={styles.connectForm}>
             <label htmlFor="review-token">Bearer access token</label>
@@ -313,8 +348,8 @@ export default function ReviewConsole() {
             </div>
           </form>
           <p className={styles.securityNote}>
-            Production access remains disabled until an approved token-verifier adapter is
-            configured.
+            Production access remains disabled until an approved token-verifier
+            adapter is configured.
           </p>
         </section>
       ) : (
@@ -366,7 +401,10 @@ export default function ReviewConsole() {
                       <span>Priority {item.review.priority}</span>
                     </span>
                     <strong>{item.source_title}</strong>
-                    <span>{item.section_count} sections · {formatDate(item.fetched_at)}</span>
+                    <span>
+                      {item.section_count} sections ·{" "}
+                      {formatDate(item.fetched_at)}
+                    </span>
                   </button>
                 ))
               ) : (
@@ -379,14 +417,21 @@ export default function ReviewConsole() {
             </div>
           </aside>
 
-          <section className={styles.documentPanel} aria-labelledby="document-title">
+          <section
+            className={styles.documentPanel}
+            aria-labelledby="document-title"
+          >
             {selected ? (
               <>
                 <div className={styles.documentHeader}>
                   <div>
                     <p className={styles.eyebrow}>Extracted evidence</p>
                     <h2 id="document-title">{selected.source_title}</h2>
-                    <a href={selected.source_url} target="_blank" rel="noreferrer">
+                    <a
+                      href={selected.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Open official source <span aria-hidden="true">↗</span>
                     </a>
                   </div>
@@ -402,13 +447,20 @@ export default function ReviewConsole() {
                         (item) => item.section_id === section.id,
                       );
                       return (
-                        <article className={styles.sectionCard} key={section.id}>
-                          <div className={styles.sectionIndex}>{String(index + 1).padStart(2, "0")}</div>
+                        <article
+                          className={styles.sectionCard}
+                          key={section.id}
+                        >
+                          <div className={styles.sectionIndex}>
+                            {String(index + 1).padStart(2, "0")}
+                          </div>
                           <div>
                             <div className={styles.sectionTitle}>
                               <h3>{section.heading}</h3>
                               {change && change.change_type !== "unchanged" && (
-                                <span data-change={change.change_type}>{change.change_type}</span>
+                                <span data-change={change.change_type}>
+                                  {change.change_type}
+                                </span>
                               )}
                             </div>
                             <p>{section.body}</p>
@@ -418,14 +470,19 @@ export default function ReviewConsole() {
                     })}
                   </div>
                 ) : (
-                  <div className={styles.emptyState}>Select an item to load its evidence.</div>
+                  <div className={styles.emptyState}>
+                    Select an item to load its evidence.
+                  </div>
                 )}
               </>
             ) : (
               <div className={styles.blankDocument}>
                 <span aria-hidden="true">◎</span>
                 <h2 id="document-title">Choose a review item</h2>
-                <p>Its checksum-verified extraction and source lineage will appear here.</p>
+                <p>
+                  Its checksum-verified extraction and source lineage will
+                  appear here.
+                </p>
               </div>
             )}
           </section>
@@ -437,11 +494,30 @@ export default function ReviewConsole() {
             {selected && artifact ? (
               <>
                 <dl className={styles.metadata}>
-                  <div><dt>Fetched</dt><dd>{formatDate(selected.fetched_at)}</dd></div>
-                  <div><dt>Adapter</dt><dd>{artifact.adapter_key}</dd></div>
-                  <div><dt>Media</dt><dd>{artifact.media_type}</dd></div>
-                  <div><dt>Changes</dt><dd>{changedSections.length}</dd></div>
-                  <div><dt>Raw SHA-256</dt><dd><code title={artifact.raw_sha256}>{compactId(artifact.raw_sha256)}</code></dd></div>
+                  <div>
+                    <dt>Fetched</dt>
+                    <dd>{formatDate(selected.fetched_at)}</dd>
+                  </div>
+                  <div>
+                    <dt>Adapter</dt>
+                    <dd>{artifact.adapter_key}</dd>
+                  </div>
+                  <div>
+                    <dt>Media</dt>
+                    <dd>{artifact.media_type}</dd>
+                  </div>
+                  <div>
+                    <dt>Changes</dt>
+                    <dd>{changedSections.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Raw SHA-256</dt>
+                    <dd>
+                      <code title={artifact.raw_sha256}>
+                        {compactId(artifact.raw_sha256)}
+                      </code>
+                    </dd>
+                  </div>
                 </dl>
 
                 <div className={styles.changeSummary}>
@@ -451,8 +527,12 @@ export default function ReviewConsole() {
                       <ul>
                         {changedSections.map((change) => (
                           <li key={change.section_id}>
-                            <span data-change={change.change_type}>{change.change_type}</span>
-                            {change.current_heading ?? change.previous_heading ?? change.section_id}
+                            <span data-change={change.change_type}>
+                              {change.change_type}
+                            </span>
+                            {change.current_heading ??
+                              change.previous_heading ??
+                              change.section_id}
                           </li>
                         ))}
                       </ul>
@@ -460,7 +540,9 @@ export default function ReviewConsole() {
                       <p>No section changes detected.</p>
                     )
                   ) : (
-                    <p>This is the first reviewed extraction for this source.</p>
+                    <p>
+                      This is the first reviewed extraction for this source.
+                    </p>
                   )}
                 </div>
 
@@ -514,7 +596,8 @@ export default function ReviewConsole() {
               </>
             ) : (
               <p className={styles.inspectorPlaceholder}>
-                Select a queue item to inspect its source, changes, and decision controls.
+                Select a queue item to inspect its source, changes, and decision
+                controls.
               </p>
             )}
           </aside>
@@ -528,7 +611,13 @@ export default function ReviewConsole() {
         <div className={styles.errorBanner} role="alert">
           <strong>Review service unavailable</strong>
           <span>{error}</span>
-          <button type="button" onClick={() => setError("")} aria-label="Dismiss error">×</button>
+          <button
+            type="button"
+            onClick={() => setError("")}
+            aria-label="Dismiss error"
+          >
+            ×
+          </button>
         </div>
       )}
     </main>
@@ -536,21 +625,32 @@ export default function ReviewConsole() {
 }
 
 function StatusPill({ status }: { status: ReviewStatus }) {
-  return <span className={styles.statusPill} data-status={status}>{status.replace("_", " ")}</span>;
+  return (
+    <span className={styles.statusPill} data-status={status}>
+      {status.replace("_", " ")}
+    </span>
+  );
 }
 
 function QueueSkeleton() {
   return (
     <div className={styles.skeletonList} aria-label="Loading review queue">
-      {[0, 1, 2].map((item) => <span key={item} />)}
+      {[0, 1, 2].map((item) => (
+        <span key={item} />
+      ))}
     </div>
   );
 }
 
 function DocumentSkeleton() {
   return (
-    <div className={styles.documentSkeleton} aria-label="Loading extracted evidence">
-      {[0, 1, 2].map((item) => <span key={item} />)}
+    <div
+      className={styles.documentSkeleton}
+      aria-label="Loading extracted evidence"
+    >
+      {[0, 1, 2].map((item) => (
+        <span key={item} />
+      ))}
     </div>
   );
 }

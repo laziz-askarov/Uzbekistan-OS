@@ -84,9 +84,7 @@ def test_s3_store_is_idempotent_for_identical_content() -> None:
 
 def test_s3_store_rejects_content_address_collisions() -> None:
     client = FakeS3Client()
-    client.objects["sources/source/snapshot.bin"] = {
-        "Metadata": {"sha256": "0" * 64}
-    }
+    client.objects["sources/source/snapshot.bin"] = {"Metadata": {"sha256": "0" * 64}}
     store = S3SnapshotStore(client=client, bucket="evidence")
 
     with pytest.raises(IngestionError, match="different bytes"):

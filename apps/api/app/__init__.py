@@ -1,2 +1,1 @@
 """Uzbekistan OS API package."""
-

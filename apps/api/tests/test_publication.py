@@ -287,9 +287,7 @@ def test_same_publication_replays_but_changed_candidate_conflicts() -> None:
         candidate_sha256=publication_candidate.sha256,
         published_at=datetime(2026, 7, 31, 13, tzinfo=UTC),
     )
-    repository.lineage = repository.lineage.model_copy(
-        update={"existing_publication": existing}
-    )
+    repository.lineage = repository.lineage.model_copy(update={"existing_publication": existing})
 
     replay = service.publish(
         principal,

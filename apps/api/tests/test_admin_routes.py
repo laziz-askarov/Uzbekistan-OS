@@ -125,9 +125,7 @@ class StubReviewService:
             raise ReviewError("invalid_review_transition", "review cannot be decided")
         self.contexts.append(context)
         target = (
-            ReviewStatus.APPROVED
-            if decision is ReviewDecision.APPROVE
-            else ReviewStatus.REJECTED
+            ReviewStatus.APPROVED if decision is ReviewDecision.APPROVE else ReviewStatus.REJECTED
         )
         self.record = ReviewRecord(
             id=self.record.id,

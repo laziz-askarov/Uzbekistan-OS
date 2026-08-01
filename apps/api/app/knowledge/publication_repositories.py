@@ -112,10 +112,7 @@ class SqlAlchemyPublicationRepository:
             )
             self.session.add(document)
             self.session.flush()
-        elif (
-            document.domain_id != domain.id
-            or document.canonical_language_id != language.id
-        ):
+        elif document.domain_id != domain.id or document.canonical_language_id != language.id:
             raise PublicationError(
                 "document_identity_conflict",
                 "existing document domain or canonical language differs",

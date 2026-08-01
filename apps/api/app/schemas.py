@@ -19,6 +19,12 @@ class HealthData(BaseModel):
     environment: str
 
 
+class ReadinessData(BaseModel):
+    service: str
+    status: str
+    checks: dict[str, str]
+
+
 class ErrorDetail(BaseModel):
     code: str
     message: str
