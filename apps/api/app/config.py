@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,7 +33,19 @@ class Settings(BaseSettings):
     worker_retry_max_seconds: int = Field(default=900, ge=1)
     worker_scheduler_poll_seconds: int = Field(default=60, ge=1, le=3600)
     worker_registry_path: str = "data/sources/registry.development.json"
+    ai_generation_enabled: bool = False
     ai_prompt_registry_path: str = "data/prompts/registry.v1.json"
+    ai_model_route_registry_path: str = "data/models/registry.mvp.json"
+    ai_retrieval_limit: int = Field(default=8, ge=1, le=20)
+    ai_evidence_max_items: int = Field(default=6, ge=1, le=12)
+    ai_evidence_max_characters: int = Field(default=9_000, ge=500, le=30_000)
+    ai_conversation_recent_turns: int = Field(default=8, ge=2, le=20)
+    ai_conversation_summary_trigger_turns: int = Field(default=12, ge=4, le=40)
+    ai_conversation_summary_max_characters: int = Field(default=4_000, ge=500, le=12_000)
+    ai_stream_start_target_ms: int = Field(default=2_000, ge=100, le=10_000)
+    ai_first_content_target_ms: int = Field(default=3_000, ge=500, le=15_000)
+    ai_response_target_ms: int = Field(default=8_000, ge=1_000, le=30_000)
+    ai_citation_coverage_target: float = Field(default=0.95, ge=0.95, le=1)
     ingestion_max_pdf_pages: int = Field(default=250, ge=1, le=2000)
     ingestion_max_normalized_characters: int = Field(default=2_000_000, ge=1000)
     s3_endpoint: str = "http://localhost:9000"
@@ -42,12 +54,37 @@ class Settings(BaseSettings):
     s3_bucket: str = "uzbekistan-os-ingestion"
     s3_region: str = "us-east-1"
     s3_auto_create_bucket: bool = False
-    openai_api_key: str | None = None
-    openai_model: str = "gpt-5.6-terra"
-    openai_store_responses: bool = Field(
+    openai_api_key: SecretStr | None = None
+    openai_generation_model: str = Field(
+        default="gpt-5.6-terra",
+        min_length=1,
+        validation_alias=AliasChoices(
+            "OPENAI_GENERATION_MODEL", "OPENAI_MODEL", "openai_generation_model"
+        ),
+    )
+    openai_store_responses: Literal[False] = Field(
         default=False,
         validation_alias=AliasChoices("OPENAI_STORE_RESPONSES", "openai_store_responses"),
     )
+
+    @field_validator("openai_api_key", mode="before")
+    @classmethod
+    def normalize_optional_provider_key(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, SecretStr):
+            return value if value.get_secret_value().strip() else None
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @field_validator("openai_generation_model")
+    @classmethod
+    def normalize_generation_model(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("generation model must not be blank")
+        return normalized
 
     @property
     def cors_origins(self) -> list[str]:

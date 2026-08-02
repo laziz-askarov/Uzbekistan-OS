@@ -10,10 +10,12 @@ from app.ai.gateway import (
     ModelRouteRegistry,
     ProviderRequest,
     ProviderResult,
+    load_model_route_registry,
 )
 from app.ai.prompts import load_prompt_registry
 
 PROMPT_REGISTRY = Path(__file__).parents[3] / "data/prompts/registry.v1.json"
+MODEL_REGISTRY = Path(__file__).parents[3] / "data/models/registry.mvp.json"
 
 
 def route(**updates) -> ModelRoute:
@@ -91,6 +93,15 @@ def test_gateway_enforces_configured_route_and_non_storage_boundary() -> None:
     assert result.route_key == "grounded-answer-default"
     assert result.attempts == 1
     assert result.cost_usd == 0.01
+
+
+def test_checked_in_model_registry_is_valid_and_intentionally_proposed() -> None:
+    registry = load_model_route_registry(MODEL_REGISTRY)
+
+    assert registry.registry_version == "1.0"
+    assert registry.routes[0].key == "grounded-answer-default"
+    assert registry.routes[0].status == "proposed"
+    assert registry.routes[0].store is False
 
 
 def test_gateway_retries_only_bounded_retryable_provider_failures() -> None:

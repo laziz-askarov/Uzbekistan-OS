@@ -10,7 +10,7 @@ Accepted decisions link to the record that defines their consequences and eviden
 | D-003 | Authentication | Open | Product + security | Guest and email/password first; gate Google OAuth separately |
 | D-004 | Translation policy | Open | Content + domain | Human review required for published procedural guidance |
 | D-005 | Freshness policy | Open | Content + domain | Review interval and expiry behavior by risk level |
-| D-006 | Model routing | Open | AI + platform | Configurable generation, embedding, and reranking roles with evaluation gates |
+| D-006 | Model routing | Open | AI + platform | ADR 0020 proposes Terra/low for grounded generation behind a disabled route; approve only after frozen multilingual quality, latency, and cost gates |
 | D-007 | Production hosting | Open | Platform + security | Managed regional services with encrypted backups |
 | D-008 | Privacy/retention | Open | Product + legal/security | Minimize PII; define deletion, analytics consent, and retention before alpha |
 | D-009 | Dark mode | Accepted 2026-08-01 | Design + product | ADR 0015: system default plus persistent explicit override in MVP |

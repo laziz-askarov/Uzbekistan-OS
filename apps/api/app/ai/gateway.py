@@ -1,9 +1,11 @@
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from time import monotonic
 from typing import Any, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from app.ai.prompts import CompiledPrompt
 
@@ -40,6 +42,7 @@ class ModelRoute(BaseModel):
 class ModelRouteRegistry(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    registry_version: Literal["1.0"] = "1.0"
     routes: list[ModelRoute] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -58,6 +61,16 @@ class ModelRouteRegistry(BaseModel):
                 "model_route_not_approved", f"model route {key!r} is not approved"
             )
         return route
+
+
+def load_model_route_registry(path: Path) -> ModelRouteRegistry:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return ModelRouteRegistry.model_validate(payload)
+    except OSError as exc:
+        raise ModelGatewayError("model_registry_unavailable", str(exc)) from exc
+    except (json.JSONDecodeError, ValidationError) as exc:
+        raise ModelGatewayError("model_registry_invalid", str(exc)) from exc
 
 
 class ProviderRequest(BaseModel):

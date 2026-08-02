@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ai.settings import load_ai_runtime_configuration
 from app.config import get_settings
 from app.errors import install_exception_handlers
 from app.middleware import request_id_middleware
@@ -24,6 +25,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    ai_runtime = load_ai_runtime_configuration(settings)
     configure_logging(settings.log_level)
     application = FastAPI(
         title=settings.app_name,
@@ -33,6 +35,7 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.app_env != "production" else None,
         lifespan=lifespan,
     )
+    application.state.ai_runtime = ai_runtime
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

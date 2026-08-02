@@ -8,6 +8,7 @@ COPY apps/api/pyproject.toml ./
 COPY apps/api/app ./app
 COPY apps/api/alembic.ini ./
 COPY apps/api/alembic ./alembic
+COPY data/models ./data/models
 COPY data/prompts ./data/prompts
 RUN python -m pip install --no-cache-dir .
 
