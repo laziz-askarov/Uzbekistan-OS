@@ -34,6 +34,16 @@ Raw source responses and canonical extraction artifacts share the S3-compatible 
 
 Each changed snapshot produces one schema-versioned extraction artifact and one `pending` review item. Unchanged responses do not create new review work.
 
+## Administrator uploads and manual crawls
+
+The `/admin` dashboard and its API require the `admin` role. Manual uploads are accepted only when the registry source is official, approved, production-eligible, and has `crawl_policy: allowed` or `manual_only`. Automatic crawler runs require the stricter `allowed` policy. An operator cannot use the dashboard to approve a source or change its URL, adapter, policy, or schedule.
+
+- Upload payloads are base64-encoded JSON to keep request parsing deterministic and are capped at 10 MB after decoding.
+- Filenames must be plain names without directory components. Supported media types are PDF, HTML, XHTML, and text.
+- The response URL remains the exact approved source URL; source/media mismatch, redirects, oversized content, and unsupported PDFs fail closed.
+- Upload and crawl mutations require a caller-supplied idempotency key. Known checksums reuse their immutable snapshot and do not create duplicate review work, even if an older version is uploaded again.
+- The database transaction rolls back if queue publication or ingestion fails. Do not bypass the API by writing directly to the evidence bucket.
+
 ## PDF controls
 
 A PDF source must be registered explicitly with `source_type: pdf`, and the approved URL must return `application/pdf`. A mismatched source type, missing PDF signature, malformed file, encrypted file, or PDF with no extractable text is a terminal failure.
@@ -79,4 +89,4 @@ Only approved, production-eligible, automatically crawlable entries with a non-n
 
 ## Current limitations
 
-The Redis-backed worker loop, manual enqueue boundary, environment-bound registry synchronization, opt-in scheduler, first reviewer compare/claim/decision console, and bounded text-first PDF extraction are implemented. OCR, a production authentication adapter, reviewer publication/expiry/re-index controls, source-specific production adapters, and approved production source entries are not implemented yet. The role-gated review and comparison services, provider-neutral identity mapping, administration routes, and transactional publication core are implemented. Worker and publication operations are documented in [worker.md](./worker.md) and [publication.md](./publication.md). Live Redis/PostgreSQL/MinIO validation remains pending while Docker is unavailable.
+The Redis-backed worker loop, admin upload/manual enqueue boundary, environment-bound registry synchronization, opt-in scheduler, ingestion operations dashboard, reviewer/publisher console, and bounded text-first PDF extraction are implemented. OCR remains intentionally out of MVP scope. A production authentication adapter, source-specific production adapters, approved production source entries, and reviewed production content are not implemented. Worker, publication, and indexing operations are documented in [worker.md](./worker.md), [publication.md](./publication.md), and [indexing.md](./indexing.md). PostgreSQL lifecycle/index eligibility has live integration coverage; full external-source staging exercises remain gated on source approval.

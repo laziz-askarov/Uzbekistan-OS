@@ -19,6 +19,7 @@ from app.database.models.knowledge import (
     SourceOrganization,
 )
 from app.identity.service import AuthenticatedPrincipal
+from app.knowledge.chunking import chunk_sections
 from app.knowledge.publication import (
     PublicationCandidate,
     PublicationError,
@@ -183,22 +184,17 @@ class SqlAlchemyPublicationRepository:
                 snapshot_sha256=snapshot.sha256,
             )
         )
-        for ordinal, section in enumerate(candidate.sections):
+        for semantic_chunk in chunk_sections(candidate.sections):
             self.session.add(
                 Chunk(
                     id=uuid4(),
                     document_version_id=document_version_id,
-                    section_id=section.id,
-                    ordinal=ordinal,
-                    content=section.body,
-                    content_hash=sha256(section.body.encode()).hexdigest(),
-                    token_count=len(section.body.split()),
-                    attributes={
-                        "heading": section.heading,
-                        "citations": [
-                            citation.model_dump(mode="json") for citation in section.citations
-                        ],
-                    },
+                    section_id=semantic_chunk.section_id,
+                    ordinal=semantic_chunk.ordinal,
+                    content=semantic_chunk.content,
+                    content_hash=semantic_chunk.content_hash,
+                    token_count=semantic_chunk.token_count,
+                    attributes=semantic_chunk.attributes,
                 )
             )
 

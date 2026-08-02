@@ -101,12 +101,19 @@ class SourceRegistryEntry(BaseModel):
         return self
 
     @property
-    def automatic_fetch_eligible(self) -> bool:
+    def manual_ingestion_eligible(self) -> bool:
         return (
             self.status is RegistryStatus.APPROVED
-            and self.crawl_policy is CrawlPolicy.ALLOWED
+            and self.crawl_policy in {CrawlPolicy.ALLOWED, CrawlPolicy.MANUAL_ONLY}
             and self.production_eligible
             and self.organization.is_official
+        )
+
+    @property
+    def automatic_fetch_eligible(self) -> bool:
+        return (
+            self.manual_ingestion_eligible
+            and self.crawl_policy is CrawlPolicy.ALLOWED
         )
 
 
@@ -123,4 +130,11 @@ class SourceRegistry(BaseModel):
             values = [str(getattr(source, field)) for source in self.sources]
             if len(values) != len(set(values)):
                 raise ValueError(f"source registry contains duplicate {field} values")
+        organizations: dict[UUID, SourceOrganizationEntry] = {}
+        for source in self.sources:
+            existing = organizations.setdefault(source.organization.id, source.organization)
+            if existing != source.organization:
+                raise ValueError(
+                    "source registry reuses an organization ID with conflicting metadata"
+                )
         return self

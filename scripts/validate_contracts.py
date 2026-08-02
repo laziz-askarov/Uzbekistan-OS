@@ -223,10 +223,38 @@ def validate_source_registry() -> None:
         registry = read_json(path)
         Draft202012Validator(schema, format_checker=FormatChecker()).validate(registry)
         environment = registry["environment"]
-        if path.name != f"registry.{environment}.json":
+        proposed = path.name.endswith(".proposed.json")
+        expected_name = (
+            f"registry.{environment}.proposed.json"
+            if proposed
+            else f"registry.{environment}.json"
+        )
+        if path.name != expected_name:
             raise ValueError(f"Source registry filename does not match environment: {path}")
 
         sources = registry["sources"]
+        if proposed:
+            for source in sources:
+                fail_closed = (
+                    source["status"] == "draft"
+                    and source["crawl_policy"] == "pending_review"
+                    and source["production_eligible"] is False
+                    and source["owner"] is None
+                    and source["reviewed_at"] is None
+                    and source["schedule"] is None
+                )
+                if not fail_closed:
+                    raise ValueError(f"Proposed source must remain fail-closed: {source['slug']}")
+        organizations: dict[str, object] = {}
+        for source in sources:
+            organization = source["organization"]
+            organization_id = organization["id"]
+            existing = organizations.setdefault(organization_id, organization)
+            if existing != organization:
+                raise ValueError(
+                    "Source registry reuses an organization ID with conflicting metadata: "
+                    f"{organization_id}"
+                )
         for field in ("id", "slug", "url"):
             values = [source[field] for source in sources]
             if len(values) != len(set(values)):

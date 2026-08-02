@@ -95,8 +95,23 @@ class SqlAlchemyIngestionRepository:
             .order_by(SourceSnapshot.fetched_at.desc(), SourceSnapshot.id.desc())
             .limit(1)
         )
-        if snapshot is None:
-            return None
+        return self._snapshot_metadata(snapshot) if snapshot is not None else None
+
+    def snapshot_by_sha256(
+        self,
+        source_id: UUID,
+        sha256: str,
+    ) -> SnapshotMetadata | None:
+        snapshot = self.session.scalar(
+            select(SourceSnapshot).where(
+                SourceSnapshot.source_id == source_id,
+                SourceSnapshot.sha256 == sha256,
+            )
+        )
+        return self._snapshot_metadata(snapshot) if snapshot is not None else None
+
+    @staticmethod
+    def _snapshot_metadata(snapshot: SourceSnapshot) -> SnapshotMetadata:
         return SnapshotMetadata(
             id=snapshot.id,
             source_id=snapshot.source_id,

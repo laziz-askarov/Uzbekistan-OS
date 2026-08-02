@@ -9,16 +9,27 @@ CONTRACT_PATH = ROOT / "packages/contracts/openapi.yaml"
 
 IMPLEMENTED_OPERATIONS = {
     "/auth/me": "get",
+    "/admin/sources": "get",
+    "/admin/sources/{source_id}/uploads": "post",
+    "/admin/ingestion/jobs": ("get", "post"),
     "/admin/reviews": "get",
     "/admin/reviews/{review_item_id}/claim": "post",
     "/admin/reviews/{review_item_id}/decision": "post",
     "/admin/artifacts/{artifact_id}/comparison": "get",
     "/admin/artifacts/{artifact_id}": "get",
     "/admin/publications": "post",
+    "/admin/documents/{document_id}/expire": "post",
+    "/admin/documents/{document_id}/reindex": "post",
 }
 
 IMPLEMENTED_AUTHORIZATION = {
     "/auth/me": {"mode": "authenticated", "roles": []},
+    "/admin/sources": {"mode": "role-gated", "roles": ["admin"]},
+    "/admin/sources/{source_id}/uploads": {
+        "mode": "role-gated",
+        "roles": ["admin"],
+    },
+    "/admin/ingestion/jobs": {"mode": "role-gated", "roles": ["admin"]},
     "/admin/reviews": {"mode": "role-gated", "roles": ["content_reviewer", "admin"]},
     "/admin/reviews/{review_item_id}/claim": {
         "mode": "role-gated",
@@ -40,6 +51,14 @@ IMPLEMENTED_AUTHORIZATION = {
         "mode": "role-gated",
         "roles": ["knowledge_publisher", "admin"],
     },
+    "/admin/documents/{document_id}/expire": {
+        "mode": "role-gated",
+        "roles": ["knowledge_publisher", "admin"],
+    },
+    "/admin/documents/{document_id}/reindex": {
+        "mode": "role-gated",
+        "roles": ["knowledge_publisher", "admin"],
+    },
 }
 
 
@@ -48,14 +67,18 @@ def test_checked_in_admin_contract_matches_runtime_paths_and_security() -> None:
         contract = yaml.safe_load(stream)
     runtime = create_app().openapi()
 
-    for path, method in IMPLEMENTED_OPERATIONS.items():
-        runtime_operation = runtime["paths"][f"/api/v1{path}"][method]
-        contract_operation = contract["paths"][path][method]
+    for path, configured_methods in IMPLEMENTED_OPERATIONS.items():
+        methods = (
+            configured_methods if isinstance(configured_methods, tuple) else (configured_methods,)
+        )
+        for method in methods:
+            runtime_operation = runtime["paths"][f"/api/v1{path}"][method]
+            contract_operation = contract["paths"][path][method]
 
-        assert contract_operation["operationId"] == runtime_operation["operationId"]
-        assert contract_operation["security"] == [{"BearerAuth": []}]
-        assert runtime_operation["security"] == [{"BearerAuth": []}]
-        assert contract_operation["x-authorization"] == IMPLEMENTED_AUTHORIZATION[path]
+            assert contract_operation["operationId"] == runtime_operation["operationId"]
+            assert contract_operation["security"] == [{"BearerAuth": []}]
+            assert runtime_operation["security"] == [{"BearerAuth": []}]
+            assert contract_operation["x-authorization"] == IMPLEMENTED_AUTHORIZATION[path]
 
     assert contract["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"
     assert runtime["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"

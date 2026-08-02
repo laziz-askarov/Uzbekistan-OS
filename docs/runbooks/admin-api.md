@@ -5,18 +5,26 @@
 All paths are relative to `/api/v1` and require `Authorization: Bearer <token>`.
 
 - `GET /auth/me` resolves the verified subject to its internal principal and roles.
+- `GET /admin/sources` merges the configured registry with source and latest-job state.
+- `POST /admin/sources/{source_id}/uploads` ingests bounded official evidence with a required `Idempotency-Key`.
+- `GET /admin/ingestion/jobs` returns recent crawler and upload jobs.
+- `POST /admin/ingestion/jobs` queues an approved automatic source with a required `Idempotency-Key`.
 - `GET /admin/reviews` returns a status-filtered, prioritized queue with source context.
 - `POST /admin/reviews/{review_item_id}/claim` claims a pending review item.
 - `POST /admin/reviews/{review_item_id}/decision` approves or rejects the assigned item.
 - `GET /admin/artifacts/{artifact_id}` returns checksum-verified extraction content.
 - `GET /admin/artifacts/{artifact_id}/comparison` returns a checksum-verified section comparison.
 - `POST /admin/publications` publishes an approved, evidence-bound knowledge candidate.
+- `POST /admin/documents/{document_id}/expire` expires the current published version.
+- `POST /admin/documents/{document_id}/reindex` queues an eligible version with a required `Idempotency-Key`.
 
 Every response carries `x-request-id` and the standard response metadata. Supply `x-request-id` from a trusted upstream when available; otherwise the API generates one.
 
-## Reviewer console
+## Admin consoles
 
-The responsive console is served at `/admin/reviews` by the web application. It supports queue filtering, source and lineage inspection, section comparison, claiming, and reasoned approval or rejection. The console keeps the Bearer token in page memory only; it does not put credentials in URLs or persistent browser storage.
+The responsive ingestion dashboard is served at `/admin`. It supports source eligibility inspection, bounded PDF/HTML/XHTML/text upload, approved crawler enqueue, job status/error monitoring, search, and dark mode. It cannot create, approve, or broaden a source: organization, URL, adapter, policy, schedule, and production eligibility remain reviewable registry-as-code changes. Uploads are limited to 10 MB and feed the same checksum, immutable evidence, extraction, and human-review pipeline as crawls.
+
+The reviewer console is served at `/admin/reviews`. It supports queue filtering, source and lineage inspection, section comparison, claiming, reasoned approval or rejection, evidence-bound publication, expiration, and re-index queueing. Publisher controls appear only for a principal with `knowledge_publisher` or `admin`. Both consoles keep the Bearer token in page memory only; they do not put credentials in URLs or persistent browser storage.
 
 The console deliberately displays the authentication failure when the verifier is disabled. Do not add a development bypass to the browser application. Configure and test the approved verifier, provision the principal and roles, then connect through the same Bearer boundary used by API clients.
 
@@ -52,4 +60,4 @@ apps/api/.venv/bin/python -m alembic -c apps/api/alembic.ini upgrade head --sql
 
 Before enabling an authentication adapter, add adapter-specific tests for invalid signatures, issuers, audiences, expiry, clock skew, and revocation. Run request-level concurrency and rollback tests against disposable PostgreSQL.
 
-Validate the reviewer route at desktop and narrow-screen breakpoints, including keyboard focus, empty/error states, claim ownership, and reason-required decisions. Publication, expiry, and re-index controls are not exposed in the first console slice.
+Validate both admin routes at desktop and narrow-screen breakpoints. For `/admin`, cover keyboard focus, source search, empty/error states, ineligible disabled actions, file type/size failures, upload feedback, crawler enqueue, job errors, and dark mode. For `/admin/reviews`, cover claim ownership, reason-required decisions, publication fields, required expiration reason, and re-index feedback.

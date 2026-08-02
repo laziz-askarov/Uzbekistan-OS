@@ -36,6 +36,9 @@ packages = ["app"]
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
+markers = [
+  "integration: requires explicitly configured disposable infrastructure",
+]
 
 [tool.ruff]
 line-length = 100

@@ -560,15 +560,11 @@ paths:
       tags: [ingestion]
       operationId: listAdminSources
       summary: List registered ingestion sources
-      x-implementation-status: planned
       x-authorization:
         mode: role-gated
         roles: [admin]
       security:
         - BearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/Cursor"
-        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
           description: Registered source page
@@ -609,19 +605,52 @@ paths:
                 $ref: "#/components/schemas/AdminSourceResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /admin/sources/{source_id}/uploads:
+    post:
+      tags: [ingestion]
+      operationId: uploadAdminSourceDocument
+      summary: Upload official source evidence for ingestion
+      x-authorization:
+        mode: role-gated
+        roles: [admin]
+      x-idempotency:
+        mode: caller-key
+        replay: original-response
+        conflict: different-request
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: source_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualUploadRequest"
+      responses:
+        "200":
+          description: Uploaded evidence processed or replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualUploadResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
   /admin/ingestion/jobs:
     get:
       tags: [ingestion]
       operationId: listIngestionJobs
       summary: List ingestion jobs
-      x-implementation-status: planned
       x-authorization:
         mode: role-gated
-        roles: [content_reviewer, admin]
+        roles: [admin]
       security:
         - BearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
       responses:
         "200":
@@ -636,7 +665,6 @@ paths:
       tags: [ingestion]
       operationId: createIngestionJob
       summary: Queue ingestion for an eligible source
-      x-implementation-status: planned
       x-authorization:
         mode: role-gated
         roles: [admin]
@@ -818,6 +846,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicationResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /admin/documents/{document_id}/expire:
+    post:
+      tags: [administration]
+      operationId: expireKnowledgeDocument
+      summary: Expire a published knowledge document
+      x-authorization:
+        mode: role-gated
+        roles: [knowledge_publisher, admin]
+      x-idempotency:
+        mode: deterministic-replay
+        replay: current-version-expiration
+        conflict: document-not-published
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpireDocumentRequest"
+      responses:
+        "200":
+          description: Document expired or exact expiration replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExpireDocumentResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /admin/documents/{document_id}/reindex:
+    post:
+      tags: [administration]
+      operationId: reindexKnowledgeDocument
+      summary: Queue a published knowledge document for re-indexing
+      x-authorization:
+        mode: role-gated
+        roles: [knowledge_publisher, admin]
+      x-idempotency:
+        mode: caller-key
+        replay: current-version-index-job
+        conflict: different-model
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReindexDocumentRequest"
+      responses:
+        "200":
+          description: Index job queued or exact request replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexJobResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
 components:
@@ -1392,22 +1489,55 @@ components:
       type: object
       required:
         - id
-        - organization_id
+        - slug
+        - organization
         - url
         - title
         - source_type
+        - domains
+        - languages
         - crawl_policy
+        - adapter_key
         - trust_tier
+        - registry_status
         - active
+        - production_eligible
+        - automatic_fetch_eligible
+        - manual_upload_eligible
+        - schedule_interval_minutes
+        - last_verified_at
+        - latest_job_status
       properties:
         id: { type: string, format: uuid }
-        organization_id: { type: string, format: uuid }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        organization: { type: string, minLength: 1 }
         url: { type: string, format: uri }
         title: { type: string, minLength: 1, maxLength: 500 }
         source_type: { $ref: "#/components/schemas/SourceType" }
+        domains:
+          type: array
+          items: { type: string }
+          uniqueItems: true
+        languages:
+          type: array
+          items: { type: string }
+          uniqueItems: true
         crawl_policy: { $ref: "#/components/schemas/CrawlPolicy" }
+        adapter_key: { type: string }
         trust_tier: { type: integer, minimum: 1, maximum: 3 }
+        registry_status:
+          type: string
+          enum: [draft, approved, rejected]
         active: { type: boolean }
+        production_eligible: { type: boolean }
+        automatic_fetch_eligible: { type: boolean }
+        manual_upload_eligible: { type: boolean }
+        schedule_interval_minutes: { type: [integer, "null"], minimum: 5 }
+        last_verified_at: { type: [string, "null"], format: date-time }
+        latest_job_status:
+          oneOf:
+            - { $ref: "#/components/schemas/IngestionJobStatus" }
+            - { type: "null" }
       additionalProperties: false
     CreateAdminSourceRequest:
       type: object
@@ -1446,13 +1576,15 @@ components:
       required: [source_id]
       properties:
         source_id: { type: string, format: uuid }
-        scheduled_at: { type: [string, "null"], format: date-time }
+        max_attempts: { type: integer, minimum: 1, maximum: 20, default: 3 }
       additionalProperties: false
     IngestionJobData:
       type: object
       required:
         - id
         - source_id
+        - source_title
+        - idempotency_key
         - status
         - attempt_count
         - max_attempts
@@ -1460,12 +1592,16 @@ components:
       properties:
         id: { type: string, format: uuid }
         source_id: { type: string, format: uuid }
+        source_title: { type: string }
+        idempotency_key: { type: string, minLength: 1, maxLength: 128 }
         status: { $ref: "#/components/schemas/IngestionJobStatus" }
         attempt_count: { type: integer, minimum: 0 }
         max_attempts: { type: integer, minimum: 1 }
         scheduled_at: { type: string, format: date-time }
         started_at: { type: [string, "null"], format: date-time }
         completed_at: { type: [string, "null"], format: date-time }
+        error_code: { type: [string, "null"] }
+        error_message: { type: [string, "null"] }
       additionalProperties: false
     IngestionJobResponse:
       type: object
@@ -1481,6 +1617,41 @@ components:
         data:
           type: array
           items: { $ref: "#/components/schemas/IngestionJobData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ManualUploadRequest:
+      type: object
+      required: [filename, content_type, content_base64]
+      properties:
+        filename: { type: string, minLength: 1, maxLength: 255 }
+        content_type:
+          type: string
+          enum: [application/pdf, text/html, application/xhtml+xml, text/plain]
+        content_base64: { type: string, minLength: 1, maxLength: 14000000 }
+        max_attempts: { type: integer, minimum: 1, maximum: 3, default: 1 }
+      additionalProperties: false
+    ManualUploadData:
+      type: object
+      required:
+        - source_id
+        - filename
+        - status
+        - snapshot_id
+        - extraction_artifact_id
+        - review_item_id
+      properties:
+        source_id: { type: string, format: uuid }
+        filename: { type: string }
+        status: { type: string, enum: [changed, unchanged] }
+        snapshot_id: { type: [string, "null"], format: uuid }
+        extraction_artifact_id: { type: [string, "null"], format: uuid }
+        review_item_id: { type: [string, "null"], format: uuid }
+      additionalProperties: false
+    ManualUploadResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ManualUploadData" }
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
     PrincipalData:
@@ -1724,6 +1895,75 @@ components:
       required: [data, meta]
       properties:
         data: { $ref: "#/components/schemas/PublicationResult" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ExpireDocumentRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 2000 }
+      additionalProperties: false
+    ExpireDocumentResult:
+      type: object
+      required:
+        - lifecycle_event_id
+        - document_id
+        - document_version_id
+        - status
+        - reason
+        - expired_at
+      properties:
+        lifecycle_event_id: { type: string, format: uuid }
+        document_id: { type: string, format: uuid }
+        document_version_id: { type: string, format: uuid }
+        status: { type: string, const: expired }
+        reason: { type: string }
+        expired_at: { type: string, format: date-time }
+      additionalProperties: false
+    ExpireDocumentResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ExpireDocumentResult" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ReindexDocumentRequest:
+      type: object
+      required: [model_key]
+      properties:
+        model_key: { type: string, minLength: 1, maxLength: 160 }
+        max_attempts: { type: integer, minimum: 1, maximum: 10, default: 3 }
+      additionalProperties: false
+    IndexJobResult:
+      type: object
+      required:
+        - index_job_id
+        - document_id
+        - document_version_id
+        - idempotency_key
+        - model_key
+        - status
+        - attempt_count
+        - max_attempts
+        - scheduled_at
+      properties:
+        index_job_id: { type: string, format: uuid }
+        document_id: { type: string, format: uuid }
+        document_version_id: { type: string, format: uuid }
+        idempotency_key: { type: string }
+        model_key: { type: string }
+        status:
+          type: string
+          enum: [queued, running, retry_scheduled, succeeded, dead_lettered, cancelled]
+        attempt_count: { type: integer, minimum: 0 }
+        max_attempts: { type: integer, minimum: 1 }
+        scheduled_at: { type: string, format: date-time }
+      additionalProperties: false
+    IndexJobResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/IndexJobResult" }
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
     ErrorDetail:

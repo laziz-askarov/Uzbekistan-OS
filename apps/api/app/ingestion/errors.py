@@ -9,6 +9,6 @@ class SourceNotEligibleError(IngestionError):
     def __init__(self) -> None:
         super().__init__(
             "source_not_eligible",
-            "source is not approved for automatic production ingestion",
+            "source is not approved for the requested production ingestion mode",
             retryable=False,
         )

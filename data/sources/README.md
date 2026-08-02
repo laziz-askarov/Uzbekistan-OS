@@ -2,6 +2,8 @@
 
 `registry.development.json` is deliberately non-production. It proves the registry contract without implying that an external source has been approved, that crawling is legally permitted, or that a launch workflow has been selected.
 
+`registry.production.proposed.json` is an inert approval packet. It is never selected by the default application configuration, and every entry is draft, pending review, and ineligible. Do not rename or deploy it as an environment registry until the checks in `docs/content/phase-3-content-inventory.md` are complete.
+
 A source may be fetched automatically only when all of the following are true:
 
 - `status` is `approved`;

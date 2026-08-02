@@ -30,7 +30,7 @@ pnpm dev
 
 The application is served at `http://localhost:3000`.
 
-The internal reviewer console is available at `http://localhost:3000/admin/reviews`. It remains fail-closed until a reviewed token-verifier adapter and authorized principal are configured.
+The internal ingestion operations dashboard is available at `http://localhost:3000/admin`, with the reviewer console at `http://localhost:3000/admin/reviews`. The dashboard lists the configured source registry, accepts bounded official-document uploads, queues approved crawlers, and displays recent job health. Both surfaces remain fail-closed until a reviewed token-verifier adapter and authorized principal are configured.
 
 ## API setup
 

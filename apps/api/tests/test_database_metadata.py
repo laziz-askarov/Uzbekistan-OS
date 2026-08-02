@@ -14,9 +14,11 @@ EXPECTED_TABLES = {
     "knowledge.sources",
     "knowledge.documents",
     "knowledge.document_versions",
+    "knowledge.document_lifecycle_events",
     "knowledge.document_sources",
     "knowledge.chunks",
     "knowledge.embeddings",
+    "knowledge.index_jobs",
     "knowledge.publication_records",
     "ingestion.source_snapshots",
     "ingestion.crawl_jobs",
@@ -146,3 +148,29 @@ def test_identity_roles_and_publication_lineage_are_explicit() -> None:
     assert publications.c.review_item_id.unique is True
     assert publications.c.document_version_id.unique is True
     assert publications.c.published_by_principal_id.foreign_keys
+
+
+def test_lifecycle_and_index_jobs_encode_audit_retry_and_idempotency() -> None:
+    lifecycle = Base.metadata.tables["knowledge.document_lifecycle_events"]
+    jobs = Base.metadata.tables["knowledge.index_jobs"]
+
+    assert {"document_id", "document_version_id", "actor_principal_id", "reason"} <= set(
+        lifecycle.c.keys()
+    )
+    assert {
+        "document_version_id",
+        "requested_by_principal_id",
+        "idempotency_key",
+        "attempt_count",
+        "max_attempts",
+        "token_count",
+        "duration_ms",
+        "cost_microusd",
+        "error",
+        "result",
+    } <= set(jobs.c.keys())
+    assert any(
+        isinstance(constraint, UniqueConstraint)
+        and constraint.name == "uq_index_jobs_version_key"
+        for constraint in jobs.constraints
+    )

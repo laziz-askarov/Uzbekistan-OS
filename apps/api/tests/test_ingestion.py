@@ -31,6 +31,7 @@ from app.ingestion.types import (
 ROOT = Path(__file__).resolve().parents[3]
 REGISTRY_PATH = ROOT / "data/sources/registry.development.json"
 STAGING_REGISTRY_PATH = ROOT / "data/sources/registry.staging.json"
+PROPOSED_REGISTRY_PATH = ROOT / "data/sources/registry.production.proposed.json"
 
 
 def approved_source() -> SourceRegistryEntry:
@@ -70,6 +71,18 @@ def approved_pdf_source() -> SourceRegistryEntry:
             "url": "https://government.example/source.pdf",
             "source_type": SourceType.PDF,
             "adapter_key": "generic-pdf",
+        }
+    )
+
+
+def approved_manual_source() -> SourceRegistryEntry:
+    source = approved_source()
+    return source.model_copy(
+        update={
+            "slug": "approved-manual-source",
+            "crawl_policy": "manual_only",
+            "source_type": SourceType.MANUAL,
+            "adapter_key": "generic-manual",
         }
     )
 
@@ -185,6 +198,20 @@ class MemoryRepository:
             None,
         )
 
+    def snapshot_by_sha256(
+        self,
+        source_id: UUID,
+        sha256: str,
+    ) -> SnapshotMetadata | None:
+        return next(
+            (
+                snapshot
+                for snapshot in self.snapshots
+                if snapshot.source_id == source_id and snapshot.sha256 == sha256
+            ),
+            None,
+        )
+
     def record_snapshot(self, snapshot: SnapshotMetadata) -> None:
         self.snapshots.append(snapshot)
 
@@ -259,6 +286,14 @@ def test_staging_registry_is_valid_empty_and_fail_closed() -> None:
     assert registry.sources == []
 
 
+def test_proposed_production_registry_is_valid_and_fails_closed() -> None:
+    registry = load_source_registry(PROPOSED_REGISTRY_PATH)
+
+    assert registry.environment == "production"
+    assert len(registry.sources) == 5
+    assert all(source.automatic_fetch_eligible is False for source in registry.sources)
+
+
 def test_allowed_source_requires_approval_metadata() -> None:
     data = approved_source().model_dump(mode="json")
     data.update({"status": "draft", "owner": None, "reviewed_at": None})
@@ -275,6 +310,48 @@ def test_unapproved_source_is_rejected_before_fetching() -> None:
         service(fetcher, MemoryRepository()).run(source, idempotency_key="fixture")
 
     assert fetcher.calls == []
+
+
+def test_manual_only_source_accepts_uploads_but_not_automatic_fetching() -> None:
+    source = approved_manual_source()
+
+    assert source.manual_ingestion_eligible is True
+    assert source.automatic_fetch_eligible is False
+
+
+def test_manual_upload_uses_ingestion_guards_and_replays_idempotently() -> None:
+    source = approved_manual_source()
+    repository = MemoryRepository()
+    fetcher = FakeFetcher([])
+    ingestion = service(fetcher, repository)
+    uploaded = response(source, b"Official manual guidance", content_type="text/plain")
+
+    first = ingestion.run_manual(source, uploaded, idempotency_key="upload:official-v1")
+    replay = ingestion.run_manual(source, uploaded, idempotency_key="upload:official-v1")
+
+    assert first.status is ChangeStatus.CHANGED
+    assert replay == first
+    assert fetcher.calls == []
+    assert len(repository.snapshots) == 1
+    assert len(repository.artifacts) == 1
+    assert len(repository.review_items) == 1
+
+
+def test_uploading_an_older_known_snapshot_does_not_duplicate_evidence() -> None:
+    source = approved_manual_source()
+    repository = MemoryRepository()
+    ingestion = service(FakeFetcher([]), repository)
+    first = response(source, b"Official version one", content_type="text/plain")
+    second = response(source, b"Official version two", content_type="text/plain")
+
+    first_outcome = ingestion.run_manual(source, first, idempotency_key="upload:v1")
+    ingestion.run_manual(source, second, idempotency_key="upload:v2")
+    reverted = ingestion.run_manual(source, first, idempotency_key="upload:v1-again")
+
+    assert reverted.status is ChangeStatus.UNCHANGED
+    assert reverted.snapshot_id == first_outcome.snapshot_id
+    assert len(repository.snapshots) == 2
+    assert len(repository.review_items) == 2
 
 
 def test_html_normalization_uses_visible_text_only() -> None:

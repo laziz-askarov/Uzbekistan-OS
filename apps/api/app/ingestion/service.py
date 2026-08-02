@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from hashlib import sha256
 from uuid import uuid4
 
@@ -45,6 +45,42 @@ class IngestionService:
     ) -> IngestionOutcome:
         if not source.automatic_fetch_eligible:
             raise SourceNotEligibleError
+        return self._run_claimed(
+            source,
+            idempotency_key=idempotency_key,
+            max_attempts=max_attempts,
+            operation=lambda: self._fetch_and_snapshot(source),
+        )
+
+    def run_manual(
+        self,
+        source: SourceRegistryEntry,
+        response: FetchResponse,
+        *,
+        idempotency_key: str,
+        max_attempts: int = 1,
+    ) -> IngestionOutcome:
+        if not source.manual_ingestion_eligible:
+            raise SourceNotEligibleError
+        return self._run_claimed(
+            source,
+            idempotency_key=idempotency_key,
+            max_attempts=max_attempts,
+            operation=lambda: self._snapshot_response(
+                source,
+                response,
+                self.repository.latest_snapshot(source.id),
+            ),
+        )
+
+    def _run_claimed(
+        self,
+        source: SourceRegistryEntry,
+        *,
+        idempotency_key: str,
+        max_attempts: int,
+        operation: Callable[[], IngestionOutcome],
+    ) -> IngestionOutcome:
         if not idempotency_key or len(idempotency_key) > 128:
             raise IngestionError(
                 "invalid_idempotency_key",
@@ -63,7 +99,7 @@ class IngestionService:
             return claim.replay
 
         try:
-            outcome = self._fetch_and_snapshot(source)
+            outcome = operation()
         except IngestionError as error:
             status = self.repository.mark_failed(
                 claim.id,
@@ -86,6 +122,15 @@ class IngestionService:
     def _fetch_and_snapshot(self, source: SourceRegistryEntry) -> IngestionOutcome:
         previous = self.repository.latest_snapshot(source.id)
         response = self.fetcher.fetch(source, self._conditional_headers(previous))
+
+        return self._snapshot_response(source, response, previous)
+
+    def _snapshot_response(
+        self,
+        source: SourceRegistryEntry,
+        response: FetchResponse,
+        previous: SnapshotMetadata | None,
+    ) -> IngestionOutcome:
 
         if response.url != str(source.url):
             raise IngestionError(
@@ -118,8 +163,9 @@ class IngestionService:
         self._validate_source_media_type(source, response)
 
         raw_sha256 = sha256(response.body).hexdigest()
-        if previous is not None and previous.sha256 == raw_sha256:
-            return self._unchanged(source, previous)
+        existing = self.repository.snapshot_by_sha256(source.id, raw_sha256)
+        if existing is not None:
+            return self._unchanged(source, existing)
 
         normalized = normalize_response(
             response,

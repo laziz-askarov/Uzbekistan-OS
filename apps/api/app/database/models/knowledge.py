@@ -290,3 +290,110 @@ class PublicationRecord(UUIDPrimaryKeyMixin, Base):
         nullable=False,
         server_default=func.now(),
     )
+
+
+class DocumentLifecycleEvent(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "document_lifecycle_events"
+    __table_args__ = (
+        CheckConstraint("event_type IN ('expired')", name="event_type_allowed"),
+        UniqueConstraint(
+            "document_version_id",
+            "event_type",
+            name="uq_document_lifecycle_events_version_type",
+        ),
+        {"schema": "knowledge"},
+    )
+
+    document_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("knowledge.documents.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    document_version_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey(
+            "knowledge.document_versions.id",
+            name="fk_lifecycle_events_version",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+        index=True,
+    )
+    event_type: Mapped[str] = mapped_column(String(24), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    actor_principal_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("identity.principals.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class IndexJob(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "index_jobs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'running', 'retry_scheduled', 'succeeded', "
+            "'dead_lettered', 'cancelled')",
+            name="status_allowed",
+        ),
+        CheckConstraint(
+            "attempt_count >= 0 AND attempt_count <= max_attempts",
+            name="attempt_count_range",
+        ),
+        CheckConstraint("max_attempts > 0", name="max_attempts_positive"),
+        CheckConstraint("token_count >= 0", name="token_count_nonnegative"),
+        CheckConstraint("duration_ms >= 0", name="duration_ms_nonnegative"),
+        CheckConstraint("cost_microusd >= 0", name="cost_microusd_nonnegative"),
+        UniqueConstraint(
+            "document_version_id",
+            "idempotency_key",
+            name="uq_index_jobs_version_key",
+        ),
+        Index("ix_index_jobs_queue", "status", "scheduled_at"),
+        {"schema": "knowledge"},
+    )
+
+    document_version_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("knowledge.document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    requested_by_principal_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("identity.principals.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    model_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, server_default="queued")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default="3")
+    scheduled_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    duration_ms: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    cost_microusd: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    error: Mapped[dict[str, object]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+    )
+    result: Mapped[dict[str, object]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+    )

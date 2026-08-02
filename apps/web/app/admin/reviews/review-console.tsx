@@ -56,6 +56,14 @@ type Comparison = {
 };
 
 type Principal = { id: string; roles: string[] };
+type Publication = {
+  publication_id: string;
+  document_id: string;
+  document_version_id: string;
+  candidate_sha256: string;
+  published_at: string;
+};
+type IndexJob = { index_job_id: string; status: string };
 type Envelope<T> = { data: T; meta: { request_id: string } };
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
 
@@ -75,6 +83,15 @@ function formatDate(value: string) {
 
 function compactId(value: string) {
   return `${value.slice(0, 8)}…${value.slice(-4)}`;
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
 }
 
 function reviewError(error: unknown) {
@@ -98,6 +115,17 @@ export default function ReviewConsole() {
   const [action, setAction] = useState<"claim" | ReviewDecision | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [publication, setPublication] = useState<Publication | null>(null);
+  const [publicationSlug, setPublicationSlug] = useState("");
+  const [publicationTitle, setPublicationTitle] = useState("");
+  const [publicationSummary, setPublicationSummary] = useState("");
+  const [publicationDomain, setPublicationDomain] = useState("tourism");
+  const [publicationLanguage, setPublicationLanguage] = useState("en");
+  const [versionMajor, setVersionMajor] = useState(1);
+  const [lifecycleReason, setLifecycleReason] = useState("");
+  const [publisherAction, setPublisherAction] = useState<
+    "publish" | "expire" | "reindex" | null
+  >(null);
 
   async function request<T>(
     path: string,
@@ -194,6 +222,11 @@ export default function ReviewConsole() {
 
   async function selectItem(item: QueueItem) {
     setSelected(item);
+    setPublication(null);
+    setPublicationSlug(slugify(item.source_title));
+    setPublicationTitle(item.source_title);
+    setPublicationSummary("");
+    setLifecycleReason("");
     await loadDetails(item);
   }
 
@@ -281,6 +314,94 @@ export default function ReviewConsole() {
       setError(reviewError(caught));
     } finally {
       setAction(null);
+    }
+  }
+
+  async function publish() {
+    if (
+      !selected ||
+      !artifact ||
+      !publicationSlug ||
+      !publicationTitle.trim() ||
+      !publicationSummary.trim()
+    )
+      return;
+    setPublisherAction("publish");
+    setError("");
+    try {
+      const result = await request<Publication>("/admin/publications", {
+        method: "POST",
+        body: JSON.stringify({
+          review_item_id: selected.review.id,
+          slug: publicationSlug,
+          domain: publicationDomain,
+          language: publicationLanguage,
+          version: { major: versionMajor, minor: 0, revision: 0 },
+          title: publicationTitle.trim(),
+          summary: publicationSummary.trim(),
+          audiences: [],
+          keywords: [],
+          sections: artifact.sections.map((section) => ({
+            ...section,
+            citations: [
+              {
+                source_id: artifact.source_id,
+                locator: section.heading,
+              },
+            ],
+          })),
+          effective_from: new Date().toISOString().slice(0, 10),
+          effective_until: null,
+          translation_of_id: null,
+        }),
+      });
+      setPublication(result);
+      setMessage("Approved evidence published with immutable lineage.");
+    } catch (caught) {
+      setError(reviewError(caught));
+    } finally {
+      setPublisherAction(null);
+    }
+  }
+
+  async function expirePublication() {
+    if (!publication || !lifecycleReason.trim()) return;
+    setPublisherAction("expire");
+    setError("");
+    try {
+      await request(`/admin/documents/${publication.document_id}/expire`, {
+        method: "POST",
+        body: JSON.stringify({ reason: lifecycleReason.trim() }),
+      });
+      setMessage("Document expired and removed from retrieval eligibility.");
+    } catch (caught) {
+      setError(reviewError(caught));
+    } finally {
+      setPublisherAction(null);
+    }
+  }
+
+  async function reindexPublication() {
+    if (!publication) return;
+    setPublisherAction("reindex");
+    setError("");
+    try {
+      const job = await request<IndexJob>(
+        `/admin/documents/${publication.document_id}/reindex`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: JSON.stringify({
+            model_key: "configured-embedding-role",
+            max_attempts: 3,
+          }),
+        },
+      );
+      setMessage(`Re-index job ${compactId(job.index_job_id)} queued.`);
+    } catch (caught) {
+      setError(reviewError(caught));
+    } finally {
+      setPublisherAction(null);
     }
   }
 
@@ -587,11 +708,163 @@ export default function ReviewConsole() {
                     </div>
                   </div>
                 ) : (
-                  <p className={styles.lockedNote}>
-                    {selected.review.status === "in_review"
-                      ? "This item is assigned to another reviewer."
-                      : `This review is ${selected.review.status}.`}
-                  </p>
+                  <>
+                    <p className={styles.lockedNote}>
+                      {selected.review.status === "in_review"
+                        ? "This item is assigned to another reviewer."
+                        : `This review is ${selected.review.status}.`}
+                    </p>
+                    {selected.review.status === "approved" &&
+                      principal?.roles.some((role) =>
+                        ["knowledge_publisher", "admin"].includes(role),
+                      ) && (
+                        <div className={styles.publicationForm}>
+                          <h3>Publication controls</h3>
+                          {!publication ? (
+                            <>
+                              <label htmlFor="publication-slug">Slug</label>
+                              <input
+                                id="publication-slug"
+                                value={publicationSlug}
+                                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                                onChange={(event) =>
+                                  setPublicationSlug(
+                                    slugify(event.target.value),
+                                  )
+                                }
+                              />
+                              <label htmlFor="publication-title">Title</label>
+                              <input
+                                id="publication-title"
+                                value={publicationTitle}
+                                onChange={(event) =>
+                                  setPublicationTitle(event.target.value)
+                                }
+                              />
+                              <label htmlFor="publication-summary">
+                                Reviewed summary
+                              </label>
+                              <textarea
+                                id="publication-summary"
+                                rows={4}
+                                value={publicationSummary}
+                                onChange={(event) =>
+                                  setPublicationSummary(event.target.value)
+                                }
+                              />
+                              <div className={styles.publicationGrid}>
+                                <label>
+                                  Domain
+                                  <select
+                                    value={publicationDomain}
+                                    onChange={(event) =>
+                                      setPublicationDomain(event.target.value)
+                                    }
+                                  >
+                                    <option value="immigration">
+                                      Immigration
+                                    </option>
+                                    <option value="tourism">Tourism</option>
+                                    <option value="business-registration">
+                                      Business
+                                    </option>
+                                    <option value="healthcare">
+                                      Healthcare
+                                    </option>
+                                    <option value="everyday-living">
+                                      Everyday living
+                                    </option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Language
+                                  <select
+                                    value={publicationLanguage}
+                                    onChange={(event) =>
+                                      setPublicationLanguage(event.target.value)
+                                    }
+                                  >
+                                    <option value="en">EN</option>
+                                    <option value="uz">UZ</option>
+                                    <option value="ru">RU</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Major version
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={versionMajor}
+                                    onChange={(event) =>
+                                      setVersionMajor(
+                                        Number(event.target.value),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              </div>
+                              <button
+                                className={styles.primaryButton}
+                                type="button"
+                                disabled={
+                                  publisherAction !== null ||
+                                  !publicationSummary.trim()
+                                }
+                                onClick={() => void publish()}
+                              >
+                                {publisherAction === "publish"
+                                  ? "Publishing…"
+                                  : "Publish approved evidence"}
+                              </button>
+                            </>
+                          ) : (
+                            <div className={styles.lifecycleControls}>
+                              <p>
+                                Published document{" "}
+                                <code>
+                                  {compactId(publication.document_id)}
+                                </code>
+                              </p>
+                              <button
+                                className={styles.secondaryButton}
+                                type="button"
+                                disabled={publisherAction !== null}
+                                onClick={() => void reindexPublication()}
+                              >
+                                {publisherAction === "reindex"
+                                  ? "Queueing…"
+                                  : "Queue re-index"}
+                              </button>
+                              <label htmlFor="expiration-reason">
+                                Expiration reason
+                              </label>
+                              <textarea
+                                id="expiration-reason"
+                                rows={3}
+                                maxLength={2000}
+                                value={lifecycleReason}
+                                onChange={(event) =>
+                                  setLifecycleReason(event.target.value)
+                                }
+                              />
+                              <button
+                                className={styles.rejectButton}
+                                type="button"
+                                disabled={
+                                  publisherAction !== null ||
+                                  !lifecycleReason.trim()
+                                }
+                                onClick={() => void expirePublication()}
+                              >
+                                {publisherAction === "expire"
+                                  ? "Expiring…"
+                                  : "Expire document"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                  </>
                 )}
               </>
             ) : (

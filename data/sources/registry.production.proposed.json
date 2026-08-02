@@ -1,0 +1,131 @@
+{
+  "registry_version": "1.1",
+  "environment": "production",
+  "sources": [
+    {
+      "id": "00000000-0000-0000-0000-000000002101",
+      "slug": "mfa-visa-guidance-en-proposed",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000002100",
+        "slug": "uzbekistan-ministry-of-foreign-affairs",
+        "name": "Ministry of Foreign Affairs of the Republic of Uzbekistan",
+        "website_url": "https://gov.uz/en/mfa",
+        "country_iso2": "UZ",
+        "is_official": true
+      },
+      "title": "Visa to the Republic of Uzbekistan (English)",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "source_type": "html",
+      "domains": ["immigration", "tourism"],
+      "languages": ["en"],
+      "crawl_policy": "pending_review",
+      "adapter_key": "govuz-activity-html",
+      "trust_tier": 1,
+      "status": "draft",
+      "owner": null,
+      "reviewed_at": null,
+      "production_eligible": false,
+      "schedule": null
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000002102",
+      "slug": "mfa-visa-guidance-uz-proposed",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000002100",
+        "slug": "uzbekistan-ministry-of-foreign-affairs",
+        "name": "Ministry of Foreign Affairs of the Republic of Uzbekistan",
+        "website_url": "https://gov.uz/en/mfa",
+        "country_iso2": "UZ",
+        "is_official": true
+      },
+      "title": "O‘zbekiston Respublikasi vizasi (Uzbek)",
+      "url": "https://gov.uz/oz/mfa/pages/o-zbekiston-respublikasi-vizasi",
+      "source_type": "html",
+      "domains": ["immigration", "tourism"],
+      "languages": ["uz"],
+      "crawl_policy": "pending_review",
+      "adapter_key": "govuz-activity-html",
+      "trust_tier": 1,
+      "status": "draft",
+      "owner": null,
+      "reviewed_at": null,
+      "production_eligible": false,
+      "schedule": null
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000002103",
+      "slug": "mfa-visa-guidance-ru-proposed",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000002100",
+        "slug": "uzbekistan-ministry-of-foreign-affairs",
+        "name": "Ministry of Foreign Affairs of the Republic of Uzbekistan",
+        "website_url": "https://gov.uz/en/mfa",
+        "country_iso2": "UZ",
+        "is_official": true
+      },
+      "title": "Виза в Республику Узбекистан (Russian)",
+      "url": "https://gov.uz/ru/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "source_type": "html",
+      "domains": ["immigration", "tourism"],
+      "languages": ["ru"],
+      "crawl_policy": "pending_review",
+      "adapter_key": "govuz-activity-html",
+      "trust_tier": 1,
+      "status": "draft",
+      "owner": null,
+      "reviewed_at": null,
+      "production_eligible": false,
+      "schedule": null
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000002104",
+      "slug": "official-evisa-guidance-proposed",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000002100",
+        "slug": "uzbekistan-ministry-of-foreign-affairs",
+        "name": "Ministry of Foreign Affairs of the Republic of Uzbekistan",
+        "website_url": "https://gov.uz/en/mfa",
+        "country_iso2": "UZ",
+        "is_official": true
+      },
+      "title": "Official electronic visa guidance",
+      "url": "https://e-visa.gov.uz/what-you-need-to-know",
+      "source_type": "html",
+      "domains": ["immigration", "tourism"],
+      "languages": ["en", "uz", "ru"],
+      "crawl_policy": "pending_review",
+      "adapter_key": "evisa-client-html",
+      "trust_tier": 1,
+      "status": "draft",
+      "owner": null,
+      "reviewed_at": null,
+      "production_eligible": false,
+      "schedule": null
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000002105",
+      "slug": "official-tourism-travel-guideline-en-proposed",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000002110",
+        "slug": "uzbekistan-tourism-committee",
+        "name": "Tourism Committee of the Republic of Uzbekistan",
+        "website_url": "https://uzbekistan.travel/en/",
+        "country_iso2": "UZ",
+        "is_official": true
+      },
+      "title": "Travel guideline (English)",
+      "url": "https://uzbekistan.travel/en/travel-guideline/",
+      "source_type": "html",
+      "domains": ["tourism", "immigration"],
+      "languages": ["en"],
+      "crawl_policy": "pending_review",
+      "adapter_key": "tourism-guideline-html",
+      "trust_tier": 2,
+      "status": "draft",
+      "owner": null,
+      "reviewed_at": null,
+      "production_eligible": false,
+      "schedule": null
+    }
+  ]
+}

@@ -48,6 +48,8 @@ The first successful publication stores a canonical candidate hash. Repeating th
 
 Published versions and audit events are immutable. Corrections are made through a new snapshot, extraction review, and higher document version. Database repair, if ever required, needs an approved incident procedure and a compensating audit event.
 
+Expiration does not edit the immutable version. It locks the document, appends a one-per-version lifecycle event and audit event, and changes the stable document status to `expired`. This removes all of the version's chunks from `knowledge.retrievable_chunks` in the same transaction. An exact expiration replay returns the stored event.
+
 ## Validation
 
 From the repository root:
@@ -63,4 +65,4 @@ The SQL-only migration check verifies compilation, not live constraint or concur
 
 ## Current limitations
 
-Reviewer and publisher HTTP routes now exist behind a fail-closed Bearer verification boundary. A production token-verifier adapter, multi-source evidence packages, reviewer UI, and live PostgreSQL integration tests are not implemented. The identity model does not resolve the open launch authentication decision. See [admin-api.md](./admin-api.md). Docker-backed validation is pending because Docker is unavailable in this workspace.
+Reviewer and publisher HTTP routes and the complete reviewer/publisher console exist behind a fail-closed Bearer verification boundary. A local PostgreSQL integration test proves expiration eligibility and re-index idempotency. A production token-verifier adapter, approved official sources, source-specific production adapters, multi-source evidence packages, and reviewed production content remain open. The identity model does not resolve the launch authentication decision. See [admin-api.md](./admin-api.md) and [indexing.md](./indexing.md).

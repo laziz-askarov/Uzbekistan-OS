@@ -2,15 +2,25 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 
 from app.dependencies import (
+    get_admin_ingestion_service,
     get_authenticated_principal,
+    get_knowledge_lifecycle_service,
     get_publication_service,
     get_review_service,
 )
 from app.identity.service import AuthenticatedPrincipal
+from app.ingestion.admin import (
+    AdminIngestionService,
+    AdminSourceRecord,
+    IngestionJobRecord,
+    ManualUploadRequest,
+    ManualUploadResult,
+    QueueCrawlRequest,
+)
 from app.ingestion.review import (
     ArtifactComparison,
     ReviewDecision,
@@ -20,10 +30,119 @@ from app.ingestion.review import (
     ReviewStatus,
     SectionChangeType,
 )
+from app.knowledge.lifecycle import (
+    ExpireDocumentRequest,
+    ExpireDocumentResult,
+    IndexJobResult,
+    KnowledgeLifecycleService,
+    ReindexDocumentRequest,
+)
 from app.knowledge.publication import PublicationCandidate, PublicationResult, PublicationService
 from app.schemas import ResponseMeta, SuccessResponse
 
 router = APIRouter(prefix="/admin", tags=["administration"])
+
+
+@router.get(
+    "/sources",
+    response_model=SuccessResponse[list[AdminSourceRecord]],
+    operation_id="listAdminSources",
+    summary="List configured ingestion sources",
+)
+def list_admin_sources(
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_service)],
+) -> SuccessResponse[list[AdminSourceRecord]]:
+    return SuccessResponse(
+        data=list(service.list_sources(principal)),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.get(
+    "/ingestion/jobs",
+    response_model=SuccessResponse[list[IngestionJobRecord]],
+    operation_id="listIngestionJobs",
+    summary="List recent ingestion jobs",
+)
+def list_ingestion_jobs(
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_service)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> SuccessResponse[list[IngestionJobRecord]]:
+    return SuccessResponse(
+        data=list(service.list_jobs(principal, limit=limit)),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.post(
+    "/ingestion/jobs",
+    response_model=SuccessResponse[IngestionJobRecord],
+    status_code=202,
+    operation_id="createIngestionJob",
+    summary="Queue a crawl for an approved source",
+)
+def create_ingestion_job(
+    payload: QueueCrawlRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(
+            alias="Idempotency-Key",
+            min_length=8,
+            max_length=128,
+            pattern=r"^[A-Za-z0-9._:-]+$",
+        ),
+    ],
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_service)],
+) -> SuccessResponse[IngestionJobRecord]:
+    return SuccessResponse(
+        data=service.queue_crawl(
+            principal,
+            payload,
+            idempotency_key=idempotency_key,
+            enqueued_at=datetime.now(UTC),
+        ),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.post(
+    "/sources/{source_id}/uploads",
+    response_model=SuccessResponse[ManualUploadResult],
+    operation_id="uploadAdminSourceDocument",
+    summary="Upload official source evidence for ingestion",
+)
+def upload_admin_source_document(
+    source_id: UUID,
+    payload: ManualUploadRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(
+            alias="Idempotency-Key",
+            min_length=8,
+            max_length=128,
+            pattern=r"^[A-Za-z0-9._:-]+$",
+        ),
+    ],
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_service)],
+) -> SuccessResponse[ManualUploadResult]:
+    return SuccessResponse(
+        data=service.upload(
+            principal,
+            source_id,
+            payload,
+            idempotency_key=idempotency_key,
+            uploaded_at=datetime.now(UTC),
+        ),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
 
 
 class ReviewDecisionRequest(BaseModel):
@@ -273,6 +392,72 @@ def publish_knowledge_candidate(
         principal,
         candidate,
         published_at=datetime.now(UTC),
+    )
+    return SuccessResponse(
+        data=result,
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.post(
+    "/documents/{document_id}/expire",
+    response_model=SuccessResponse[ExpireDocumentResult],
+    operation_id="expireKnowledgeDocument",
+    summary="Expire a published knowledge document",
+)
+def expire_knowledge_document(
+    document_id: UUID,
+    payload: ExpireDocumentRequest,
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[
+        KnowledgeLifecycleService,
+        Depends(get_knowledge_lifecycle_service),
+    ],
+) -> SuccessResponse[ExpireDocumentResult]:
+    result = service.expire(
+        principal,
+        document_id,
+        payload,
+        expired_at=datetime.now(UTC),
+    )
+    return SuccessResponse(
+        data=result,
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.post(
+    "/documents/{document_id}/reindex",
+    response_model=SuccessResponse[IndexJobResult],
+    operation_id="reindexKnowledgeDocument",
+    summary="Queue a published knowledge document for re-indexing",
+)
+def reindex_knowledge_document(
+    document_id: UUID,
+    payload: ReindexDocumentRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(
+            alias="Idempotency-Key",
+            min_length=8,
+            max_length=128,
+            pattern=r"^[A-Za-z0-9._:-]+$",
+        ),
+    ],
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[
+        KnowledgeLifecycleService,
+        Depends(get_knowledge_lifecycle_service),
+    ],
+) -> SuccessResponse[IndexJobResult]:
+    result = service.reindex(
+        principal,
+        document_id,
+        payload,
+        idempotency_key=idempotency_key,
+        requested_at=datetime.now(UTC),
     )
     return SuccessResponse(
         data=result,
