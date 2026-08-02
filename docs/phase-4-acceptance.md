@@ -1,0 +1,19 @@
+# Phase 4 acceptance record
+
+Date assessed: 2026-08-01
+
+## Current slice
+
+| Phase 4 requirement | Repository evidence | Status |
+| --- | --- | --- |
+| Typed language/intent/risk planning | Deterministic planner, applicability context, reproducible fingerprint, 15-flow EN/UZ/RU fixture | Core complete; entity extraction and model-assisted rewriting remain |
+| Hybrid retrieval | Eligibility-view lexical and exact-vector SQL, active official-source checks, reciprocal-rank fusion, service-layer filters | Core complete; production embedding route and ANN index await D-006 |
+| Evidence packs | Bounded cited chunks, content-hash deduplication, lineage conflict detection, control-pattern quarantine, insufficiency result | Core complete |
+| Prompt registry and model gateway | Immutable layered prompt versions/fingerprints; approved-route boundary; provider-neutral adapter protocol; timeout, attempts, token, cost, and non-storage controls | Core complete; production adapter and D-006 route approval remain |
+| Claim/citation validation | Strict grounded-answer schema, evidence identity and exact-quote checks, risk-sensitive lexical support, localized fail-closed abstention | Core complete; semantic entailment evaluation and frozen thresholds remain |
+| Conversation context | No implementation in this slice | Not started |
+| Evaluation harness | 15-flow planning fixture and unit safety cases | Started; golden source/relevance/groundedness suite remains |
+
+Phase 4 is **not complete**. The public search/chat surface stays planned until
+approved content, D-006, the production provider adapter, conversation context,
+offline retrieval/generation metrics, and adversarial tests pass.

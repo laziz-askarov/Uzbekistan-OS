@@ -1,0 +1,110 @@
+{
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "arrival-entry-en",
+      "query": "I'm flying to Uzbekistan tomorrow. What happens at the airport?",
+      "language": "en",
+      "intent": "arrival_entry",
+      "domains": ["immigration", "tourism"]
+    },
+    {
+      "id": "visa-eligibility-en",
+      "query": "Do United States citizens need a visa for Uzbekistan?",
+      "language": "en",
+      "intent": "visa_eligibility",
+      "domains": ["immigration"]
+    },
+    {
+      "id": "registration-ru",
+      "query": "Как получить регистрацию иностранца в Узбекистане?",
+      "language": "ru",
+      "intent": "foreigner_registration",
+      "domains": ["immigration"]
+    },
+    {
+      "id": "moving-en",
+      "query": "I am moving to Uzbekistan and need a relocation checklist.",
+      "language": "en",
+      "intent": "moving",
+      "domains": ["immigration", "everyday-living"]
+    },
+    {
+      "id": "business-registration-uz",
+      "query": "MCHJ kompaniyasini qanday ro'yxatdan o'tkazaman?",
+      "language": "uz",
+      "intent": "business_registration",
+      "domains": ["business-registration"]
+    },
+    {
+      "id": "residence-permit-uz",
+      "query": "Vaqtinchalik yashash guvohnoma olish uchun nima kerak?",
+      "language": "uz",
+      "intent": "residence_permit",
+      "domains": ["immigration"]
+    },
+    {
+      "id": "employment-en",
+      "query": "I received a job offer. Do I need a work permit?",
+      "language": "en",
+      "intent": "employment",
+      "domains": ["immigration", "everyday-living"]
+    },
+    {
+      "id": "study-ru",
+      "query": "Какие документы нужны студенту для учебы в Узбекистане?",
+      "language": "ru",
+      "intent": "study",
+      "domains": ["immigration", "everyday-living"]
+    },
+    {
+      "id": "banking-ru",
+      "query": "Как иностранцу открыть банковский счет?",
+      "language": "ru",
+      "intent": "banking",
+      "domains": ["everyday-living"]
+    },
+    {
+      "id": "pinfl-en",
+      "query": "Where can a foreigner apply for a PINFL?",
+      "language": "en",
+      "intent": "pinfl",
+      "domains": ["everyday-living"]
+    },
+    {
+      "id": "healthcare-uz",
+      "query": "O'zbekistonda shifoxona va tibbiy sug'urta qanday ishlaydi?",
+      "language": "uz",
+      "intent": "healthcare",
+      "domains": ["healthcare"]
+    },
+    {
+      "id": "renting-uz",
+      "query": "Toshkentda kvartira ijara uchun nimalar kerak?",
+      "language": "uz",
+      "intent": "renting",
+      "domains": ["everyday-living"]
+    },
+    {
+      "id": "customs-en",
+      "query": "What personal belongings can I bring through customs?",
+      "language": "en",
+      "intent": "customs",
+      "domains": ["immigration", "tourism"]
+    },
+    {
+      "id": "stay-extension-ru",
+      "query": "Как продлить визу и срок пребывания?",
+      "language": "ru",
+      "intent": "stay_extension",
+      "domains": ["immigration"]
+    },
+    {
+      "id": "departure-en",
+      "query": "What should I check before leaving Uzbekistan?",
+      "language": "en",
+      "intent": "departure",
+      "domains": ["immigration", "tourism"]
+    }
+  ]
+}

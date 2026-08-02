@@ -163,6 +163,8 @@ PostgreSQL with pgvector is the system of record. Redis supports ephemeral sessi
 
 ### Phase 4 - Retrieval, AI orchestration, and evaluation (weeks 4-8)
 
+**Current progress:** the internal retrieval and grounded-orchestration cores are implemented: typed deterministic language/intent/risk planning for all 15 launch flows, strict trust/applicability filters, eligibility-view lexical and exact-vector queries with current official-source checks, reciprocal-rank fusion, bounded citation-preserving evidence packs, retrieved-control-pattern quarantine, immutable layered prompt versions and fingerprints, provider-neutral approved routes with timeout/retry/token/cost/non-storage controls, a strict grounded-answer schema, claim-level evidence and exact-quote validation, risk-sensitive lexical support checks, and localized fail-closed insufficiency behavior. Public search/chat, the production provider adapter and approved D-006 route, production embeddings and ANN indexing, conversation state, and the full frozen evaluation suite remain incomplete.
+
 **Deliverables**
 
 - Language detection, intent/entity extraction, query rewriting, risk classification, and retrieval planning with typed outputs.
