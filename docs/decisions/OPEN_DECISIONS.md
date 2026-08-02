@@ -6,7 +6,7 @@ Accepted decisions link to the record that defines their consequences and eviden
 | ID | Decision | Status | Owner | Record / recommended baseline |
 | --- | --- | --- | --- | --- |
 | D-001 | Launch workflows | Accepted 2026-08-01 | Product + domain | ADR 0014 and `docs/product/launch-workflows.md`: 15 initial workflows |
-| D-002 | Citation metric | Open | Product + AI | Measure claim-level coverage and source validity separately |
+| D-002 | Citation metric | Open | Product + AI | ADR 0022 and `phase-4-gates.v1.json` implement separate claim coverage and citation-validity metrics; approve or revise the proposed 95%/98% release thresholds after the first live run |
 | D-003 | Authentication | Open | Product + security | Guest and email/password first; gate Google OAuth separately |
 | D-004 | Translation policy | Open | Content + domain | Human review required for published procedural guidance |
 | D-005 | Freshness policy | Open | Content + domain | Review interval and expiry behavior by risk level |

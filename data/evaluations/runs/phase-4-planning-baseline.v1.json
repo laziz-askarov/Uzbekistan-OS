@@ -1,0 +1,22 @@
+{
+  "run_id": "phase-4-planning-baseline-v1",
+  "benchmark_version": "1.0",
+  "resolved_blockers": [],
+  "observations": [
+    {"case_id": "flow-01-golden-en", "planning": {"language": "en", "intent": "arrival_entry", "domains": ["immigration", "tourism"], "risk": "high"}},
+    {"case_id": "flow-02-golden-uz", "planning": {"language": "uz", "intent": "visa_eligibility", "domains": ["immigration"], "risk": "high"}},
+    {"case_id": "flow-03-golden-ru", "planning": {"language": "ru", "intent": "foreigner_registration", "domains": ["immigration"], "risk": "high"}},
+    {"case_id": "flow-04-golden-en", "planning": {"language": "en", "intent": "moving", "domains": ["immigration", "everyday-living"], "risk": "high"}},
+    {"case_id": "flow-05-golden-uz", "planning": {"language": "uz", "intent": "business_registration", "domains": ["business-registration"], "risk": "high"}},
+    {"case_id": "flow-06-golden-ru", "planning": {"language": "ru", "intent": "residence_permit", "domains": ["immigration"], "risk": "high"}},
+    {"case_id": "flow-07-golden-en", "planning": {"language": "en", "intent": "employment", "domains": ["immigration", "everyday-living"], "risk": "high"}},
+    {"case_id": "flow-08-golden-uz", "planning": {"language": "uz", "intent": "study", "domains": ["immigration", "everyday-living"], "risk": "high"}},
+    {"case_id": "flow-09-golden-ru", "planning": {"language": "ru", "intent": "banking", "domains": ["everyday-living"], "risk": "medium"}},
+    {"case_id": "flow-10-golden-en", "planning": {"language": "en", "intent": "pinfl", "domains": ["everyday-living"], "risk": "medium"}},
+    {"case_id": "flow-11-golden-uz", "planning": {"language": "uz", "intent": "healthcare", "domains": ["healthcare"], "risk": "high"}},
+    {"case_id": "flow-12-golden-ru", "planning": {"language": "ru", "intent": "renting", "domains": ["everyday-living"], "risk": "medium"}},
+    {"case_id": "flow-13-golden-en", "planning": {"language": "en", "intent": "customs", "domains": ["immigration", "tourism"], "risk": "high"}},
+    {"case_id": "flow-14-golden-uz", "planning": {"language": "uz", "intent": "stay_extension", "domains": ["immigration"], "risk": "high"}},
+    {"case_id": "flow-15-golden-ru", "planning": {"language": "ru", "intent": "departure", "domains": ["immigration", "tourism"], "risk": "high"}}
+  ]
+}

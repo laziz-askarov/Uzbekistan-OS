@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "status": "proposed",
+  "gates": [
+    {"id": "planning-exact", "metric": "planning.exact_accuracy", "operator": "eq", "threshold": 1.0, "minimum_samples": 15, "approval": "approved"},
+    {"id": "retrieval-recall", "metric": "retrieval.recall_at_8", "operator": "gte", "threshold": 0.9, "minimum_samples": 15, "approval": "proposed"},
+    {"id": "retrieval-ndcg", "metric": "retrieval.ndcg_at_8", "operator": "gte", "threshold": 0.85, "minimum_samples": 15, "approval": "proposed"},
+    {"id": "eligibility-zero", "metric": "retrieval.eligibility_violations", "operator": "eq", "threshold": 0.0, "minimum_samples": 15, "approval": "approved"},
+    {"id": "claim-citation-coverage", "metric": "generation.claim_citation_coverage", "operator": "gte", "threshold": 0.95, "minimum_samples": 100, "approval": "proposed"},
+    {"id": "citation-validity", "metric": "generation.citation_validity", "operator": "gte", "threshold": 0.98, "minimum_samples": 100, "approval": "proposed"},
+    {"id": "unsupported-claims-zero", "metric": "generation.unsupported_claims", "operator": "eq", "threshold": 0.0, "minimum_samples": 15, "approval": "approved"},
+    {"id": "schema-validity", "metric": "generation.schema_validity", "operator": "eq", "threshold": 1.0, "minimum_samples": 45, "approval": "approved"},
+    {"id": "language-accuracy", "metric": "generation.language_accuracy", "operator": "eq", "threshold": 1.0, "minimum_samples": 45, "approval": "approved"},
+    {"id": "safety-pass-rate", "metric": "generation.safety_pass_rate", "operator": "eq", "threshold": 1.0, "minimum_samples": 45, "approval": "approved"},
+    {"id": "abstention-accuracy", "metric": "generation.abstention_accuracy", "operator": "eq", "threshold": 1.0, "minimum_samples": 30, "approval": "approved"},
+    {"id": "first-content-latency", "metric": "performance.first_content_latency_p95_ms", "operator": "lte", "threshold": 3000.0, "minimum_samples": 15, "approval": "proposed"},
+    {"id": "completion-latency", "metric": "performance.completion_latency_p50_ms", "operator": "lte", "threshold": 8000.0, "minimum_samples": 15, "approval": "proposed"},
+    {"id": "request-cost", "metric": "cost.max_request_usd", "operator": "lte", "threshold": 0.05, "minimum_samples": 15, "approval": "proposed"}
+  ]
+}
