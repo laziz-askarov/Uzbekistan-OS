@@ -14,6 +14,7 @@
 | Evidence characters | 9,000 | Bound model input and reduce prompt-injection surface |
 | Recent / summary-trigger turns | 8 / 12 | Preserve useful continuity with bounded context |
 | Summary characters | 4,000 | Bound application-owned conversation state |
+| Total context characters | 16,000 | Bound recent turns plus an accepted cited summary |
 | Stream / first content / completion | 2s / 3s / 8s | PRD and reliability response objectives |
 | Citation benchmark coverage | 95% | PRD minimum; runtime factual-claim coverage remains 100% |
 | Provider response storage | `false` | Uzbekistan OS remains the conversation system of record |

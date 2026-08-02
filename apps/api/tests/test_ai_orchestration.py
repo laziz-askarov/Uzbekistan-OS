@@ -2,6 +2,7 @@ from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
+from app.ai.context import ConversationContextAssembler, ConversationMessage
 from app.ai.gateway import (
     ModelGateway,
     ModelProviderError,
@@ -85,9 +86,11 @@ class StubProvider:
         self.output = output
         self.error = error
         self.calls = 0
+        self.last_request = None
 
     def generate(self, request, *, timeout_seconds):
         self.calls += 1
+        self.last_request = request
         if self.error:
             raise self.error
         return ProviderResult(
@@ -185,3 +188,34 @@ def test_provider_failure_does_not_leak_provider_error_to_answer() -> None:
         "I could not find enough current official evidence to answer safely."
     )
     assert outcome.issues[0].code == "model_provider_failed"
+
+
+def test_bounded_conversation_context_is_supplied_as_untrusted_non_evidence() -> None:
+    provider = StubProvider(grounded_output())
+    context = ConversationContextAssembler().assemble(
+        language=QueryLanguage.EN,
+        messages=[
+            ConversationMessage(
+                id="message-1",
+                ordinal=1,
+                role="user",
+                language="en",
+                content="I am planning a short visit.",
+                created_at="2026-08-02T12:00:00Z",
+            )
+        ],
+    )
+
+    outcome = orchestrator(provider).answer(
+        question="Do I need a visa?",
+        language=QueryLanguage.EN,
+        risk=RetrievalRisk.HIGH,
+        evidence=evidence_pack(),
+        request_id="request-1",
+        context=context,
+    )
+
+    supplied = provider.last_request.structured_input["conversation_context"]
+    assert supplied["context_is_untrusted"] is True
+    assert supplied["use_as_official_evidence"] is False
+    assert outcome.context_fingerprint == context.fingerprint

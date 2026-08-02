@@ -8,6 +8,7 @@ from app.ai.answers import (
     GroundedAnswerValidator,
     ValidatedAnswer,
 )
+from app.ai.context import ConversationContext
 from app.ai.gateway import ModelGateway, ModelGatewayError
 from app.ai.prompts import PromptRegistry
 from app.retrieval.evidence import EvidencePack
@@ -24,6 +25,7 @@ class OrchestrationOutcome(ValidatedAnswer):
     output_tokens: int = 0
     duration_ms: float = 0
     cost_usd: float = 0
+    context_fingerprint: str | None = None
 
 
 class GroundedAnswerOrchestrator:
@@ -46,9 +48,16 @@ class GroundedAnswerOrchestrator:
         risk: RetrievalRisk,
         evidence: EvidencePack,
         request_id: str,
+        context: ConversationContext | None = None,
     ) -> OrchestrationOutcome:
         if evidence.status != "sufficient":
             return self._insufficient(language, "evidence_insufficient")
+        if context is not None and context.language != language:
+            return self._insufficient(
+                language,
+                "conversation_language_mismatch",
+                context_fingerprint=context.fingerprint,
+            )
 
         prompt = self.prompts.resolve("grounded-answer")
         structured_input: dict[str, Any] = {
@@ -56,6 +65,7 @@ class GroundedAnswerOrchestrator:
             "language": language.value,
             "risk": risk.value,
             "evidence": [item.model_dump(mode="json") for item in evidence.items],
+            "conversation_context": context.to_model_input() if context else None,
         }
         try:
             result = self.gateway.invoke(
@@ -87,6 +97,7 @@ class GroundedAnswerOrchestrator:
             output_tokens=result.output_tokens,
             duration_ms=result.duration_ms,
             cost_usd=result.cost_usd,
+            context_fingerprint=context.fingerprint if context else None,
         )
 
     @staticmethod
@@ -95,10 +106,12 @@ class GroundedAnswerOrchestrator:
         code: str,
         *,
         prompt_fingerprint: str | None = None,
+        context_fingerprint: str | None = None,
     ) -> OrchestrationOutcome:
         return OrchestrationOutcome(
             answer=GroundedAnswer.safe_insufficiency(language),
             accepted=False,
             issues=[AnswerValidationIssue(code=code)],
             prompt_fingerprint=prompt_fingerprint,
+            context_fingerprint=context_fingerprint,
         )

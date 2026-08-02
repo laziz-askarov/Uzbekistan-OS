@@ -41,6 +41,8 @@ def test_mvp_ai_defaults_match_prd_scope_quality_and_latency_targets() -> None:
     assert policy.first_content_target_ms == 3_000
     assert policy.response_target_ms == 8_000
     assert policy.citation_coverage_target == 0.95
+    assert policy.conversation_context_max_characters == 16_000
+    assert policy.build_context_assembler().recent_turns == 8
     assert settings.openai_generation_model == "gpt-5.6-terra"
 
 
@@ -48,7 +50,7 @@ def test_runtime_loads_proposed_route_but_keeps_generation_disabled() -> None:
     runtime = load_ai_runtime_configuration(configured_settings())
 
     assert runtime.generation_enabled is False
-    assert runtime.prompts.resolve("grounded-answer").version == "1.0.0"
+    assert runtime.prompts.resolve("grounded-answer").version == "1.1.0"
     assert runtime.routes.routes[0].status == "proposed"
     assert runtime.routes.routes[0].reasoning_effort == "low"
     assert runtime.routes.routes[0].store is False
@@ -100,6 +102,10 @@ def test_blank_provider_key_is_treated_as_missing(tmp_path) -> None:
         {"ai_stream_start_target_ms": 4_000},
         {"ai_first_content_target_ms": 9_000},
         {"ai_conversation_summary_trigger_turns": 8},
+        {
+            "ai_conversation_summary_max_characters": 12_000,
+            "ai_conversation_context_max_characters": 12_000,
+        },
         {"ai_evidence_max_items": 9, "ai_retrieval_limit": 8},
     ],
 )

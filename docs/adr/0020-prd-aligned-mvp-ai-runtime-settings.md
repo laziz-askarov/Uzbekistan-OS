@@ -27,8 +27,9 @@ and [Responses migration guidance](https://developers.openai.com/api/docs/guides
 - Configure retrieval to return at most eight chunks and evidence generation to
   accept at most six distinct cited chunks or 9,000 characters.
 - Retain eight recent conversation turns and trigger a bounded summary after 12
-  turns, with a 4,000-character summary ceiling. These are context budgets, not
-  a retention-policy decision; D-008 remains open.
+  turns, with a 4,000-character summary ceiling and a 16,000-character total
+  context ceiling. These are context budgets, not a retention-policy decision;
+  D-008 remains open.
 - Use targets of 2 seconds for the application-owned stream start, 3 seconds for
   first supported content, and 8 seconds for completion.
 - Set the frozen benchmark citation-coverage target to at least 95%. Runtime

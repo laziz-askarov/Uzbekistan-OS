@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.ai.context import ConversationContextAssembler
 from app.ai.gateway import ModelGatewayError, ModelRouteRegistry, load_model_route_registry
 from app.ai.prompts import PromptRegistry, load_prompt_registry
 from app.config import Settings
@@ -46,6 +47,7 @@ class MvpAiPolicy(BaseModel):
     conversation_recent_turns: int = Field(ge=2, le=20)
     conversation_summary_trigger_turns: int = Field(ge=4, le=40)
     conversation_summary_max_characters: int = Field(ge=500, le=12_000)
+    conversation_context_max_characters: int = Field(ge=12_000, le=48_000)
     stream_start_target_ms: int = Field(ge=100, le=10_000)
     first_content_target_ms: int = Field(ge=500, le=15_000)
     response_target_ms: int = Field(ge=1_000, le=30_000)
@@ -59,6 +61,8 @@ class MvpAiPolicy(BaseModel):
             raise ValueError("stream start, first content, and response targets must be ordered")
         if self.conversation_summary_trigger_turns <= self.conversation_recent_turns:
             raise ValueError("summary trigger must exceed the recent-turn window")
+        if self.conversation_summary_max_characters >= self.conversation_context_max_characters:
+            raise ValueError("summary character limit must be below the context limit")
         if self.evidence_max_items > self.retrieval_limit:
             raise ValueError("evidence item limit cannot exceed the retrieval limit")
         return self
@@ -72,11 +76,19 @@ class MvpAiPolicy(BaseModel):
             conversation_recent_turns=settings.ai_conversation_recent_turns,
             conversation_summary_trigger_turns=(settings.ai_conversation_summary_trigger_turns),
             conversation_summary_max_characters=(settings.ai_conversation_summary_max_characters),
+            conversation_context_max_characters=(settings.ai_conversation_context_max_characters),
             stream_start_target_ms=settings.ai_stream_start_target_ms,
             first_content_target_ms=settings.ai_first_content_target_ms,
             response_target_ms=settings.ai_response_target_ms,
             citation_coverage_target=settings.ai_citation_coverage_target,
             provider_response_storage=settings.openai_store_responses,
+        )
+
+    def build_context_assembler(self) -> ConversationContextAssembler:
+        return ConversationContextAssembler(
+            recent_turns=self.conversation_recent_turns,
+            summary_max_characters=self.conversation_summary_max_characters,
+            context_max_characters=self.conversation_context_max_characters,
         )
 
 

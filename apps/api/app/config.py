@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     ai_conversation_recent_turns: int = Field(default=8, ge=2, le=20)
     ai_conversation_summary_trigger_turns: int = Field(default=12, ge=4, le=40)
     ai_conversation_summary_max_characters: int = Field(default=4_000, ge=500, le=12_000)
+    ai_conversation_context_max_characters: int = Field(default=16_000, ge=12_000, le=48_000)
     ai_stream_start_target_ms: int = Field(default=2_000, ge=100, le=10_000)
     ai_first_content_target_ms: int = Field(default=3_000, ge=500, le=15_000)
     ai_response_target_ms: int = Field(default=8_000, ge=1_000, le=30_000)
