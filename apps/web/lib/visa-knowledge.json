@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "importedAt": "2026-08-09",
+  "sourceCount": 13,
+  "chunkCount": 52,
+  "sources": [
+    {
+      "filename": "Business visa.docx",
+      "title": "Business visa",
+      "topic": "business-visa",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "8f9bdd3e728ec6cef2d129f658e8b03fbc38897e83a40d38c4779a3bbf190664",
+      "blockCount": 58,
+      "chunkCount": 4
+    },
+    {
+      "filename": "e-visa UZ.docx",
+      "title": "Electronic visa",
+      "topic": "electronic-visa",
+      "officialUrl": "https://www.e-visa.gov.uz/",
+      "sha256": "18aaf08bdba700088e6162e781a5002f92ca1f621b976f36d5d89e6eb977d382",
+      "blockCount": 66,
+      "chunkCount": 4
+    },
+    {
+      "filename": "Family reunification.docx",
+      "title": "Family reunification and private visits",
+      "topic": "family-visit",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "4b2db41ff22e77d23e9577195691f9871612af925980597f61d2e58fb025142d",
+      "blockCount": 58,
+      "chunkCount": 4
+    },
+    {
+      "filename": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "blockCount": 29,
+      "chunkCount": 10
+    },
+    {
+      "filename": "Overstay penalties.docx",
+      "title": "Overstay penalties and exit",
+      "topic": "overstay-and-exit",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "d0b979a06ad5a5abf843a34a9f15e2ab61a8d3768bf0ebd7d59188db3efd659c",
+      "blockCount": 23,
+      "chunkCount": 2
+    },
+    {
+      "filename": "Passport validity requirements.docx",
+      "title": "Passport validity requirements",
+      "topic": "passport-validity",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "c2ce389fc60fb4039f5c7f7acb507ed0da9b3c6658107bd96567dca08ecb3cc7",
+      "blockCount": 15,
+      "chunkCount": 1
+    },
+    {
+      "filename": "Permanent Residence (PR) in Uzbekistan.docx",
+      "title": "Permanent residence in Uzbekistan",
+      "topic": "permanent-residence",
+      "officialUrl": "https://my.gov.uz/en/for-foreigners",
+      "sha256": "4d9a0001f0f38321b89b551903423f55264239b9a97be475e4750c0496ba71db",
+      "blockCount": 59,
+      "chunkCount": 5
+    },
+    {
+      "filename": "Registration of foreigners.docx",
+      "title": "Registration of foreigners",
+      "topic": "arrival-registration",
+      "officialUrl": "https://my.gov.uz/en/for-foreigners",
+      "sha256": "e3a7406afe3b8dacd9c1ffa13d4b38644400689268cbe1087dbc3008630c48eb",
+      "blockCount": 75,
+      "chunkCount": 4
+    },
+    {
+      "filename": "Student visas.docx",
+      "title": "Student visas",
+      "topic": "student-visa",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "c1bf141bd66c86ba1cfa8d8a82c7cb7454c0c763842c99ea859b224ed2704879",
+      "blockCount": 57,
+      "chunkCount": 4
+    },
+    {
+      "filename": "Temporary residence permits.docx",
+      "title": "Temporary residence permits",
+      "topic": "temporary-residence",
+      "officialUrl": "https://my.gov.uz/en/for-foreigners",
+      "sha256": "23e8153a584b1b16bf0d529c5610bf3630558b30f17064f3641f5c1a317876e3",
+      "blockCount": 62,
+      "chunkCount": 4
+    },
+    {
+      "filename": "Visa categories.docx",
+      "title": "Visa categories",
+      "topic": "visa-categories",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "47043ccf1312dcd7347b0237d835df844ed91f9357a0489e2e38acf1fd8c4903",
+      "blockCount": 29,
+      "chunkCount": 2
+    },
+    {
+      "filename": "Visa to the Republic of Uzbekistan MFA.docx",
+      "title": "Visa to the Republic of Uzbekistan — MFA",
+      "topic": "mfa-visa-guidance",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "160c2cb1b43e983ed4745435f3e4dcd62e6d5be8ddb2cff411fc8e8c028c639a",
+      "blockCount": 59,
+      "chunkCount": 5
+    },
+    {
+      "filename": "Visa-free entry to Uzbekistan.docx",
+      "title": "Visa-free entry to Uzbekistan",
+      "topic": "visa-free-entry",
+      "officialUrl": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "sha256": "2c7085c0bfcc3ef4e3a04ab77fbf3d4a0a2a0dd198fe69988cb09e564a7e362c",
+      "blockCount": 70,
+      "chunkCount": 3
+    }
+  ],
+  "chunks": [
+    {
+      "id": "business-visa-96f13779-1",
+      "title": "Business visa",
+      "topic": "business-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Business visa.docx",
+      "sourceSha256": "8f9bdd3e728ec6cef2d129f658e8b03fbc38897e83a40d38c4779a3bbf190664",
+      "content": "Uzbekistan Business Visa\n\nSummary\n\nThe Uzbekistan Business Visa is designed for foreign nationals visiting the country for commercial purposes, meetings, and business negotiations. It is split into two primary types: the standard Business Visa (B-1/B-2) requiring a local corporate sponsor, and the Investment Visa (V-2) for significant financial contributors. Standard processing takes 2 to 10 working days through the Ministry of Foreign Affairs (MVD/MFA) networks or the electronic visa portal.\n\nOverview\n\nA business visa allows foreign professionals to enter Uzbekistan to establish corporate networks, sign contracts, or oversee existing investments. It is strictly non-employment; individuals looking to earn a local salary must secure a separate work permit and work visa (E-type).\n\nEligibility\n\nThe business visa categories are available to:\n\nCorporate Executives & Managers: Individuals representing foreign companies for market research or partnership setups.\n\nInvestors: High-net-worth individuals purchasing shares, setting up local entities, or funding infrastructure.\n\nTechnical Specialists: Consultants visiting local branches for short-term corporate oversight or machinery setups.\n\nRequirements\n\nTo qualify for a business visa, an applicant must:\n\nBe invited by a legally registered legal entity (company) within Uzbekistan.\n\nSecure an official Letter of Invitation (LOI) approved by the Ministry of Foreign Affairs (except for nationalities eligible for simplified procedures).\n\nPossess a passport valid for at least 3 months beyond the intended visa expiration date.\n\nRequired Documents\n\nThe application package differs based on the sub-category, but generally requires:\n\nVisa Application Form: Completed online or in print with a passport-sized photo."
+    },
+    {
+      "id": "business-visa-96f13779-2",
+      "title": "Business visa",
+      "topic": "business-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Business visa.docx",
+      "sourceSha256": "8f9bdd3e728ec6cef2d129f658e8b03fbc38897e83a40d38c4779a3bbf190664",
+      "content": "Visa Application Form: Completed online or in print with a passport-sized photo.\n\nValid Passport: Clear copy of the biometric data page.\n\nLetter of Invitation (LOI): Issued by the inviting company in Uzbekistan and stamped by the MFA.\n\nCorporate Charter / License: A copy of the inviting company's state registration documents.\n\nEmployment Proof: A formal letter from the applicant’s foreign employer stating their corporate position and purpose of travel.\n\nInvestment Proof (For V-2 Track): Bank certificates or corporate certificates showing a minimum investment or share purchase of at least $10,000 to $300,000 depending on the target framework.\n\nApplication Steps\n\nSponsor Request: The inviting company in Uzbekistan submits a request to the Ministry of Foreign Affairs via the dedicated corporate portal to generate the LOI telex.\n\nLOI Issuance: The MFA reviews the company's standing and issues a unique confirmation/telex code.\n\nApplication Submission:\n\nOption A (Embassy): The applicant submits the paperwork and the telex code to the nearest Uzbek Consulate.\n\nOption B (E-Visa): For specific business categories, the applicant applies directly via the e-visa.gov.uz portal using the corporate invite details.\n\nInterview and Collection: Collect the physical sticker visa at the consulate or download the electronic PDF voucher.\n\nProcessing Time\n\nLOI Approval (MFA): Takes 5 to 10 working days.\n\nConsular/E-Visa Processing: Takes 2 to 5 working days once the LOI code is issued.\n\nFees\n\nStandard E-Visa (Single-entry Business): Consular fees average $20 to $30.\n\nMultiple-Entry Business Visa (Consulate-issued): Fees range from $150 to $350 depending on the visa duration (up to 1 year) and the applicant's citizenship due to bilateral reciprocity agreements.\n\nValidity"
+    },
+    {
+      "id": "business-visa-96f13779-3",
+      "title": "Business visa",
+      "topic": "business-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Business visa.docx",
+      "sourceSha256": "8f9bdd3e728ec6cef2d129f658e8b03fbc38897e83a40d38c4779a3bbf190664",
+      "content": "Validity\n\nSingle or Double-Entry: Typically valid for 30 days to 90 days.\n\nMultiple-Entry (B-2): Valid for 6 months or 1 year, allowing multiple entries with a cap on continuous days spent per visit (usually 90 days per entry).\n\nInvestment Visa (V-2): Valid for up to 3 years with unrestricted multi-entry rights.\n\nRenewal\n\nIn-Country Extensions: Business visas can rarely be extended inside the country unless there is an emergency or an explicit request submitted by an inviting Ministry or large state enterprise to the Migration and Citizenship Department.\n\nVisa Run: Applicants typically need to exit Uzbekistan and apply for a new business telex/visa from abroad.\n\nRestrictions\n\nNo Local Salary: You cannot be directly employed or receive a salary from an Uzbek entity under a business visa.\n\nStrict Company Affiliation: You must only engage in business operations connected to the specific local company that sponsored your original LOI.\n\nRegistration Mandatory: Holding a business visa does not bypass the requirement to register your temporary address within 3 working days of arrival.\n\nExceptions\n\nVisa-Free Nationalities: Citizens of certain countries (e.g., EU nationals, Turkey, UAE) can enter Uzbekistan visa-free for 30 days or 90 days and can conduct basic business meetings without a formal business visa.\n\nIT Park Residents: Foreign investors or specialists affiliated with the Uzbekistan IT Park enjoy expedited visa processes and direct exemptions from standard local labor market testing.\n\nFrequently Asked Questions\n\nCan I switch from an E-visa to a long-term business visa inside Uzbekistan? No. Changing your visa category inside the country is generally prohibited. You must leave and re-enter with the appropriate consular-issued business sticker."
+    },
+    {
+      "id": "business-visa-96f13779-4",
+      "title": "Business visa",
+      "topic": "business-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Business visa.docx",
+      "sourceSha256": "8f9bdd3e728ec6cef2d129f658e8b03fbc38897e83a40d38c4779a3bbf190664",
+      "content": "Can I switch from an E-visa to a long-term business visa inside Uzbekistan? No. Changing your visa category inside the country is generally prohibited. You must leave and re-enter with the appropriate consular-issued business sticker.\n\nCan I open a local bank account with a business visa? Yes. You can open an Uzbek bank account using your passport, business visa, temporary registration slip, and a local PINFL number.\n\nDoes a business visa guarantee entry? No. Border control officials hold final authorization rights and can request proof of accommodation, return tickets, or your company's physical contact info at the gate.\n\nOfficial Sources & Related Documents\n\nMinistry of Foreign Affairs of Uzbekistan (mfa.uz): The regulatory authority for all LOI validations and consular sticker issuances.\n\nOfficial E-Visa Portal (e-visa.gov.uz): The formal portal used for short-term commercial and electronic entry applications.\n\nCabinet of Ministers Resolution No. 408: Governs the entry, exit, and temporary residence rules for foreign professionals and commercial operators."
+    },
+    {
+      "id": "electronic-visa-456ce071-1",
+      "title": "Electronic visa",
+      "topic": "electronic-visa",
+      "url": "https://www.e-visa.gov.uz/",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "e-visa UZ.docx",
+      "sourceSha256": "18aaf08bdba700088e6162e781a5002f92ca1f621b976f36d5d89e6eb977d382",
+      "content": "An e-Visa to Uzbekistan can be obtained completely online through the official government portal e-visa.gov.uz. This system completely eliminates the need to visit an embassy or consular office. [1, 2, 3]\n\nCost and Visa Types\n\nThe processing fee varies depending on the number of entries you require, and payments can be made online via an international credit or debit card (such as Visa): [3, 4]\n\nSingle-Entry: 20 USD\n\nDouble-Entry: 35 USD\n\nMultiple-Entry: 50 USD [5]\n\nValidity and Stay Duration\n\nDuration of Stay: You are allowed to stay in Uzbekistan for up to 30 days per visit.\n\nValidity Window: The e-Visa remains valid for 90 days from the exact date it is issued. You can enter the country at any point during this 90-day window. [6, 7, 8, 9]\n\nProcessing Time\n\nYou must apply at least 3 working days before your planned trip.\n\nApplications are typically processed within 2 working days (excluding the day of filing). Once approved, the electronic visa is sent directly to your email in PDF format. [6, 8, 10]\n\nDocument Requirements\n\nWhen filling out the online application form, you will need to upload digital copies of the following: [2, 3]\n\nPassport Data Page: A clear, readable scan of your passport's main page (the passport must be valid for at least 3 months beyond your planned departure date).\n\nPassport Photo: A digital, passport-style photograph (35x45 mm size, white background, under 1 MB file size). [2, 4]\n\nWho Needs an e-Visa?\n\nCitizens of countries that do not have bilateral visa-free entry agreements with Uzbekistan must apply for an e-Visa. This primarily includes citizens of: [11]\n\nAlbania Algeria Angola Bhutan Bolivia Cabo Verde Cambodia Cameroon Colombia Côte d’Ivoire Ecuador Egypt Fiji Gabon Ghana Guyana"
+    },
+    {
+      "id": "electronic-visa-456ce071-2",
+      "title": "Electronic visa",
+      "topic": "electronic-visa",
+      "url": "https://www.e-visa.gov.uz/",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "e-visa UZ.docx",
+      "sourceSha256": "18aaf08bdba700088e6162e781a5002f92ca1f621b976f36d5d89e6eb977d382",
+      "content": "Albania Algeria Angola Bhutan Bolivia Cabo Verde Cambodia Cameroon Colombia Côte d’Ivoire Ecuador Egypt Fiji Gabon Ghana Guyana\n\nHong Kong India Iran Kiribati North Korea Laos Lebanon Macedonia Maldives Marshall Islands Mauritius Micronesia Morocco Nauru Nepal Palau Paraguay\n\nPeru Philippines Samoa Senegal Seychelles Solomon Islands South Africa Sri Lanka Suriname Thailand Tonga Tunisia Uruguay Vanuatu Venezuela Vietnam\n\nTo apply for an Uzbekistan electronic visa, you must submit your application through the official government portal at e-visa.gov.uz. Avoid third-party websites that charge extra processing fees. [1, 2]\n\nBelow is the complete step-by-step application guideline based on the official requirements for 2026.\n\nOverview of Visa Types and Fees\n\nConsular fees depend entirely on the number of entries you require. The fee is non-refundable, even if your application is denied. [3]\n\nNote: Your 90-day validity window begins the moment your application is processed, not on your day of arrival. You can enter Uzbekistan at any point within this 90-day window. [4]\n\nRequired Documents & Photo Specifications\n\nBefore opening the application portal, prepare the following digital assets according to strict Uzbek technical guidelines:\n\nPassport Scan:\n\nMust be valid for at least 3 months beyond your planned departure date (some borders recommend 6 months).\n\nUpload only the main bio-data page.\n\nFile size must not exceed 500 KB and the text must be easily readable. [2, 5, 6, 7]\n\nDigital Passport Photo:\n\nDimensions must be exactly 35x40 mm.\n\nResolution must be 300 dpi.\n\nFile size must be under 1 MB.\n\nMust feature a plain white background with a clear frontal view of your face. [2, 5]\n\nAccommodation Info: The name and physical address of your first hotel or accommodation. [2]"
+    },
+    {
+      "id": "electronic-visa-456ce071-3",
+      "title": "Electronic visa",
+      "topic": "electronic-visa",
+      "url": "https://www.e-visa.gov.uz/",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "e-visa UZ.docx",
+      "sourceSha256": "18aaf08bdba700088e6162e781a5002f92ca1f621b976f36d5d89e6eb977d382",
+      "content": "Accommodation Info: The name and physical address of your first hotel or accommodation. [2]\n\nStep-by-Step Application Process\n\nSelect Preliminary Information: Go to the official website and input your nationality, travel document type, and your purpose of visit (Tourist). [8, 9]\n\nDefine Travel Dates: Input your intended date of entry into the country. [10]\n\nEnter Personal Data: Input your biographical details exactly as they appear on your passport. Mistakes here will lead to entry denial at the border. [1, 2, 8]\n\nUpload Documents: Attach your pre-formatted passport scan and digital photo. [1, 5]\n\nEmail Activation: Enter a valid, active email address. The system will send you an automated message containing an activation code/link. You must enter this code on the portal to verify your account. [1, 2, 10]\n\nPay the Consular Fee: Complete the online payment using an international Visa or payment card. The card does not need to be under your name. [3, 9, 11]\n\nProcessing Time and Status Check\n\nTimeline: The standard turnaround is 3 working days (excluding the day you submitted the application). Always apply at least 3 business days before flying. [3, 11, 12]\n\nTracking: You can monitor your application's progress directly on the e-visa.gov.uz/status page by inputting your unique activation code. [10]\n\nDelivery: Once approved, a PDF version of the e-visa is sent to your email. Print a physical copy of this PDF; border control requires you to keep it alongside your passport during your stay. [1, 9, 11]\n\n[1] https://e-visa.gov.uz\n\n[2] https://tourfixer.uz\n\n[3] https://www.advantour.com\n\n[4] https://caravanistan.com\n\n[5] https://www.advantour.com\n\n[6] https://my.gov.uz\n\n[7] https://www.visahq.com\n\n[8] https://e-visa.gov.uz\n\n[9] https://belgium.mfa.uz"
+    },
+    {
+      "id": "electronic-visa-456ce071-4",
+      "title": "Electronic visa",
+      "topic": "electronic-visa",
+      "url": "https://www.e-visa.gov.uz/",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "e-visa UZ.docx",
+      "sourceSha256": "18aaf08bdba700088e6162e781a5002f92ca1f621b976f36d5d89e6eb977d382",
+      "content": "[9] https://belgium.mfa.uz\n\n[10] https://www.advantour.com\n\n[11] https://uzembassy.uk\n\n[12] https://www.uzbekembassy.in\n\n[13] https://uzembassy-qatar.org\n\nEntry Type | Validity Window | Max Duration of Stay | Consular Fee (USD)\n\nSingle Entry | 90 Days | 30 Days | $20\n\nDouble Entry | 90 Days | 30 Days | $35\n\nMultiple Entry | 90 Days | 30 Days | $50"
+    },
+    {
+      "id": "family-visit-4ad17bc5-1",
+      "title": "Family reunification and private visits",
+      "topic": "family-visit",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Family reunification.docx",
+      "sourceSha256": "4b2db41ff22e77d23e9577195691f9871612af925980597f61d2e58fb025142d",
+      "content": "Family reunification\n\nUzbekistan issues Family Visas (Category \"O-2\") to foreign nationals seeking long-term stay for family reunification with relatives who are citizens of Uzbekistan. The process requires an official invitation sponsored by the inviting relative through the territorial migration authorities of the Ministry of Internal Affairs.\n\nSummary\n\nVisa Type: Family Guest Visa (Category O-2).\n\nValidity: Issued for up to 1 year with multiple entry options, depending on the track.\n\nKey Obligation: Mandatory local residence registration within 3 working days of arrival.\n\nOverview\n\nFamily reunification in Uzbekistan is primarily managed through the \"O-2\" visa framework, designed for close relatives of Uzbek citizens. It serves as a stepping stone for foreigners who wish to live long-term with their families in Uzbekistan. An active O-2 visa allows the holder to remain in the country legally without needing tourist or business visa renewals, though it does not automatically grant permanent residency.\n\nEligibility\n\nThe following close relatives of citizens of the Republic of Uzbekistan are eligible to apply for family reunification under the O-2 track:\n\nSpouses: Legally married husbands or wives.\n\nChildren: Biological or legally adopted children.\n\nParents: Parents or legal guardians of Uzbek citizens.\n\nSiblings: Biological brothers and sisters (under specific dependency or hosting criteria).\n\nRequirements\n\nOfficial Invitation: The inviting relative in Uzbekistan must file an official invitation request through their local migration office.\n\nProof of Kinship: Legal and apostilled/legalized documents proving the exact family relationship are strictly required."
+    },
+    {
+      "id": "family-visit-4ad17bc5-2",
+      "title": "Family reunification and private visits",
+      "topic": "family-visit",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Family reunification.docx",
+      "sourceSha256": "4b2db41ff22e77d23e9577195691f9871612af925980597f61d2e58fb025142d",
+      "content": "Proof of Kinship: Legal and apostilled/legalized documents proving the exact family relationship are strictly required.\n\nFinancial & Housing Support: The inviting host must guarantee that they have the means and space to accommodate the foreign relative.\n\nRequired Documents\n\nThe standard application dossier required to initiate the family visa track includes:\n\nApplication Steps\n\nLocal Filing: The inviting relative visits their local territorial Migration and Citizenship Department (formerly OVIR) in Uzbekistan to submit the invitation request.\n\nSecurity Clearance: Migration authorities review the host's documents and issue an approved invitation code/telex.\n\nVisa Application: The foreign relative takes this approval code to the nearest Uzbek Embassy/Consulate or applies via the https://visa.mfa.uz/ if eligible.\n\nEntry & Registration: Upon arrival in Uzbekistan, the foreigner must register their physical address via the hotel or the host's Emehmon Portal within 3 working days.\n\nPR Application (Optional): If the applicant qualifies for Permanent Residence (e.g., through marriage or direct descent), they can transition to apply for a Permanent Residence Permit (Vid na Zhitelstvo) at the migration office.\n\nProcessing Time\n\nInvitation Clearance in Uzbekistan: 14 to 30 days for background checks and processing.\n\nConsular Visa Issuance: 3 to 7 working days once the embassy receives the migration department's clearance.\n\nFees\n\nLocal Invitation Fee: A minor administrative state duty (calculated based on the current Base Calculation Amount).\n\nConsular Visa Fee: Ranges from $40 to $160 depending on the duration (single vs. multiple entry) and the applicant's nationality.\n\nValidity\n\nInitial Visa: Typically issued for 3 to 12 months as a multiple-entry visa."
+    },
+    {
+      "id": "family-visit-4ad17bc5-3",
+      "title": "Family reunification and private visits",
+      "topic": "family-visit",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Family reunification.docx",
+      "sourceSha256": "4b2db41ff22e77d23e9577195691f9871612af925980597f61d2e58fb025142d",
+      "content": "Initial Visa: Typically issued for 3 to 12 months as a multiple-entry visa.\n\nPermanent Transition: If a Permanent Residence Permit is successfully granted later, the physical permit card is issued for 5 years (or up to the validity of the foreign passport).\n\nRenewal\n\nTimeline: O-2 visa extensions must be requested at local migration offices at least 10-15 working days before expiration.\n\nBasis: Continued validity of the family relationship (e.g., active marriage) and sustained local residence registration.\n\nRestrictions\n\nNo Direct Work Rights: Holding an O-2 family visa does not grant immediate commercial employment rights. The foreigner must still obtain a standard work permit from the Agency for External Labor Migration to work legally.\n\nAddress Locking: The foreigner must physically reside at the address where they are registered. Moving or staying elsewhere without updating the migration file triggers administrative fines.\n\nExceptions\n\nCIS Visa-Free Countries: Relatives holding passports from visa-free nations (like Russia, Kazakhstan, or Belarus) do not need an O-2 visa. They enter visa-free and can apply directly for long-term temporary registration or transition directly to permanent residency processing based on family ties.\n\nFrequently Asked Questions\n\nDoes marrying an Uzbek citizen give me immediate citizenship? No. Marriage grants eligibility for a Permanent Residence Permit first. Under current laws, citizenship via marriage requires a period of permanent residency and meeting specific integration and legal criteria."
+    },
+    {
+      "id": "family-visit-4ad17bc5-4",
+      "title": "Family reunification and private visits",
+      "topic": "family-visit",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Family reunification.docx",
+      "sourceSha256": "4b2db41ff22e77d23e9577195691f9871612af925980597f61d2e58fb025142d",
+      "content": "Does marrying an Uzbek citizen give me immediate citizenship? No. Marriage grants eligibility for a Permanent Residence Permit first. Under current laws, citizenship via marriage requires a period of permanent residency and meeting specific integration and legal criteria.\n\nCan I apply for family reunification entirely online? The initial invitation must be verified and processed through the physical migration department in Uzbekistan by your relative. However, once approved, the actual visa application can often be finalized via the digital consular networks.\n\nOfficial Sources\n\nConsular Track Information: Ministry of Foreign Affairs (MFA) of Uzbekistan\n\nHousing Registrations: E-mehmon Digital Portal\n\nRelated Documents\n\nLaw of the Republic of Uzbekistan \"On the Legal Status of Foreign Citizens and Stateless Persons.\"\n\nFamily Code of the Republic of Uzbekistan.\n\nCategory | Required Documents\n\nIdentity | National passport of the applicant and the internal passport/ID-card of the inviting Uzbek citizen.\n\nKinship Proof | Marriage certificate, birth certificates, or adoption papers (translated and notarized).\n\nHost Guarantee | Notarized consent form from the property owner agreeing to host the foreign relative.\n\nApplication | Completed visa application form from the Ministry of Foreign Affairs (MFA).\n\nIncome Proof | Financial statements or employment proof from the inviting relative (if requested by local migration desks)."
+    },
+    {
+      "id": "visa-categories-e44523a1-1",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "LIST OF CATEGORIES OF ENTRY, EXIT AND TRANSIT VISAS (NON-ELECTRONIC) OF THE REPUBLIC OF UZBEKISTAN\n\n1. D-1 Diplomatic entry visa (for those with permanent accreditation) It is issued for the period of accreditation to employees of permanent missions of foreign states, international intergovernmental organizations and representations of government organizations of foreign states permanently residing in the territory of the Republic of Uzbekistan, and their dependent family members (holding diplomatic passports).\n\n2. D-2 Diplomatic entry visa (for temporary residents) It is issued for a period of up to 3 months to employees of permanent missions of foreign states, international intergovernmental organizations and representative offices of government organizations of foreign states temporarily staying in the territory of the Republic of Uzbekistan, and their dependent family members (holding diplomatic passports).\n\n3. DT Diplomatic entry visa (tourist for diplomatic passport holders) It is issued for a period of up to 1 month to diplomatic officials of foreign countries and employees of representative offices of international intergovernmental organizations and government organizations of foreign countries entering the Republic of Uzbekistan for tourist purposes, as well as their dependent family members (holding diplomatic passports)."
+    },
+    {
+      "id": "visa-categories-e44523a1-2",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "3. DT Diplomatic entry visa (tourist for diplomatic passport holders) It is issued for a period of up to 1 month to diplomatic officials of foreign countries and employees of representative offices of international intergovernmental organizations and government organizations of foreign countries entering the Republic of Uzbekistan for tourist purposes, as well as their dependent family members (holding diplomatic passports).\n\n4. S-1 Service entry visa (for those with permanent accreditation) It is issued for the period of accreditation to employees of representative offices of foreign states, international intergovernmental organizations and representative offices of government organizations of foreign states permanently residing in the territory of the Republic of Uzbekistan and their dependent family members (who do not have diplomatic passports), as well as to employees of representative offices and branches of international and foreign non-governmental (non-governmental) non-profit organizations registered with the Ministry of Justice of the Republic of Uzbekistan permanently residing in the territory of the Republic of Uzbekistan and their dependent family members."
+    },
+    {
+      "id": "visa-categories-e44523a1-3",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "4. S-1 Service entry visa (for those with permanent accreditation) It is issued for the period of accreditation to employees of representative offices of foreign states, international intergovernmental organizations and representative offices of government organizations of foreign states permanently residing in the territory of the Republic of Uzbekistan and their dependent family members (who do not have diplomatic passports), as well as to employees of representative offices and branches of international and foreign non-governmental (non-governmental) non-profit organizations registered with the Ministry of Justice of the Republic of Uzbekistan permanently residing in the territory of the Republic of Uzbekistan and their dependent family members.\n\n5. S-2 Service entry visa (temporary) It is issued for a period of up to 3 months to employees of representative offices of foreign states, international intergovernmental organizations and representative offices of government organizations of foreign states temporarily staying in the territory of the Republic of Uzbekistan and their dependent family members (who do not have diplomatic passports), as well as to employees of representative offices and branches of international and foreign non-governmental (non-governmental) non-profit organizations registered with the Ministry of Justice of the Republic of Uzbekistan temporarily staying in the territory of the Republic of Uzbekistan and their dependent family members."
+    },
+    {
+      "id": "visa-categories-e44523a1-4",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "5. S-2 Service entry visa (temporary) It is issued for a period of up to 3 months to employees of representative offices of foreign states, international intergovernmental organizations and representative offices of government organizations of foreign states temporarily staying in the territory of the Republic of Uzbekistan and their dependent family members (who do not have diplomatic passports), as well as to employees of representative offices and branches of international and foreign non-governmental (non-governmental) non-profit organizations registered with the Ministry of Justice of the Republic of Uzbekistan temporarily staying in the territory of the Republic of Uzbekistan and their dependent family members.\n\n6. S-3 Service entry visa (at the invitation of state organizations of the Republic of Uzbekistan) It is issued for a period of up to 1 year to foreign citizens arriving on a business trip to the Republic of Uzbekistan at the invitation of state and economic management bodies of the Republic of Uzbekistan, non-governmental non-profit associations established on the initiative of the President and the Government, as provided for by the legislation.\n\n7. About Official entry visa (for official and state visits) It is granted to members of official delegations visiting the Republic of Uzbekistan at the invitation of the President of the Republic of Uzbekistan, the Oliy Majlis and the Cabinet of Ministers for the duration of official events."
+    },
+    {
+      "id": "visa-categories-e44523a1-5",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "7. About Official entry visa (for official and state visits) It is granted to members of official delegations visiting the Republic of Uzbekistan at the invitation of the President of the Republic of Uzbekistan, the Oliy Majlis and the Cabinet of Ministers for the duration of official events.\n\n8. B-1 Business entry visa (for those accredited in specialized institutions and departments of the Republic of Uzbekistan) It is issued for the period of accreditation to employees of representative offices of foreign commercial organizations in the territory of the Republic of Uzbekistan, as well as foreign banks or other financial organizations.\n\n9. B-2 Business entry visa (business visa) Issued for a period of up to 1 year to representatives of business circles temporarily staying in the Republic of Uzbekistan.\n\n10. T Tourist entry visa It is issued for a period of up to 1 month to foreign citizens visiting the Republic of Uzbekistan for tourist purposes.\n\n11. TG Group tourist entry visa It is issued for a period of up to 1 month to foreign citizens visiting the Republic of Uzbekistan for tourist purposes as part of a tourist group of at least 5 people.\n\n12. PLG Pilgrimage entry visa Foreign citizens are granted up to 2 months to study the cultural, historical, religious and spiritual heritage and traditions of Uzbekistan, based on questionnaires submitted by tourism entities and the Committee on Religious Affairs under the Cabinet of Ministers of the Republic of Uzbekistan."
+    },
+    {
+      "id": "visa-categories-e44523a1-6",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "12. PLG Pilgrimage entry visa Foreign citizens are granted up to 2 months to study the cultural, historical, religious and spiritual heritage and traditions of Uzbekistan, based on questionnaires submitted by tourism entities and the Committee on Religious Affairs under the Cabinet of Ministers of the Republic of Uzbekistan.\n\n13. Is Work entry visa (based on the license of the Agency for Foreign Labor Migration under the Ministry of Employment and Labor Relations of the Republic of Uzbekistan) The right to work granted to a foreign citizen by the Foreign Labor Migration Department under the Ministry of Employment and Labor Relations of the Republic of Uzbekistan is granted for a period approved by the Ministry.\n\n14. J-1 Entry visa for press representatives (permanently accredited at the Ministry of Foreign Affairs of the Republic of Uzbekistan) It is issued for the period of accreditation to representatives of foreign media outlets permanently accredited to the Ministry of Foreign Affairs of the Republic of Uzbekistan and their dependent family members.\n\n15. J-2 Entry visa for press representatives (temporarily accredited at Dunyo AA) It is issued to representatives of foreign media temporarily accredited by the Ministry of Foreign Affairs of the Republic of Uzbekistan for the duration of the accreditation.\n\n16. PV-1 Visitor entry visa (at the request of citizens of the Republic of Uzbekistan through the Main Department of Migration and Citizenship of the Ministry of Internal Affairs of the Republic of Uzbekistan) Issued for a period of up to 1 year to foreign citizens undertaking a guest trip at the invitation of citizens of the Republic of Uzbekistan."
+    },
+    {
+      "id": "visa-categories-e44523a1-7",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "16. PV-1 Visitor entry visa (at the request of citizens of the Republic of Uzbekistan through the Main Department of Migration and Citizenship of the Ministry of Internal Affairs of the Republic of Uzbekistan) Issued for a period of up to 1 year to foreign citizens undertaking a guest trip at the invitation of citizens of the Republic of Uzbekistan.\n\n17. PV-2 Visitor entry visa (at the request of foreign citizens) Issued for a period of up to 1 year to foreign citizens who are making a guest trip at the invitation of foreign citizens permanently accredited and registered in the Republic of Uzbekistan.\n\n18. VTD Entry visa for compatriots (at the request of citizens of the Republic of Uzbekistan through the Main Department of Migration and Citizenship of the Ministry of Internal Affairs of the Republic of Uzbekistan) For those born in the Republic of Uzbekistan and their family members, a visa is issued for a period of up to 2 years if there is an invitation from their relatives who are citizens of the Republic of Uzbekistan and permanently reside in its territory.\n\n19. STD Student entry visa (based on exchange between higher education institutions - for a temporary period of study) It is issued for a period of up to 1 year to foreign students studying at higher educational institutions located in the territory of the Republic of Uzbekistan for a short period of time (on the basis of exchange between higher educational institutions or on a temporary basis within the framework of interaction between higher educational institutions), and is issued upon applications from educational institutions, ministries, departments and organizations of the Republic of Uzbekistan that have an educational institution under their jurisdiction."
+    },
+    {
+      "id": "visa-categories-e44523a1-8",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "19. STD Student entry visa (based on exchange between higher education institutions - for a temporary period of study) It is issued for a period of up to 1 year to foreign students studying at higher educational institutions located in the territory of the Republic of Uzbekistan for a short period of time (on the basis of exchange between higher educational institutions or on a temporary basis within the framework of interaction between higher educational institutions), and is issued upon applications from educational institutions, ministries, departments and organizations of the Republic of Uzbekistan that have an educational institution under their jurisdiction.\n\n20. A-1 Student entry visa (permanent - for the period of study) It is issued for a period of up to 1 year to foreign students studying at educational institutions located in the territory of the Republic of Uzbekistan, and is issued upon requests from educational institutions, ministries, departments and organizations of the Republic of Uzbekistan that have an educational institution under their jurisdiction.\n\n21. A-2 Teachers' entry visa (for permanent employment in the territory of the Republic of Uzbekistan) The teaching staff of educational institutions of the Ministry of Public Education of the Republic of Uzbekistan and the Ministry of Higher and Secondary Specialized Education, as well as the teaching staff of branches of foreign educational institutions in the territory of the Republic of Uzbekistan, are granted to foreign citizens for a period of up to 1 year. They are issued upon applications from educational institutions, ministries, departments and organizations of the Republic of Uzbekistan that have educational institutions under their jurisdiction."
+    },
+    {
+      "id": "visa-categories-e44523a1-9",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "21. A-2 Teachers' entry visa (for permanent employment in the territory of the Republic of Uzbekistan) The teaching staff of educational institutions of the Ministry of Public Education of the Republic of Uzbekistan and the Ministry of Higher and Secondary Specialized Education, as well as the teaching staff of branches of foreign educational institutions in the territory of the Republic of Uzbekistan, are granted to foreign citizens for a period of up to 1 year. They are issued upon applications from educational institutions, ministries, departments and organizations of the Republic of Uzbekistan that have educational institutions under their jurisdiction.\n\n22. A-3 Academic entry visa (on a temporary basis) It is issued for a period of 3 months to 2 years for foreign individuals wishing to conduct scientific research (collecting materials for dissertations, scientific works) and teaching activities (short-term traveling lectures) in the Republic of Uzbekistan, and is issued upon applications from the Academy of Sciences of the Republic of Uzbekistan, scientific research organizations, higher educational institutions of the Republic of Uzbekistan, ministries or departments.\n\n23. WITH Medical entry visa It is issued for a period of up to 3 months to foreign citizens arriving in the Republic of Uzbekistan for treatment at the invitation of treatment and prevention institutions.\n\n24. C-1 Entry visa for crew Issued to foreign members of aircraft and railway crews for a period of up to 1 year.\n\n25. C-2 Entry visa for drivers Issued to foreign drivers of freight vehicles for a period of up to 1 year.\n\n26. EXIT Exit visa In cases where entry visas are overdue for foreign citizens, they are granted a period of up to 1 month to exit the Republic of Uzbekistan."
+    },
+    {
+      "id": "visa-categories-e44523a1-10",
+      "title": "Non-electronic visa category catalogue",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "LIST_OF_CATEGORIES_OF_ENTRY,_EXIT_AND_TRANSIT_VISAS_NON_ELECTRONIC.docx",
+      "sourceSha256": "7a237a9bd382ac47a6d5528ef59bbbbd713a3f6dc37a72a63d9475eb01449d54",
+      "content": "26. EXIT Exit visa In cases where entry visas are overdue for foreign citizens, they are granted a period of up to 1 month to exit the Republic of Uzbekistan.\n\n27. TRAN Transit visa Issued for up to 3 days to foreign citizens transiting through the territory of the Republic of Uzbekistan.\n\n28. INV Multiple-entry investment visa It is issued upon the application of enterprises investing in the economy of the Republic of Uzbekistan in an amount not less than 8500 times the base payment established in the Republic of Uzbekistan when making foreign investments, for the purpose of acquiring shares and stakes in economic associations, as well as for the establishment of enterprises with the participation of foreign investments, with the possibility of extending its term without leaving the territory of the Republic of Uzbekistan, issued to foreign citizens and stateless persons, valid for up to 3 years. In this case, the investor's family members (spouse, parents, and children) are issued a visitor visa for the duration of the \"Investment visa\" with the right to extend it without leaving the republic."
+    },
+    {
+      "id": "overstay-and-exit-006d1de9-1",
+      "title": "Overstay penalties and exit",
+      "topic": "overstay-and-exit",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Overstay penalties.docx",
+      "sourceSha256": "d0b979a06ad5a5abf843a34a9f15e2ab61a8d3768bf0ebd7d59188db3efd659c",
+      "content": "Overstay penalties\n\nOverstaying a visa or failing to fulfill registration requirements in Uzbekistan results in tiered monetary fines based on the duration of the violation, potential deportation, and entry bans. Under Article 225 of the Administrative Responsibility Code, penalties are calculated using the country's Base Calculation Amount (BCA/BHM). [1, 2]\n\nTiered Fine Structure\n\nFines do not accrue strictly day-by-day but are categorized by duration blocks: [1]\n\nUp to 10 Days: A fine of 5 BCA.\n\n11 to 30 Days: A fine of 10 BCA.\n\nMore than 30 Days: A fine of 20 BCA. [1]\n\n(Note: Minor travelers under the age of 18 are legally exempt from administrative fines for overstaying or violating residency regulations). [2]\n\nEscalated Penalties & Sanctions\n\nFailing to settle the fine immediately or repeating the violation introduces severe legal mechanisms:\n\nDeportation & 1-Year Ban: If you are unable or refuse to pay the administrative overstay fine, you will be formally expelled from the country and issued a 1-year entry ban. [2]\n\n3-Year Ban: Committing a repeated overstay or registration violation within a single calendar year triggers immediate deportation and a 3-year entry ban. [2, 3]\n\nHost Liability: Local residents or businesses who host a foreigner but fail to register them properly or help them leave upon visa expiration face independent, separate fines. [4]\n\nCritical Next Steps if You Overstay\n\nIf you realize you have overstayed your visa or missed the 3-day registration window, do not wait until your departure day at the airport gates:\n\nVisit Migration Offices: Report immediately to the local territorial Migration and Citizenship Assessment Department (formerly known as OVIR). [5]"
+    },
+    {
+      "id": "overstay-and-exit-006d1de9-2",
+      "title": "Overstay penalties and exit",
+      "topic": "overstay-and-exit",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Overstay penalties.docx",
+      "sourceSha256": "d0b979a06ad5a5abf843a34a9f15e2ab61a8d3768bf0ebd7d59188db3efd659c",
+      "content": "Visit Migration Offices: Report immediately to the local territorial Migration and Citizenship Assessment Department (formerly known as OVIR). [5]\n\nObtain an Exit Visa: You must officially clear the fine at a bank desk and obtain a temporary documentation extension or explicit exit visa clearance prior to boarding a departing flight.\n\nIf you are currently facing an overstay, tell me how many days you have overstayed and your current location in Uzbekistan. I can provide details on the nearest migration office.\n\n[1] https://gov.uz\n\n[2] https://tashkenttimes.uz\n\n[3] https://kun.uz\n\n[4] https://uzbekistan.travel\n\n[5] https://www.facebook.com"
+    },
+    {
+      "id": "passport-validity-a969b53a-1",
+      "title": "Passport validity requirements",
+      "topic": "passport-validity",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Passport validity requirements.docx",
+      "sourceSha256": "c2ce389fc60fb4039f5c7f7acb507ed0da9b3c6658107bd96567dca08ecb3cc7",
+      "content": "To obtain a visa and enter Uzbekistan, your passport must be valid for at least 3 months beyond the expiration date of your visa or your intended period of stay. [1, 2]\n\nHowever, many international airlines and border control authorities strongly recommend having 6 months of passport validity from your date of entry to prevent any boarding or transit complications. [2, 3]\n\n📑 Complete Passport Criteria for Uzbekistan\n\nValidity Duration: 3 months minimum past your stay/visa expiration (6 months recommended). [1, 2]\n\nBlank Pages: Your passport must contain at least 1 to 2 completely blank visa pages for entry and exit border stamps. [4, 5]\n\nPhysical Condition: The passport must be in good condition, completely intact, and free of any tears, water damage, or unofficial markings. [6]\n\nMatching Information: The passport you use to cross the border must exactly match the passport details provided during your E-visa application. If you renew your passport after receiving an E-visa, the visa becomes invalid and you must reapply with your new passport. [2, 7]\n\n[1] https://gov.uz\n\n[2] https://www.centraliatours.com\n\n[3] https://my.gov.uz\n\n[4] https://uzembassy.uk\n\n[5] https://www.visahq.com\n\n[6] https://belgium.mfa.uz\n\n[7] https://e-visa.gov.uz\n\n[8] https://www.uzairways.com"
+    },
+    {
+      "id": "permanent-residence-6b9bbbb9-1",
+      "title": "Permanent residence in Uzbekistan",
+      "topic": "permanent-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Permanent Residence (PR) in Uzbekistan.docx",
+      "sourceSha256": "4d9a0001f0f38321b89b551903423f55264239b9a97be475e4750c0496ba71db",
+      "content": "Here is the complete, comprehensive guide to obtaining and maintaining Permanent Residence (PR) in Uzbekistan based on current immigration frameworks and updated legislation.\n\nSummary\n\nForeign nationals can secure permanent residence in Uzbekistan via three primary tracks: real estate investments starting at $100,000 to $300,000, family reunification, or employment status as a highly qualified specialist. The review process takes up to 1 to 2 months (68 working days). The card grants the right to legally reside, work, and study in the country, is issued for a 5-year renewable term, and carries zero physical presence requirements for tax residency under specific elite economic structures.\n\nOverview\n\nA permanent residence permit (Вид на жительство) serves as an official identification document for foreign citizens and stateless persons living in Uzbekistan. Holding PR permits long-term settlement, employment without a standalone work permit, and streamlined access to state healthcare and education networks.\n\nEligibility\n\nThe right to apply for a permanent residence permit is granted to the following groups:\n\nProperty Investors: Foreigners purchasing newly constructed primary residential real estate.\n\nFamily Members: Spouses, children, or dependent parents of citizens of Uzbekistan or existing PR holders.\n\nHighly Qualified Specialists: Internationally recognized professionals or scientists invited to work in Uzbekistan.\n\nFormer Citizens & Stateless Persons: Individuals born in the territory or those with deep historical ties.\n\nRequirements\n\nTo meet basic regulatory criteria, an applicant must:\n\nHave a clean criminal record.\n\nPose no threat to national security or public health."
+    },
+    {
+      "id": "permanent-residence-6b9bbbb9-2",
+      "title": "Permanent residence in Uzbekistan",
+      "topic": "permanent-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Permanent Residence (PR) in Uzbekistan.docx",
+      "sourceSha256": "4d9a0001f0f38321b89b551903423f55264239b9a97be475e4750c0496ba71db",
+      "content": "Pose no threat to national security or public health.\n\nObtain a PINFL (Personal Identification Number of an Individual) via a Public Services Center.\n\nPossess a legal residential address where the property owner provides documented consent.\n\nRequired Documents\n\nApplicants must submit a complete application package including:\n\nApplication form: Two completed copies in Uzbek or Russian.\n\nValid Foreign Passport: Must have at least 6 months of validity remaining.\n\nNotarized Translations: Passport and external documents translated into Uzbek.\n\nPolice Clearance Certificate: Background check from the country of origin.\n\nMedical Clearances: Comprehensive health check including a mandatory HIV-negative certificate from an authorized state clinic.\n\nProof of Housing: Cadastral ownership documents or a notarized host's letter of consent to register the applicant.\n\nFinancial Proof: Bank statements proving economic self-sufficiency.\n\nPassport Photos: Four copies (3.5 x 4.5 cm) on a white background.\n\nTrack-Specific Documents: Marriage/birth certificates for family tracks, or bank certificates showing the nominal value of capital/shares for business paths.\n\nApplication Steps\n\nLegal Entry & Immediate Registration: Enter Uzbekistan on a valid visa or visa-free entry. Register your temporary stay address at the local migration office or through the \"E-guest\" program within 3 working days.\n\nObtain PINFL: Visit a Public Services Center to generate your identity number.\n\nMedical Checks: Visit an authorized domestic clinic for the required laboratory tests.\n\nNotarization: Gather, translate, and notarize your foreign background papers and certificates."
+    },
+    {
+      "id": "permanent-residence-6b9bbbb9-3",
+      "title": "Permanent residence in Uzbekistan",
+      "topic": "permanent-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Permanent Residence (PR) in Uzbekistan.docx",
+      "sourceSha256": "4d9a0001f0f38321b89b551903423f55264239b9a97be475e4750c0496ba71db",
+      "content": "Notarization: Gather, translate, and notarize your foreign background papers and certificates.\n\nSubmission: Apply in person through the Migration and Citizenship Department of the Ministry of Internal Affairs (MVD), a Public Services Center, or digitally via the EPIGU (My.gov.uz) online portal. Both the applicant and property owner must confirm consent, using Face-ID or Mobile-ID if submitted online.\n\nProcessing Time\n\nStandard Route: Up to 1 month for review by the regional competent authorities.\n\nInvestment Route: Up to 68 working days for finalized processing and distribution of the physical permit card.\n\nFees\n\nDocument Review & Registration: Paid at a standard rate of 20% of the minimum wage (BHM/BRV).\n\nGold Visa Multi-Year Pass Option: A fast-track 5-year permit can be explicitly obtained via an up-front statutory processing fee of $200,000 for the primary applicant and $100,000 per family member.\n\nValidity & Renewal\n\nStandard Terms: The residence permit is issued for a duration of 5 years. It cannot exceed the remaining validity of the holder's national passport.\n\nSenior Categories: For individuals who have reached 60 years of age, the permit is issued for 10 years or for the remainder of their passport validity. For stateless seniors, it is permanent.\n\nRenewal: Applications for extension can be renewed up to 5 times before requiring a new physical booklet update.\n\nRestrictions\n\nLand Ownership: Foreign residents can own buildings and infrastructure but are forbidden from directly owning agricultural or residential land. Land use is restricted to long-term leases (up to 49 years).\n\nPolitical Rights: PR holders do not possess voting rights and cannot hold public office."
+    },
+    {
+      "id": "permanent-residence-6b9bbbb9-4",
+      "title": "Permanent residence in Uzbekistan",
+      "topic": "permanent-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Permanent Residence (PR) in Uzbekistan.docx",
+      "sourceSha256": "4d9a0001f0f38321b89b551903423f55264239b9a97be475e4750c0496ba71db",
+      "content": "Political Rights: PR holders do not possess voting rights and cannot hold public office.\n\nDual Citizenship: Uzbekistan strictly forbids dual nationality. PR does not grant an additional passport, and moving from PR to naturalized citizenship requires the formal renunciation of your original citizenship.\n\nExceptions\n\nSpecial Tax Regime: Under updated financial incentives, high-net-worth individuals and corporate board executives can achieve formal tax residency with only 30 days of physical presence within a 12-month period, circumventing the standard 183-day rule.\n\nFee Exemptions: Individuals fully supported or secured by the state are exempt from paying government duties on the issuance or extension of residence documents.\n\nFrequently Asked Questions\n\nCan a standard work visa automatically convert into permanent residence? No. Standard employment time or tax tracking does not guarantee PR. An applicant must still independently qualify through investment, direct family roots, or elite talent categories.\n\nWhat happens if my PR application is refused? If refused, you must leave the region within 3 days of receiving notice. However, you may stay temporarily under standard tourist or commercial visas if you own legally acquired property, hold valid local employment, or are undergoing hospital treatment.\n\nCan I qualify for PR by buying a secondary-market apartment? No. The investment pathway strictly requires purchasing newly built property on the primary real estate market.\n\nOfficial Sources & Related Documents\n\nUnified Portal of Interactive Public Services (EPIGU / My.gov.uz): For digital profile generation and application tracking."
+    },
+    {
+      "id": "permanent-residence-6b9bbbb9-5",
+      "title": "Permanent residence in Uzbekistan",
+      "topic": "permanent-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Permanent Residence (PR) in Uzbekistan.docx",
+      "sourceSha256": "4d9a0001f0f38321b89b551903423f55264239b9a97be475e4750c0496ba71db",
+      "content": "Unified Portal of Interactive Public Services (EPIGU / My.gov.uz): For digital profile generation and application tracking.\n\nMinistry of Internal Affairs (MVD) - Migration and Citizenship Department: The legal regulatory body for background checks and physical permit distribution.\n\nCabinet of Ministers Resolution No. 224: Dictates current verification frameworks, Face-ID tracking, and property registry integrations."
+    },
+    {
+      "id": "arrival-registration-9029b202-1",
+      "title": "Registration of foreigners",
+      "topic": "arrival-registration",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Registration of foreigners.docx",
+      "sourceSha256": "e3a7406afe3b8dacd9c1ffa13d4b38644400689268cbe1087dbc3008630c48eb",
+      "content": "Registration of foreigners\n\nSummary\n\nAll foreign nationals visiting Uzbekistan must register their place of stay within 3 working days of arrival. Registration is handled automatically by hotels or licensed guest houses. If staying in private accommodations (e.g., Airbnb, friends), registration must be completed online via the E-mehmon system or via EPIGU, requiring biometric verification (Face-ID/Mobile-ID) from both the visitor and the property owner. Failing to register results in heavy administrative fines. [1, 2, 3, 4, 5]\n\nOverview\n\nTemporary registration (Vaqtincha roʻyxatdan oʻtish) tracks the temporary location of foreign citizens and stateless persons for tourism, business, or personal visits. Under recent legislative updates, the regulatory focus has shifted to the hosting party (landlords and hotels), holding them legally responsible for submitting guest information. [4, 6, 7]\n\nEligibility\n\nRegistration applies to:\n\nAll foreign tourists staying in hotels, hostels, resorts, or campsites.\n\nPrivate guests staying with relatives, friends, or in rented apartments.\n\nForeign employees, students, and medical patients residing in the country temporarily. [3, 8, 9, 10]\n\nRequirements\n\nTo successfully register your stay, you must:\n\nApply within 3 business days following the day of your entry.\n\nStay only at the exact physical address provided during registration.\n\nCoordinate directly with your property owner, who must log into the portal using their OneID/MyID account. [2, 5, 7, 10, 11]\n\nRequired Documents\n\nIf your host registers you or you register a private stay, you will need:\n\nValid International Passport: Showing your full biometrics and biometric page.\n\nEntry Border Stamp: Proof of the entry date and border checkpoint location."
+    },
+    {
+      "id": "arrival-registration-9029b202-2",
+      "title": "Registration of foreigners",
+      "topic": "arrival-registration",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Registration of foreigners.docx",
+      "sourceSha256": "e3a7406afe3b8dacd9c1ffa13d4b38644400689268cbe1087dbc3008630c48eb",
+      "content": "Entry Border Stamp: Proof of the entry date and border checkpoint location.\n\nCadastral Number: The legal property identifier number of the host's apartment or house.\n\nPINFL: Needed primarily for long-term stays or extensions exceeding 30 days. [1, 7, 11, 12]\n\nApplication Steps\n\nFor Hotel/Hostel Bookings:\n\nCheck-In: Hand your passport to the front desk at check-in.\n\nAutomatic Upload: The staff enters your details into the commercial E-mehmon portal.\n\nReceipt Collection: Request your paper registration slip (with a QR code) before checking out. [4, 6, 9]\n\nFor Private/Rented Housing:\n\nAccess Portal: The landlord logs into emehmon.uz or my.gov.uz.\n\nEnter Data: The landlord fills out the \"Arrival Guest List\" with your passport and entry details.\n\nBiometric Consent: Under Resolution No. 224, both parties verify their identification using Face-ID or Mobile-ID via the app.\n\nDownload Voucher: Save and print the generated electronic registration form. [5, 6, 11]\n\nProcessing Time\n\nInstantaneous: Electronic submission through the E-mehmon application issues the registration slip immediately upon data submission and fee settlement. [6]\n\nFees\n\nHotels/Hostels: The mandatory tourist tax (ranging roughly from $2 to $5 per night depending on accommodation tier) is usually integrated directly into your room rate or invoiced at checkout.\n\nPrivate Residences: If staying with family or friends for non-commercial purposes, a lower flat processing fee is calculated via the online portal system. [10, 11]\n\nValidity\n\nShort-Term Tourist Registration: Valid for the exact duration of your paid booking or declared itinerary up to 30 days."
+    },
+    {
+      "id": "arrival-registration-9029b202-3",
+      "title": "Registration of foreigners",
+      "topic": "arrival-registration",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Registration of foreigners.docx",
+      "sourceSha256": "e3a7406afe3b8dacd9c1ffa13d4b38644400689268cbe1087dbc3008630c48eb",
+      "content": "Short-Term Tourist Registration: Valid for the exact duration of your paid booking or declared itinerary up to 30 days.\n\nLong-Term Temporary Registration: Can be granted for up to 6 months to 1 year for foreigners holding valid work permits, student enrollments, or multi-entry business visas. [10, 12]\n\nRenewal\n\nChanging Accommodations: If you move to a new city or another hotel, the new provider must register your presence fresh within 3 days.\n\nExtensions: Long-term extensions require an application submitted by your inviting company, school, or relative to the local Migration and Citizenship Department (Passport Office / OVIR) before your current permit expires. [9, 13]\n\nRestrictions\n\nNo Unauthorized Movement: You cannot legally live at an address different from the registered text location on your e-registration form.\n\nStrict Timelines: Weekends and national holidays do not pause the 3-day clock; applications must be initiated promptly.\n\nWork Prohibition: Tourist registration does not grant the right to engage in local commercial activities or employment. [7, 10, 12]\n\nExceptions\n\nThe following categories are exempt from standard temporary registration requirements: [13]\n\nForeigners staying in the country for fewer than 3 working days.\n\nChildren under 16 years of age.\n\nHeads of foreign states, government delegations, and individuals traveling on UN passports.\n\nDiplomatic staff and individuals accredited by the Ministry of Foreign Affairs (MFA). [2, 10, 13]\n\nFrequently Asked Questions\n\nDo I need to keep the physical paper registration slips? Yes. Keep all paper slips or digital QR vouchers until you exit the country. Border control officers occasionally check them at airport immigration."
+    },
+    {
+      "id": "arrival-registration-9029b202-4",
+      "title": "Registration of foreigners",
+      "topic": "arrival-registration",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Registration of foreigners.docx",
+      "sourceSha256": "e3a7406afe3b8dacd9c1ffa13d4b38644400689268cbe1087dbc3008630c48eb",
+      "content": "Do I need to keep the physical paper registration slips? Yes. Keep all paper slips or digital QR vouchers until you exit the country. Border control officers occasionally check them at airport immigration.\n\nWhat happens if my landlord refuses to register me? You are in legal jeopardy. You must change accommodations to a hotel or an authorized host who will log into E-mehmon immediately to avoid systemic fines.\n\nCan I register myself if I am wild camping or overlanding? Yes. Independent tourists staying in tents or camper vans can log directly into E-mehmon, select the independent traveler track, and pay the corresponding tourist fees via bank card. [6, 13]\n\nOfficial Sources & Related Documents\n\nE-Mehmon System Portal (emehmon.uz): The official state portal for short-term registration and tourist tax remittance.\n\nUnified Portal of Interactive Public Services (my.gov.uz): For processing residential stays, Face-ID tracking, and long-term registrations.\n\nCabinet of Ministers Resolution No. 224: Establishes modern biometric authorization frameworks and dual-party consent rules.\n\nLaw No. LRU-1074: Specifies the legal obligations of local property owners and housing managers to register foreign guests. [3, 4, 5, 12, 14]\n\n[1] https://my.gov.uz\n\n[2] https://kun.uz\n\n[3] https://uz.usembassy.gov\n\n[4] https://gov.uz\n\n[5] https://yep.uz\n\n[6] https://gratanet.com\n\n[7] https://studyin-uzbekistan.uz\n\n[8] https://kun.uz\n\n[9] https://tourfixer.uz\n\n[10] https://advice.uz\n\n[11] https://www.facebook.com\n\n[12] https://my.gov.uz\n\n[13] https://kun.uz\n\n[14] https://www.emehmon.uz"
+    },
+    {
+      "id": "student-visa-a3e5f98d-1",
+      "title": "Student visas",
+      "topic": "student-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Student visas.docx",
+      "sourceSha256": "c1bf141bd66c86ba1cfa8d8a82c7cb7454c0c763842c99ea859b224ed2704879",
+      "content": "Student visas\n\nUzbekistan issues Student Visas (Category \"A-2\") to foreign nationals who are officially enrolled in licensed higher or secondary specialized educational institutions across the country. The process requires an official invitation sponsored by the host educational institution through the Ministry of Higher Education, Science, and Innovations.\n\nSummary\n\nVisa Type: Student Visa (Category A-2).\n\nValidity: Issued for the duration of the academic period (typically up to 1 year, renewable).\n\nKey Obligation: Mandatory local residence registration within 3 working days of arrival.\n\nOverview\n\nThe student visa in Uzbekistan is designed for long-term academic stays. It cannot be issued automatically upon purchasing short-term private courses; it requires a strict institutional linkage between the student, the university, and the Ministry of Foreign Affairs (MFA). An active A-2 visa functions as a multiple-entry pass throughout its duration.\n\nEligibility\n\nThe following foreign nationals are eligible to apply for an A-2 student visa:\n\nIndividuals who have passed the entrance exams or admission interviews at a licensed Uzbek university.\n\nStudents enrolled in Bachelor's, Master's, Ph.D. programs, or long-term clinical/academic internships.\n\nInternational students arriving under formal academic exchange or bilateral university mobility agreements.\n\nRequirements\n\nOfficial Visa Support (Telex): The primary legal basis for the visa is an invitation code approved by the Ministry of Foreign Affairs under the university’s request.\n\nFull-Time/On-Campus Enrollment: Distance learning or part-time/correspondence formats do not generally qualify a student for a long-term residence track."
+    },
+    {
+      "id": "student-visa-a3e5f98d-2",
+      "title": "Student visas",
+      "topic": "student-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Student visas.docx",
+      "sourceSha256": "c1bf141bd66c86ba1cfa8d8a82c7cb7454c0c763842c99ea859b224ed2704879",
+      "content": "Full-Time/On-Campus Enrollment: Distance learning or part-time/correspondence formats do not generally qualify a student for a long-term residence track.\n\nFinancial Solvency: Proof of capability to cover tuition fees, housing, and general cost of living.\n\nRequired Documents\n\nThe standard application dossier required at the consulate or online visa portal includes:\n\nApplication Steps\n\nAdmission: Finalize your enrollment contract with the Uzbek university and pay the initial tuition fee installment.\n\nTelex Request: The international department of the university submits your dossier to the MFA to request formal visa support.\n\nObtain Code: The university provides you with the completed MFA confirmation number (Telex number).\n\nVisa Submission: Submit your application to the nearest Embassy/Consulate of Uzbekistan or via the https://visa.mfa.uz/ if applicable to your nationality.\n\nArrival & Registration: Upon crossing the border, ensure the university helps you secure your temporary residence registration within 3 working days.\n\nProcessing Time\n\nMFA Visa Support (Telex Approval): 14 to 30 days depending on institutional queues.\n\nConsular Processing: 3 to 7 working days once the Telex code has been officially received.\n\nFees\n\nConsular Fee: Ranges from $40 to $200 depending on the applicant's nationality and the requested entry frequency (single vs. multiple entry).\n\nAdministrative Fees: Some universities may charge separate internal processing fees for document handling.\n\nValidity\n\nInitial Entry: Usually granted for 1 to 3 months to allow the student to travel and enter the country.\n\nIn-Country Extension: Once you clear registration with your university, it is extended up to 1 year (covering the current academic year block).\n\nRenewal"
+    },
+    {
+      "id": "student-visa-a3e5f98d-3",
+      "title": "Student visas",
+      "topic": "student-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Student visas.docx",
+      "sourceSha256": "c1bf141bd66c86ba1cfa8d8a82c7cb7454c0c763842c99ea859b224ed2704879",
+      "content": "Renewal\n\nTimeline: Applications for renewal must be submitted to the local Migration Department (UvaOG) at least 15–20 days prior to the expiry of the current visa.\n\nBasis: A new rectoral decree confirming your advancement to the next academic semester and verification of up-to-date tuition payments.\n\nRestrictions\n\nNo Direct Employment: The A-2 student visa does not grant full commercial work rights. Foreign students cannot work legally unless they acquire a separate work permit from the Agency for External Labor Migration.\n\nInstitutional Lock: Your visa is legally tied to your specific university. If you drop out, are expelled, or transfer, your visa is immediately canceled, and you must exit the country to re-apply.\n\nExceptions\n\nCIS Country Nationals: Students holding passports from visa-free CIS nations (e.g., Russia, Kazakhstan, Belarus, Tajikistan) do not need an A-2 student visa. They study purely based on their national passport and a renewable temporary registration certificate.\n\nFrequently Asked Questions\n\nCan I enter Uzbekistan on a tourist visa and change it to a student visa inside the country? No. Officially switching visa categories from a tourist track to a student track without exiting the country is prohibited. You must leave Uzbekistan and return on an official student invitation track.\n\nWhere am I allowed to live during my studies? You may reside in a university dormitory or rent a private apartment. In both scenarios, either the university administration or your landlord must register your physical location on the E-mehmon system for the duration of your visa.\n\nOfficial Sources\n\nVisa Support Approvals: Ministry of Foreign Affairs (MFA) of Uzbekistan\n\nElectronic Visa Processing: Official E-Visa Portal\n\nRelated Documents"
+    },
+    {
+      "id": "student-visa-a3e5f98d-4",
+      "title": "Student visas",
+      "topic": "student-visa",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Student visas.docx",
+      "sourceSha256": "c1bf141bd66c86ba1cfa8d8a82c7cb7454c0c763842c99ea859b224ed2704879",
+      "content": "Related Documents\n\nLaw of the Republic of Uzbekistan \"On the Legal Status of Foreign Citizens and Stateless Persons.\"\n\nCabinet of Ministers Resolution on the Rules of Entry, Exit, and Residence for Foreign Nationals.\n\nCategory | Required Documents\n\nIdentity | National passport valid for at least 6 months past the requested visa expiry date.\n\nAuthorization | Official letter or approved Telex invitation code from the MFA of Uzbekistan.\n\nApplication | Completed and signed visa application form with a 3x4 cm passport photo.\n\nAcademic Proof | Official university enrollment decree or letter of acceptance from the rector.\n\nMedical | HIV clearance certificate (mandatory for long-term residency tracks)."
+    },
+    {
+      "id": "temporary-residence-d01d444c-1",
+      "title": "Temporary residence permits",
+      "topic": "temporary-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Temporary residence permits.docx",
+      "sourceSha256": "23e8153a584b1b16bf0d529c5610bf3630558b30f17064f3641f5c1a317876e3",
+      "content": "Temporary residence permits\n\nUzbekistan issues temporary residence permits (known as temporary registration or Vremennaya Registratsiya) to foreign nationals for durations ranging from 3 days up to 6 months per stay. The process requires active cooperation between the visitor and the host (e.g., employer, educational institution, or property owner), with modern biometric verifications like Face-ID now required for residential rentals.\n\nSummary\n\nRule: Foreigners staying outside hotels must secure a temporary stay registration.\n\nDeadline: Must be requested within 3 working days of crossing the border.\n\nHow: Processed online via state portals or in person at migration offices.\n\nOverview\n\nA temporary residence permit is a mandatory legal record of a foreigner's geographic stay in Uzbekistan. Unlike a Permanent Residence Permit (which takes months to issue and permits long-term settlement), the temporary version functions as a flexible stay clearance tied to a specific purpose, such as work, study, or family visits.\n\nEligibility\n\nAny foreign national who has entered Uzbekistan legally (via a visa or visa-free framework) qualifies for temporary residence, provided they belong to one of these groups:\n\nWorkers: Foreigners employed by a registered Uzbek company.\n\nStudents: Individuals enrolled in licensed domestic universities.\n\nGuests: People visiting friends or family members who own residential property.\n\nPatients: Foreign nationals receiving long-term treatment at a local medical facility.\n\nRequirements\n\nOwner Consent: The landlord or host must formally approve the registration.\n\nPINFL Requirement: Registered foreigners are assigned a Personal Identification Number (PINFL) by migration authorities."
+    },
+    {
+      "id": "temporary-residence-d01d444c-2",
+      "title": "Temporary residence permits",
+      "topic": "temporary-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Temporary residence permits.docx",
+      "sourceSha256": "23e8153a584b1b16bf0d529c5610bf3630558b30f17064f3641f5c1a317876e3",
+      "content": "PINFL Requirement: Registered foreigners are assigned a Personal Identification Number (PINFL) by migration authorities.\n\nGeographic Boundary: You must legally live at the exact address stated on your digital registration form.\n\nRequired Documents\n\nThe required dossier varies based on the duration of your stay:\n\nApplication Steps\n\nLegal Entry: Cross into Uzbekistan and clear border checkpoints.\n\nIdentity Setup: Apply for your PINFL number at a local Public Service Center if stay exceeds basic limits.\n\nOwner Verification: If renting, the property owner verifies their identity using Face-ID or Mobile-ID through state portals.\n\nDossier Submission: Submit paperwork online via the EPIGU (My.gov.uz) Portal or in person at the Migration Department of Internal Affairs (MvaFRB).\n\nCollection: Receive your paper or digital temporary registration certificate embedded with a protective bar-code.\n\nProcessing Time\n\nOnline Submissions: 1 working day once the landlord approves the system request.\n\nIn-Person Visits: Usually processed same-day at local migration desks.\n\nFees\n\nHotel Stays: Included directly in your nightly room rate via automated systems.\n\nPrivate Stays: A state duty ranging between $10 and $20 depending on the duration and type of visa.\n\nValidity\n\nRange: Granted for durations from 3 days up to a maximum of 6 months.\n\nRule: Your residency window cannot exceed the validity period of your entry visa.\n\nRenewal\n\nTimeline: You must file for an extension at least 3 working days prior to your current permit expiring.\n\nBasis: Extended upon receiving an official renewal request letter from your university, employer, or host.\n\nRestrictions\n\nThe 3-Day Relocation Rule: If you move to a different region within Uzbekistan, you must register at your new location within 3 days."
+    },
+    {
+      "id": "temporary-residence-d01d444c-3",
+      "title": "Temporary residence permits",
+      "topic": "temporary-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Temporary residence permits.docx",
+      "sourceSha256": "23e8153a584b1b16bf0d529c5610bf3630558b30f17064f3641f5c1a317876e3",
+      "content": "The 3-Day Relocation Rule: If you move to a different region within Uzbekistan, you must register at your new location within 3 days.\n\nPhysical Address Matching: Law enforcement conducts random checks. Living at an address different from your registration triggers immediate penalizations.\n\nLeaving the Country: Crossing an international border cancels your temporary stay file. You must re-register from scratch when you return.\n\nExceptions\n\nThe following groups are exempt from temporary residence registration:\n\nHeads of foreign states, government leaders, and official state delegations.\n\nForeigners visiting on holiday for under 3 working days.\n\nCrew members of international commercial aircraft, trains, or transiting vehicles.\n\nFrequently Asked Questions\n\nDoes my hotel registration cover my whole trip? Only for the days you are checked in. If you leave the hotel to camp or sleep at a friend's house, a separate registration must be created on E-mehmon within 3 days.\n\nCan I buy real estate to get temporary residence? Buying property unlocks Permanent Residence rather than temporary stay. The investment benchmarks are $300,000 in Tashkent or $100,000–$200,000 in other regions.\n\nOfficial Sources\n\nDigital Self-Registration: E-mehmon Tourism Portal\n\nE-Government Interactive Submissions: Official EPIGU Portal\n\nRelated Documents\n\nCabinet of Ministers Resolution No. 224 (Regulating local residency rules)\n\nLaw on the Registration of Foreign Citizens and Stateless Persons\n\nDocument Category | Short Stay (Up to 30 Days) | Long Stay (30 Days to 6 Months)\n\nIdentity | National passport copy | Original national passport\n\nApplication | Digital form via E-mehmon | Written application & official host request letter"
+    },
+    {
+      "id": "temporary-residence-d01d444c-4",
+      "title": "Temporary residence permits",
+      "topic": "temporary-residence",
+      "url": "https://my.gov.uz/en/for-foreigners",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Temporary residence permits.docx",
+      "sourceSha256": "23e8153a584b1b16bf0d529c5610bf3630558b30f17064f3641f5c1a317876e3",
+      "content": "Application | Digital form via E-mehmon | Written application & official host request letter\n\nHousing Proof | Property title deeds & owner consent | Notarized lease agreement or property deeds\n\nBiometrics | Digital photo upload | Face-ID / Mobile-ID owner confirmation\n\nFees | Hotel/Tourist tax receipt | State duty payment receipt"
+    },
+    {
+      "id": "visa-categories-1915cb0d-1",
+      "title": "Visa categories",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa categories.docx",
+      "sourceSha256": "47043ccf1312dcd7347b0237d835df844ed91f9357a0489e2e38acf1fd8c4903",
+      "content": "Uzbekistan issues entry visas categorized strictly by the primary purpose of your stay, which can be acquired via the E-visa portal (for select tourist/business entries) or through an embassy/consular mission (for specialized and long-term stays). [1, 2]\n\nOver 90 nationalities (including all EU states, the US, UK, Canada, Australia, and GCC nations) enjoy visa-free entry for short stays up to 30 days. If you require a formal visa, the primary statutory categories are structured below: [3, 4, 5, 6]\n\nShort-Term & General Travel Visas\n\nTourist Visa (T): Issued to leisure travelers. It can be requested as a single, double, or multiple-entry electronic visa via the official E-visa platform for stays up to 30 days. [1, 7, 8]\n\nBusiness Visa (B-2): For corporate representatives visiting for meetings, contract negotiations, or trade fairs. Short-term business visits can often be handled via the standard electronic path. [3, 7, 9]\n\nTransit Visa (Transit): For individuals traveling through Uzbekistan to a third country. It is valid for up to 3 days and requires proof of an onward ticket and a visa to your final destination. [10]\n\nPilgrimage/Ziyorat Visa: A dedicated tourist category issued to foreign citizens traveling specifically to explore religious, historical, and cultural heritage sites. [6]\n\nSpecialized & Long-Term Visas\n\nThese non-electronic visas are processed via an official invitation (Visa Support Letter) from an inviting entity in Uzbekistan and issued by an embassy or at Tashkent International Airport: [2, 11, 12]\n\nWork Visa (E): Issued to foreign nationals legally employed by a registered company in Uzbekistan. This requires prior employment authorization from the Agency for External Labor Migration. [6, 7, 13]"
+    },
+    {
+      "id": "visa-categories-1915cb0d-2",
+      "title": "Visa categories",
+      "topic": "visa-categories",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa categories.docx",
+      "sourceSha256": "47043ccf1312dcd7347b0237d835df844ed91f9357a0489e2e38acf1fd8c4903",
+      "content": "Work Visa (E): Issued to foreign nationals legally employed by a registered company in Uzbekistan. This requires prior employment authorization from the Agency for External Labor Migration. [6, 7, 13]\n\nStudent & Academic Visas (A-1 / Student): One-year renewable visas issued to students enrolled full-time in Uzbek educational institutions, or foreign researchers participating in academic exchanges. [6, 7, 14]\n\nVatandosh (Compatriot) Visa: A unique 2-year visa granted to individuals originally native to Uzbekistan and their family members, provided they are invited by relatives who are current Uzbek citizens. [14]\n\nInvestment Visa: A long-term multi-entry visa issued to foreign investors making significant financial or asset contributions to the local economy. Family members can be added under a dependent status. [15]\n\nMedical Visa: Valid for up to 3 months for individuals entering the country for clinical treatment at an authorized medical facility, issued upon receipt of an official institutional invitation. [14]\n\n[1] https://visarun.ai\n\n[2] https://www.advantour.com\n\n[3] https://www.sailglobal.com\n\n[4] https://gravion.uz\n\n[5] https://www.centraliatours.com\n\n[6] https://gov.uz\n\n[7] https://www.globalization-partners.com\n\n[8] https://advice.uz\n\n[9] https://my.gov.uz\n\n[10] https://gov.uz\n\n[11] https://advice.uz\n\n[12] https://uzembassy.uk\n\n[13] https://advice.uz\n\n[14] https://uzbekembassy.com.my\n\n[15] https://gov.uz"
+    },
+    {
+      "id": "mfa-visa-guidance-226131d9-1",
+      "title": "Visa to the Republic of Uzbekistan — MFA",
+      "topic": "mfa-visa-guidance",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa to the Republic of Uzbekistan MFA.docx",
+      "sourceSha256": "160c2cb1b43e983ed4745435f3e4dcd62e6d5be8ddb2cff411fc8e8c028c639a",
+      "content": "Ministry of foreign affairs of the Republic of Uzbekistan. (www.gov.uz)\n\nVisa to the Republic of Uzbekistan\n\nForeign citizens and stateless persons may enter Uzbekistan and transit through its territory only if they have entry visas in accordance with the legislation of the Republic of Uzbekistan. With the exception of citizens of countries for which a visa-free entry regime is established by bilateral international treaties of the Republic of Uzbekistan and Decrees of the President of the Republic of Uzbekistan (the list of such countries and information on the duration of the visa-free regime is provided below).\n\nVisas to foreign citizens and stateless persons are issued at diplomatic missions and consular offices of the Republic of Uzbekistan abroad on the basis of a visa confirmation (confirmation of the Consular and Legal Department of the Ministry of Foreign Affairs of the Republic of Uzbekistan).\n\nA visa is issued on the basis of an invitation-application from legal entities and individuals permanently or temporarily registered in the territory of Uzbekistan, submitted to the Consular and Legal Department of the Ministry of Foreign Affairs of the Republic of Uzbekistan.\n\nList of documents to be submitted when inviting foreign citizens by legal entities:\n\n- A visa application form filled out on the official letterhead of the organization, in the established format;\n\n- electronic application form obtained from the website evisa.mfa.uz;\n\n- Copies of the passports of the invited person, the head of the organization and the employee of the organization authorized to submit documents;\n\n- Copies of official documents of the organization (license, certificate, ID card, etc.);\n\n- Copies of employment orders from the head of the organization and authorized employee;"
+    },
+    {
+      "id": "mfa-visa-guidance-226131d9-2",
+      "title": "Visa to the Republic of Uzbekistan — MFA",
+      "topic": "mfa-visa-guidance",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa to the Republic of Uzbekistan MFA.docx",
+      "sourceSha256": "160c2cb1b43e983ed4745435f3e4dcd62e6d5be8ddb2cff411fc8e8c028c639a",
+      "content": "- Copies of employment orders from the head of the organization and authorized employee;\n\n- A copy of a power of attorney issued in the name of an authorized employee of the organization;\n\n- In cases where the visa is intended to be obtained at the Tashkent airport - copies of the air ticket or reservation;\n\n- A certificate of authorization to engage in labor activity issued to the proposed person by the Agency for Foreign Labor Migration under the Ministry of Employment and Labor Relations of the Republic of Uzbekistan.\n\nIn order to obtain an investment visa, a legal entity with foreign investments proposing to apply must submit one of the following documents in addition to the above:\n\n- on the amount of purchased shares of business companies (issued by the state enterprise \"Central Securities Depository\");\n\n- the amount of purchased shares of business entities, as well as the establishment of enterprises with foreign investment in the territory of the Republic of Uzbekistan (issued by the State Services Agency under the Ministry of Justice of the Republic of Uzbekistan or its territorial departments).\n\nIndividuals submit the following documents:\n\n- Visa application form of the established sample;\n\n- electronic application form obtained from the website evisa.mfa.uz;\n\n- Copies of passports of the proposed and proposing persons;\n\n- Original invitation letter from the internal affairs bodies;\n\n- In cases where the visa is intended to be obtained at the Tashkent airport - copies of the air ticket or reservation.\n\nWritten applications from legal entities and individuals submitted to the Ministry of Foreign Affairs of the Republic of Uzbekistan in accordance with the established procedure are considered within 4 working days."
+    },
+    {
+      "id": "mfa-visa-guidance-226131d9-3",
+      "title": "Visa to the Republic of Uzbekistan — MFA",
+      "topic": "mfa-visa-guidance",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa to the Republic of Uzbekistan MFA.docx",
+      "sourceSha256": "160c2cb1b43e983ed4745435f3e4dcd62e6d5be8ddb2cff411fc8e8c028c639a",
+      "content": "Written applications from legal entities and individuals submitted to the Ministry of Foreign Affairs of the Republic of Uzbekistan in accordance with the established procedure are considered within 4 working days.\n\nForeign citizens and stateless persons must submit the following documents to diplomatic missions and consular offices of the Republic of Uzbekistan abroad to obtain a visa:\n\n- passport or stateless person document (the validity of these documents must be at least 3 months longer than the visa);\n\n- 2 copies of a fully completed visa application form;\n\n- 2 color photos (passport size - 35x45mm).\n\nTo obtain a transit visa, foreign citizens and stateless persons, in addition to the above documents, must have a visa of the country of visit and travel documents confirming the date of departure from Uzbekistan to the destination country. In this case, the visa processing time is 3 days."
+    },
+    {
+      "id": "mfa-visa-guidance-226131d9-4",
+      "title": "Visa to the Republic of Uzbekistan — MFA",
+      "topic": "mfa-visa-guidance",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa to the Republic of Uzbekistan MFA.docx",
+      "sourceSha256": "160c2cb1b43e983ed4745435f3e4dcd62e6d5be8ddb2cff411fc8e8c028c639a",
+      "content": "To obtain a transit visa, foreign citizens and stateless persons, in addition to the above documents, must have a visa of the country of visit and travel documents confirming the date of departure from Uzbekistan to the destination country. In this case, the visa processing time is 3 days.\n\nCitizens of countries that do not have a diplomatic mission or consular representation of the Republic of Uzbekistan and stateless persons can obtain a visa upon arrival in Uzbekistan at the visa service sector of the Ministry of Foreign Affairs at the Tashkent International Airport. To do this, the inviting individual or legal entity on the territory of Uzbekistan must apply in advance to the Ministry of Foreign Affairs of the Republic of Uzbekistan in accordance with the established procedure, obtain an appropriate confirmation (stamp) from the Visa Service Department of the Consular Legal Department and send it to the invited person. This confirmation is presented by the invited person when purchasing an air ticket and passing passport control in his country, and on the basis of this document a visa is issued to him at the visa service sector of the Ministry of Foreign Affairs at the Tashkent International Airport.\n\nIn accordance with the legislation of the Republic of Uzbekistan, the following consular fees are established for the processing and issuance of visas:\n\na) For single-entry visas:\n\nUp to 7 days - 40 USD;\n\nUp to 15 days - 50 USD;\n\nUp to 30 days - 60 USD;\n\nUp to 3 months - 80 USD;\n\nUp to 6 months - 120 USD;\n\nUp to 1 year - 160 USD.\n\nNote: The tariff rate increases by $10 for each additional number of entries.\n\nb) For multiple-entry visas:\n\nUp to 6 months - 150 USD;\n\nUp to 1 year - 250 USD;\n\nUp to 2 years - 300 USD;\n\nUp to 3 years - 350 USD.\n\nc) For transit visas:"
+    },
+    {
+      "id": "mfa-visa-guidance-226131d9-5",
+      "title": "Visa to the Republic of Uzbekistan — MFA",
+      "topic": "mfa-visa-guidance",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa to the Republic of Uzbekistan MFA.docx",
+      "sourceSha256": "160c2cb1b43e983ed4745435f3e4dcd62e6d5be8ddb2cff411fc8e8c028c639a",
+      "content": "c) For transit visas:\n\nUp to 72 hours - 40 USD;\n\nfor a double transit visa - 50 US dollars.\n\nd) For tourist visas:\n\nFor 30 days - 40 USD.\n\nNote: The tariff rate increases by $10 for each additional number of entries.\n\ne) For group visas (the group must consist of at least 5 people, excluding children under 16 years of age):\n\nUp to 15 days - $15 (per person);\n\nUp to 30 days - $25 (per person).\n\nf) electronic visa:\n\nFor a single-entry electronic visa - 20 USD;\n\nFor a double-entry electronic visa for up to 30 days - 35 USD;\n\nFor a multiple-entry electronic visa for up to 30 days - 50 USD;\n\nFor issuing a group e-visa for up to 30 days - from 20 USD per person.\n\nIn addition, fees are charged at the time of visa issuance to cover actual costs associated with visa processing. The amount of such fees depends on the location of the visa processing (regardless of the applicant's citizenship)."
+    },
+    {
+      "id": "visa-free-entry-9e548d01-1",
+      "title": "Visa-free entry to Uzbekistan",
+      "topic": "visa-free-entry",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa-free entry to Uzbekistan.docx",
+      "sourceSha256": "2c7085c0bfcc3ef4e3a04ab77fbf3d4a0a2a0dd198fe69988cb09e564a7e362c",
+      "content": "As of 2026, citizens from over 90 countries can enter Uzbekistan completely visa-free, with the permitted duration of stay ranging from 30 to 90 days depending on nationality. [1, 2]\n\nThe visual map below outlines global access, followed by the specific breakdowns by country and stay limits:\n\nUp to 90 Days\n\nCitizens of the following countries can stay in Uzbekistan for up to 90 days without a visa: [3]\n\nArmenia\n\nAzerbaijan\n\nBelarus\n\nGeorgia\n\nKazakhstan\n\nMoldova\n\nRussia\n\nUkraine [4]\n\nUp to 60 Days\n\nKyrgyzstan [4]\n\nUp to 30 Days\n\nCitizens of the United States, United Kingdom, European Union member states, GCC countries, and several others can enter visa-free for up to 30 days: [1, 5, 6]\n\nAmericas: United States, Canada, Argentina, Brazil, Chile.\n\nEurope: All EU/Schengen countries (e.g., Germany, France, Italy, Spain), United Kingdom, Switzerland, Norway, Iceland, Monaco.\n\nAsia & Oceania: Australia, New Zealand, Japan, South Korea, Singapore, Malaysia, Indonesia, Israel, Turkey, Mongolia, Tajikistan.\n\nMiddle East / GCC: United Arab Emirates, Saudi Arabia, Qatar, Kuwait, Oman, Bahrain. [1, 5, 6, 7, 8]\n\nSpecial Exemptions\n\nUnder 16: Foreign citizens of any nationality under the age of 16 enjoy visa-free entry for up to 90 days, provided they hold a valid international passport and travel with a legal guardian. [3, 9]\n\nUzbekistan permits visa-free entry for citizens of over 90 countries for periods ranging from 30 days to an unlimited stay. Eligible travelers simply present a valid passport at any border checkpoint without prior electronic or embassy applications.\n\nSummary\n\nRule: Enter without a pre-arranged visa.\n\nDuration: 30, 60, 90 days, or unlimited depending on nationality.\n\nKey Duty: Mandatory local residence registration within 3 working days of arrival.\n\nOverview"
+    },
+    {
+      "id": "visa-free-entry-9e548d01-2",
+      "title": "Visa-free entry to Uzbekistan",
+      "topic": "visa-free-entry",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa-free entry to Uzbekistan.docx",
+      "sourceSha256": "2c7085c0bfcc3ef4e3a04ab77fbf3d4a0a2a0dd198fe69988cb09e564a7e362c",
+      "content": "Overview\n\nUzbekistan's simplified entry program promotes tourism and business. Eligible international travelers cross air, land, or rail borders seamlessly by bypassing consulate applications and fees.\n\nEligibility & Stays\n\nStays are categorized clearly by your passport origin:\n\nRequirements & Documents\n\nTo pass through immigration smoothly, travelers must bring:\n\nValid Passport: Your national passport must be valid for at least 6 months past your arrival date.\n\nBlank Pages: At least one empty page for entry and exit stamps.\n\nChildren's Papers: Minor travelers under 16 need their own biometric passport.\n\nProof of Transit: A valid ticket to a third country if utilizing the 5-day air transit exemption.\n\nApplication Steps & Processing\n\nSteps: No advance application exists. Proceed straight to border control.\n\nTime: Instant processing at the border counter.\n\nFees: $0 (Entirely free of consular charges).\n\nValidity & Renewal\n\nValidity: Clock starts the exact calendar day you clear border customs.\n\nRenewal: Visa-free periods cannot be extended inside the country for tourist visits.\n\nVisa Runs: Same-day exit and re-entry via a land border (a \"visa run\") resets the 30-day clock. No official cooling-off limit applies between visits.\n\nRestrictions & Pitfalls\n\nThe 3-Day Registration Rule: You must register your location with immigration within 3 working days. Hotels handle this automatically and give you a physical slip. If staying with friends or in private rentals, your host must register you on the Emehmon portal.\n\nKeep Slips: Keep all registration slips inside your passport. Border police might ask them when you exit the country.\n\nOverstay Fines: Overstaying your visa-free window triggers fines and potential future travel bans.\n\nExceptions"
+    },
+    {
+      "id": "visa-free-entry-9e548d01-3",
+      "title": "Visa-free entry to Uzbekistan",
+      "topic": "visa-free-entry",
+      "url": "https://gov.uz/en/mfa/activity_page/o-zbekiston-respublikasi-vizasi",
+      "reviewedAt": "2026-08-09",
+      "sourceFile": "Visa-free entry to Uzbekistan.docx",
+      "sourceSha256": "2c7085c0bfcc3ef4e3a04ab77fbf3d4a0a2a0dd198fe69988cb09e564a7e362c",
+      "content": "Exceptions\n\nUnder 16: Minors under 16 from any country enter visa-free for up to 90 days if traveling with a legally documented guardian.\n\nAged 55+: Seniors from Vietnam can visit visa-free for up to 30 days even if standard age groups from those countries require alternative tracks.\n\nFrequently Asked Questions\n\nDo I need a return ticket to enter? Immigration rarely demands proof of onward travel at the gate, but keeping a flight copy handy prevents unexpected terminal delays.\n\nWhat if my country is not on the visa-free list? You can instantly apply for a 30-day single or multi-entry tourist visa online via the Official Uzbekistan E-Visa Portal for a $20 fee.\n\n[1] https://craftnculture.uz\n\n[2] https://www.advantour.com\n\n[3] https://uzembassy.uk\n\n[4] https://en.wikipedia.org\n\n[5] https://craftnculture.uz\n\n[6] https://visarun.ai\n\n[7] https://www.uzairways.com\n\n[8] https://www.advantour.com\n\n[9] https://www.un.int\n\n[10] https://e-visa.gov.uz\n\nPermitted Stay | Eligible Nationalities / Regions\n\nUnlimited | Russia, Belarus, Armenia, Azerbaijan, Georgia, Kazakhstan, Moldova, Ukraine.\n\n60 Days | Kyrgyzstan.\n\n30 Days | USA, UK, EU/Schengen nations, Canada, Australia, New Zealand, Japan, South Korea, Singapore, UAE, and GCC nations.\n\n15 Days | Citizens of Turkmenistan entering the specific Uzbekistan-Turkmenistan Free Trade Zone."
+    }
+  ]
+}

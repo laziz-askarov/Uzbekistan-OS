@@ -4,8 +4,9 @@ import "@uzbekistan-os/design-system/components.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Uzbekistan OS",
-  description: "Evidence-backed guidance for life and business in Uzbekistan.",
+  title: "Uzbekistan visa guide | Uzbekistan OS",
+  description:
+    "Evidence-backed guidance for visa-free entry, e-visas, consular visas, and registration in Uzbekistan.",
 };
 
 export default function RootLayout({

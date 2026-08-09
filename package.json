@@ -11,6 +11,7 @@
     "dev": "pnpm --filter @uzbekistan-os/web dev",
     "format:check": "prettier --check \"apps/web/**/*.{ts,tsx,css,mjs,json}\" \"packages/design-system/**/*.{ts,tsx,css,json,md}\" package.json pnpm-workspace.yaml docker-compose.yml \".github/**/*.yml\"",
     "lint": "pnpm --filter @uzbekistan-os/web lint",
+    "test": "pnpm --filter @uzbekistan-os/web test",
     "typecheck": "pnpm --filter @uzbekistan-os/web typecheck"
   },
   "devDependencies": {
