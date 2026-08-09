@@ -62,6 +62,37 @@ const initialChats: Chat[] = [
   { id: 1, title: "New conversation", messages: [] },
 ];
 
+const completedSectionOrder = [
+  "route",
+  "fees",
+  "requirements",
+  "documents",
+  "application",
+  "processing",
+  "validity",
+  "arrival",
+  "registration",
+  "restrictions",
+] as const;
+
+function orderedAnswerSections(answer: VisaApiAnswer) {
+  const rank = (heading: string) => {
+    const normalizedHeading = heading.toLocaleLowerCase();
+    const index = completedSectionOrder.findIndex((keyword) =>
+      normalizedHeading.includes(keyword),
+    );
+    return index === -1 ? completedSectionOrder.length : index;
+  };
+
+  return answer.sections
+    .map((section, originalIndex) => ({ section, originalIndex }))
+    .sort((left, right) =>
+      rank(left.section.heading) - rank(right.section.heading) ||
+      left.originalIndex - right.originalIndex,
+    )
+    .map(({ section }) => section);
+}
+
 function Icon({ name, size = 16 }: { name: "shield" | "panel" | "plus" | "send" | "arrow" | "external"; size?: number }) {
   const common = {
     width: size,
@@ -85,6 +116,7 @@ function Icon({ name, size = 16 }: { name: "shield" | "panel" | "plus" | "send" 
 function GeneratedAnswerCard({ message }: { message: Message }) {
   const answer = message.answer;
   if (!answer) return null;
+  const orderedSections = orderedAnswerSections(answer);
   const profileTotal = answer.profile.length + answer.missingProfileFields.length;
   const progress = profileTotal === 0 ? 0 : (answer.profile.length / profileTotal) * 100;
   const sourcesById = new Map(message.sources?.map((source) => [source.id, source]));
@@ -129,7 +161,11 @@ function GeneratedAnswerCard({ message }: { message: Message }) {
   }
 
   return (
-    <div className={styles.generatedAnswer}>
+    <div
+      className={styles.generatedAnswer}
+      aria-label={answer.status === "answered" ? "Completed visa guidance" : "Visa guidance status"}
+    >
+      <p className={styles.srOnly}>{answer.summary}</p>
       <div className={styles.workflowBanner}>
         <span>{message.generated ? "Workflow ready" : "Safe fallback"}</span>
         <div>
@@ -150,7 +186,7 @@ function GeneratedAnswerCard({ message }: { message: Message }) {
           </dl>
         </section>
       ) : null}
-      {answer.sections.map((section) => (
+      {orderedSections.map((section) => (
         <section className={styles.generatedSection} key={section.heading}>
           <h3>{section.heading}</h3>
           <MessageResponse>{section.content}</MessageResponse>
@@ -302,7 +338,12 @@ export default function ChatWorkspace() {
               {active.messages.map((message) => (
                 <article key={message.id} className={`${styles.message} ${message.role === "user" ? styles.userMessage : styles.assistantMessage}`}>
                   <div className={styles.messageAvatar}>{message.role === "user" ? "V" : <Icon name="shield" size={15} />}</div>
-                  <div className={styles.messageContent}><div className={styles.messageText}><MessageResponse>{message.text}</MessageResponse></div>{message.answer ? <GeneratedAnswerCard message={message} /> : null}</div>
+                  <div className={styles.messageContent}>
+                    {message.answer?.status === "answered" ? null : (
+                      <div className={styles.messageText}><MessageResponse>{message.text}</MessageResponse></div>
+                    )}
+                    {message.answer ? <GeneratedAnswerCard message={message} /> : null}
+                  </div>
                 </article>
               ))}
               {isSending ? (

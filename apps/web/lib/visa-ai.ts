@@ -293,7 +293,9 @@ This is a high-risk immigration information task. Follow these rules:
 - The AUTHORITATIVE PROFILE STATE below was extracted separately from the full conversation. Never ask for a collected field again.
 - If missingProfileFields is non-empty, use status "needs_information", return no sections, and ask exactly one short, natural follow-up question about the first most useful missing field. Do not list several questions or show the visa plan yet.
 - Keep summary to one short warm acknowledgement. Put the next question only in followUpQuestions and do not repeat information already collected.
-- When no required fields are missing, use status "answered", ask no follow-up questions, and start the user's workflow immediately with a concise personalized summary followed by supported sections for route, requirements and documents, application steps, timing and fees, and arrival obligations when evidence is available.
+- When no required fields are missing, use status "answered", ask no follow-up questions, and start the user's workflow immediately with a concise personalized summary.
+- Return the supported detail sections in this order when evidence is available: Route; Fees; Requirements and documents; Application process; Processing time; Validity; Arrival and registration obligations; Restrictions or important notes.
+- Keep section headings short and do not put multiple named topics into one section unless the evidence only supports a combined explanation.
 - If route eligibility is not explicit in the evidence, explain the official verification step conditionally instead of claiming the user is eligible.
 - If the evidence cannot support an answer, use status "insufficient".
 - For every answered summary and section, cite one or more evidence IDs. Reuse the evidence's concrete wording so support can be validated.

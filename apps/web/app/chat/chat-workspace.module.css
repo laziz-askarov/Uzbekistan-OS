@@ -393,7 +393,8 @@
 
 .profileFacts > div {
   min-width: 0;
-  padding: 6px 9px;
+  min-height: 30px;
+  padding: 7px 10px;
   display: flex;
   align-items: baseline;
   gap: 5px;
@@ -404,7 +405,7 @@
 
 .profileFacts dt {
   color: #94a3b8;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 750;
   text-transform: capitalize;
 }
@@ -413,7 +414,7 @@
   margin: 0;
   overflow: hidden;
   color: #334155;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -482,7 +483,7 @@
 
 .generatedSection > div {
   color: #4b5563;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 

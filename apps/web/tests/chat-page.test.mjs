@@ -88,6 +88,20 @@ test("visa intake gathers one detail at a time before starting the workflow", as
   assert.match(workspace, /result\.answer\.followUpQuestions\[0\]/);
 });
 
+test("completed visa guidance uses the designed workflow card presentation", async () => {
+  const workspace = await readFile(workspaceUrl, "utf8");
+  const ai = await readFile(aiUrl, "utf8");
+  assert.match(workspace, /completedSectionOrder/);
+  assert.match(workspace, /orderedAnswerSections\(answer\)/);
+  assert.match(workspace, /"Completed visa guidance" : "Visa guidance status"/);
+  assert.match(workspace, /message\.answer\?\.status === "answered"/);
+  assert.match(workspace, /styles\.workflowBanner/);
+  assert.match(workspace, /styles\.profileSummary/);
+  assert.match(workspace, /styles\.generatedSection/);
+  assert.match(workspace, /styles\.generatedSources/);
+  assert.match(ai, /Route; Fees; Requirements and documents; Application process/);
+});
+
 test("visa requests are routed through explicit deterministic workflows", async () => {
   const workflows = await readFile(workflowsUrl, "utf8");
   for (const workflow of [
