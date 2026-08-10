@@ -31,9 +31,7 @@ def test_semantic_chunker_preserves_heading_order_and_citation_provenance() -> N
     assert [chunk.ordinal for chunk in chunks] == [0, 1]
     assert chunks[0].content == "First complete concept.\n\nSecond complete concept."
     assert chunks[0].attributes["heading"] == "Requirements"
-    assert chunks[0].attributes["citations"][0]["locator"] == (
-        "requirements source section"
-    )
+    assert chunks[0].attributes["citations"][0]["locator"] == ("requirements source section")
 
 
 def test_semantic_chunker_never_crosses_sections_or_size_boundaries() -> None:

@@ -225,9 +225,7 @@ def validate_source_registry() -> None:
         environment = registry["environment"]
         proposed = path.name.endswith(".proposed.json")
         expected_name = (
-            f"registry.{environment}.proposed.json"
-            if proposed
-            else f"registry.{environment}.json"
+            f"registry.{environment}.proposed.json" if proposed else f"registry.{environment}.json"
         )
         if path.name != expected_name:
             raise ValueError(f"Source registry filename does not match environment: {path}")

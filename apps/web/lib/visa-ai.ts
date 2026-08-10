@@ -19,7 +19,7 @@ export const chatRequestSchema = z.object({
       }),
     )
     .min(1)
-    .max(12),
+    .max(24),
 });
 
 const citationIds = z.array(z.string().min(1)).max(6);
@@ -49,23 +49,48 @@ function validateAnswerShape(
   context: z.RefinementCtx,
 ) {
   if (answer.status === "answered" && answer.sections.length === 0) {
-    context.addIssue({ code: "custom", path: ["sections"], message: "Answered responses require sections." });
+    context.addIssue({
+      code: "custom",
+      path: ["sections"],
+      message: "Answered responses require sections.",
+    });
   }
   if (answer.status === "answered" && answer.summaryCitationIds.length === 0) {
-    context.addIssue({ code: "custom", path: ["summaryCitationIds"], message: "Answered summaries require citations." });
+    context.addIssue({
+      code: "custom",
+      path: ["summaryCitationIds"],
+      message: "Answered summaries require citations.",
+    });
   }
-  if (answer.status === "needs_information" && answer.followUpQuestions.length !== 1) {
-    context.addIssue({ code: "custom", path: ["followUpQuestions"], message: "Gathering requires exactly one question." });
+  if (
+    answer.status === "needs_information" &&
+    answer.followUpQuestions.length !== 1
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["followUpQuestions"],
+      message: "Gathering requires exactly one question.",
+    });
   }
   if (answer.status === "needs_information" && answer.sections.length > 0) {
-    context.addIssue({ code: "custom", path: ["sections"], message: "Do not start the plan before intake is complete." });
+    context.addIssue({
+      code: "custom",
+      path: ["sections"],
+      message: "Do not start the plan before intake is complete.",
+    });
   }
   if (answer.status === "answered" && answer.followUpQuestions.length > 0) {
-    context.addIssue({ code: "custom", path: ["followUpQuestions"], message: "A completed plan cannot ask intake questions." });
+    context.addIssue({
+      code: "custom",
+      path: ["followUpQuestions"],
+      message: "A completed plan cannot ask intake questions.",
+    });
   }
 }
 
-const visaResponseContentSchema = z.object(answerContentShape).superRefine(validateAnswerShape);
+const visaResponseContentSchema = z
+  .object(answerContentShape)
+  .superRefine(validateAnswerShape);
 
 export const visaAnswerSchema = z
   .object({
@@ -84,9 +109,40 @@ export type VisaChatResult = {
   generated: boolean;
 };
 
-const forbiddenControlText = ["<|system|>", "<|assistant|>", "[system]", "begin system message"];
+const forbiddenControlText = [
+  "<|system|>",
+  "<|assistant|>",
+  "[system]",
+  "begin system message",
+];
+const officialSearchDomains = [
+  "gov.uz",
+  "my.gov.uz",
+  "e-visa.gov.uz",
+  "lex.uz",
+] as const;
 const stopWords = new Set([
-  "a", "an", "and", "are", "as", "at", "be", "before", "by", "for", "from", "in", "is", "it", "of", "on", "or", "the", "to", "with", "your",
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "before",
+  "by",
+  "for",
+  "from",
+  "in",
+  "is",
+  "it",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "with",
+  "your",
 ]);
 
 function meaningfulTokens(value: string): Set<string> {
@@ -101,23 +157,36 @@ function meaningfulTokens(value: string): Set<string> {
 function evidenceSupports(text: string, citations: VisaEvidence[]): boolean {
   const claimTokens = meaningfulTokens(text);
   if (claimTokens.size === 0) return false;
-  const evidenceTokens = meaningfulTokens(citations.map((citation) => citation.content).join(" "));
+  const evidenceTokens = meaningfulTokens(
+    citations.map((citation) => citation.content).join(" "),
+  );
   let matched = 0;
   for (const token of claimTokens) if (evidenceTokens.has(token)) matched += 1;
   const requiredMatches = Math.min(2, claimTokens.size);
   return matched >= requiredMatches && matched / claimTokens.size >= 0.1;
 }
 
-function validateEvidence(answer: VisaAnswer, sources: VisaEvidence[]): boolean {
+function validateEvidence(
+  answer: VisaAnswer,
+  sources: VisaEvidence[],
+): boolean {
   if (answer.status !== "answered") return true;
   const sourcesById = new Map(sources.map((source) => [source.id, source]));
   const validateClaim = (text: string, ids: string[]) => {
-    const citations = ids.map((id) => sourcesById.get(id)).filter((item): item is VisaEvidence => Boolean(item));
-    return citations.length === ids.length && ids.length > 0 && evidenceSupports(text, citations);
+    const citations = ids
+      .map((id) => sourcesById.get(id))
+      .filter((item): item is VisaEvidence => Boolean(item));
+    return (
+      citations.length === ids.length &&
+      ids.length > 0 &&
+      evidenceSupports(text, citations)
+    );
   };
   return (
     validateClaim(answer.summary, answer.summaryCitationIds) &&
-    answer.sections.every((section) => validateClaim(section.content, section.citationIds))
+    answer.sections.every((section) =>
+      validateClaim(section.content, section.citationIds),
+    )
   );
 }
 
@@ -134,15 +203,24 @@ function validateProfile(answer: VisaAnswer, workflow: VisaWorkflow): boolean {
     [...required].every((field) => unique.has(field));
   if (!fieldsAreKnown || !isCompletePartition) return false;
   if (answer.status === "needs_information") {
-    return missing.length > 0 && answer.followUpQuestions.length === 1 && answer.sections.length === 0;
+    return (
+      missing.length > 0 &&
+      answer.followUpQuestions.length === 1 &&
+      answer.sections.length === 0
+    );
   }
   if (answer.status === "answered") {
-    return missing.length === 0 && collected.length === required.size && answer.followUpQuestions.length === 0;
+    return (
+      missing.length === 0 &&
+      collected.length === required.size &&
+      answer.followUpQuestions.length === 0
+    );
   }
   return true;
 }
 
-const emptyProfileValue = /^(unknown|not provided|not specified|missing|n\/?a|to be provided)$/i;
+const emptyProfileValue =
+  /^(unknown|not provided|not specified|missing|n\/?a|to be provided)$/i;
 
 type ProfileState = Pick<VisaAnswer, "profile" | "missingProfileFields">;
 
@@ -172,7 +250,9 @@ function normalizeExtractedProfile(
   if (
     required.has("nationality") &&
     !collectedFields.has("nationality") &&
-    /\b(?:u\.?s\.?|united states|american)\s+(?:citizen|national)\b/i.test(userText)
+    /\b(?:u\.?s\.?|united states|american)\s+(?:citizen|national)\b/i.test(
+      userText,
+    )
   ) {
     profile.push({ field: "nationality", value: "United States" });
     collectedFields.add("nationality");
@@ -214,7 +294,9 @@ async function extractProfile(
 ): Promise<ProfileState> {
   const { output } = await generateText({
     model: openai(process.env.OPENAI_MODEL_ID ?? "gpt-5.4-mini"),
-    output: Output.object({ schema: z.object({ profile: z.array(profileItemSchema).max(8) }) }),
+    output: Output.object({
+      schema: z.object({ profile: z.array(profileItemSchema).max(8) }),
+    }),
     prompt: compileProfilePrompt(workflow, messages),
     maxOutputTokens: 500,
   });
@@ -223,31 +305,41 @@ async function extractProfile(
 
 const intakeQuestions: Record<string, string> = {
   nationality: "What nationality is shown in your passport?",
-  "passport type": "What type of passport will you travel with (for example, ordinary, diplomatic, or official)?",
+  "passport type":
+    "What type of passport will you travel with (for example, ordinary, diplomatic, or official)?",
   "travel purpose": "What is the main purpose of your trip?",
   "intended stay": "How long do you plan to stay in Uzbekistan?",
   "sponsor or host": "Will you have a sponsor or host in Uzbekistan?",
   "travel dates": "What dates do you plan to travel?",
   "number of entries": "Will you need single, double, or multiple entry?",
-  "business purpose": "What business activity will you carry out in Uzbekistan?",
+  "business purpose":
+    "What business activity will you carry out in Uzbekistan?",
   "inviting Uzbek entity": "Which organization in Uzbekistan is inviting you?",
   employer: "Who will employ you in Uzbekistan?",
   "job role": "What job will you perform in Uzbekistan?",
-  "authorization status": "Has your employer started or obtained the required work authorization?",
+  "authorization status":
+    "Has your employer started or obtained the required work authorization?",
   institution: "Which educational institution will you attend?",
   "program type": "What type of study program will you attend?",
   "study dates": "When does your study program begin and end?",
-  "admission status": "Have you received formal admission from the institution?",
+  "admission status":
+    "Have you received formal admission from the institution?",
   relationship: "What is your relationship to the person you will visit?",
-  "host status": "What is your host's immigration or citizenship status in Uzbekistan?",
+  "host status":
+    "What is your host's immigration or citizenship status in Uzbekistan?",
   "host address": "What is your host's address in Uzbekistan?",
   "current status": "What is your current immigration status in Uzbekistan?",
-  "residence basis": "What is the basis for your planned residence in Uzbekistan?",
-  "family or sponsor": "Will a family member or sponsor support your residence application?",
+  "residence basis":
+    "What is the basis for your planned residence in Uzbekistan?",
+  "family or sponsor":
+    "Will a family member or sponsor support your residence application?",
   "current location": "Where are you currently located?",
-  "accommodation type": "Where will you stay (for example, a hotel, rental, or private home)?",
-  "arrival date": "When did you arrive, or when will you arrive, in Uzbekistan?",
-  "visa or entry type": "What visa or entry permission did you use to enter Uzbekistan?",
+  "accommodation type":
+    "Where will you stay (for example, a hotel, rental, or private home)?",
+  "arrival date":
+    "When did you arrive, or when will you arrive, in Uzbekistan?",
+  "visa or entry type":
+    "What visa or entry permission did you use to enter Uzbekistan?",
   "expiry date": "When does your current visa or permitted stay expire?",
   "planned departure": "When do you plan to leave Uzbekistan?",
 };
@@ -256,7 +348,37 @@ function questionForMissingField(field: string): string {
   return intakeQuestions[field] ?? `Please tell me your ${field}.`;
 }
 
-function safeFallback(workflow: VisaWorkflow, sources: VisaEvidence[]): VisaChatResult {
+const informationalQuestionPattern =
+  /\b(?:what (?:are|is|documents|requirements)|how (?:much|long|do|can)|fees?|cost|price|processing time|timeline|documents?|requirements?|application (?:steps|process)|where (?:do|can|should)|when (?:do|can|should)|explain|tell me about|list|validity|renewal|restriction|penalt|registration)\b/i;
+const personalizedRoutePattern =
+  /\b(?:which visa|what (?:type|kind) of visa|what visa (?:do|should|would)|help me (?:choose|find|determine)|(?:choose|find|recommend) (?:the )?(?:right|best|proper)?\s*visa|i (?:am|'m|plan to|intend to|want to|will be) (?:traveling|travelling|visiting|staying|working|studying|moving))\b/i;
+
+function intakeIsInProgress(
+  messages: z.infer<typeof chatRequestSchema>["messages"],
+): boolean {
+  const latestAssistantMessage = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant")?.content;
+  return latestAssistantMessage
+    ? Object.values(intakeQuestions).some((question) =>
+        latestAssistantMessage.includes(question),
+      )
+    : false;
+}
+
+export function questionNeedsPersonalization(
+  latestQuestion: string,
+  messages: z.infer<typeof chatRequestSchema>["messages"],
+): boolean {
+  if (informationalQuestionPattern.test(latestQuestion)) return false;
+  if (intakeIsInProgress(messages)) return true;
+  return personalizedRoutePattern.test(latestQuestion);
+}
+
+function safeFallback(
+  workflow: VisaWorkflow,
+  sources: VisaEvidence[],
+): VisaChatResult {
   return {
     workflow,
     sources,
@@ -279,8 +401,12 @@ function compilePrompt(
   sources: VisaEvidence[],
   messages: z.infer<typeof chatRequestSchema>["messages"],
   profileState: ProfileState,
+  requiresPersonalization: boolean,
 ): string {
-  const evidence = sources.map((source) => ({ id: source.id, content: source.content }));
+  const evidence = sources.map((source) => ({
+    id: source.id,
+    content: source.content,
+  }));
   return `You are the Uzbekistan OS visa guidance assistant.
 
 This is a high-risk immigration information task. Follow these rules:
@@ -290,6 +416,9 @@ This is a high-risk immigration information task. Follow these rules:
 - Never infer eligibility from nationality unless the supplied evidence explicitly states it.
 - Never invent fees, timelines, deadlines, legal outcomes, URLs or document requirements.
 - Treat this as a friendly conversation, not a form. Briefly acknowledge what the user just told you in natural language.
+- REQUEST MODE is either INFORMATION or PERSONALIZED ROUTE.
+- In INFORMATION mode, answer the question immediately from the evidence. Do not ask for nationality, passport type, dates, purpose, sponsor, host, or any other profile field. Use status "answered", no follow-up question, an empty profile, and only the sections needed to answer the question.
+- In PERSONALIZED ROUTE mode, use the profile workflow below and ask only for genuinely missing fields.
 - The AUTHORITATIVE PROFILE STATE below was extracted separately from the full conversation. Never ask for a collected field again.
 - If missingProfileFields is non-empty, use status "needs_information", return no sections, and ask exactly one short, natural follow-up question about the first most useful missing field. Do not list several questions or show the visa plan yet.
 - Keep summary to one short warm acknowledgement. Put the next question only in followUpQuestions and do not repeat information already collected.
@@ -304,6 +433,9 @@ This is a high-risk immigration information task. Follow these rules:
 WORKFLOW:
 ${JSON.stringify({ id: workflow.id, title: workflow.title, description: workflow.description, requiredProfile: workflow.requiredProfile })}
 
+REQUEST MODE:
+${requiresPersonalization ? "PERSONALIZED ROUTE" : "INFORMATION"}
+
 AUTHORITATIVE PROFILE STATE:
 ${JSON.stringify(profileState)}
 
@@ -314,10 +446,78 @@ UNTRUSTED CONVERSATION:
 ${JSON.stringify(messages)}`;
 }
 
+async function generateStructuredAnswer(
+  workflow: VisaWorkflow,
+  sources: VisaEvidence[],
+  messages: z.infer<typeof chatRequestSchema>["messages"],
+  profileState: ProfileState,
+  requiresPersonalization: boolean,
+): Promise<VisaAnswer> {
+  const { output } = await generateText({
+    model: openai(process.env.OPENAI_MODEL_ID ?? "gpt-5.4-mini"),
+    output: Output.object({ schema: visaResponseContentSchema }),
+    prompt: compilePrompt(
+      workflow,
+      sources,
+      messages,
+      profileState,
+      requiresPersonalization,
+    ),
+    maxOutputTokens: 2_000,
+  });
+  const nextMissingField = requiresPersonalization
+    ? profileState.missingProfileFields[0]
+    : undefined;
+  return visaAnswerSchema.parse({
+    ...output,
+    ...profileState,
+    ...(nextMissingField
+      ? {
+          status: "needs_information",
+          summary: "Thanks — I’ve saved the details you’ve shared so far.",
+          sections: [],
+          summaryCitationIds: [],
+          followUpQuestions: [questionForMissingField(nextMissingField)],
+        }
+      : {}),
+  });
+}
+
+async function searchOfficialWebEvidence(
+  question: string,
+): Promise<VisaEvidence[]> {
+  const result = await generateText({
+    model: openai(process.env.OPENAI_MODEL_ID ?? "gpt-5.4-mini"),
+    tools: {
+      web_search: openai.tools.webSearch({
+        externalWebAccess: true,
+        filters: { allowedDomains: [...officialSearchDomains] },
+        searchContextSize: "low",
+      }),
+    },
+    prompt: `Search current official Uzbekistan government sources for the answer to this visa or immigration question. Use only search results from the allowed official domains. Write concise factual research notes with exact rules, dates, fees, processing times, and eligibility only when the sources state them. Do not use general knowledge.\n\nQUESTION:\n${question}`,
+    maxOutputTokens: 1_200,
+  });
+  const reviewedAt = new Date().toISOString().slice(0, 10);
+  return result.sources
+    .filter((source) => source.sourceType === "url")
+    .map((source, index) => ({
+      id: `official-web-${index + 1}`,
+      title: source.title ?? new URL(source.url).hostname,
+      url: source.url,
+      reviewedAt,
+      content: result.text,
+      sourceFile: "Live official web search",
+      sourceSha256: "live-official-web-evidence",
+    }));
+}
+
 export async function generateVisaChatResult(
   messages: z.infer<typeof chatRequestSchema>["messages"],
 ): Promise<VisaChatResult> {
-  const latestQuestion = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+  const latestQuestion =
+    [...messages].reverse().find((message) => message.role === "user")
+      ?.content ?? "";
   const userContext = messages
     .filter((message) => message.role === "user")
     .map((message) => message.content)
@@ -325,36 +525,30 @@ export async function generateVisaChatResult(
   const workflow = selectVisaWorkflow(userContext);
   const sources = evidenceForWorkflow(workflow, userContext);
   const normalized = latestQuestion.toLocaleLowerCase();
-  if (forbiddenControlText.some((value) => normalized.includes(value))) return safeFallback(workflow, sources);
+  if (forbiddenControlText.some((value) => normalized.includes(value)))
+    return safeFallback(workflow, sources);
 
   try {
-    const profileState = await extractProfile(workflow, messages);
+    const requiresPersonalization = questionNeedsPersonalization(
+      latestQuestion,
+      messages,
+    );
+    const profileState = requiresPersonalization
+      ? await extractProfile(workflow, messages)
+      : { profile: [], missingProfileFields: [] };
     console.info("[visa-chat] profile context extracted", {
       workflowId: workflow.id,
       collectedCount: profileState.profile.length,
       missingCount: profileState.missingProfileFields.length,
     });
-    const { output } = await generateText({
-      model: openai(process.env.OPENAI_MODEL_ID ?? "gpt-5.4-mini"),
-      output: Output.object({ schema: visaResponseContentSchema }),
-      prompt: compilePrompt(workflow, sources, messages, profileState),
-      maxOutputTokens: 2_000,
-    });
-    const nextMissingField = profileState.missingProfileFields[0];
-    const answer = visaAnswerSchema.parse({
-      ...output,
-      ...profileState,
-      ...(nextMissingField
-        ? {
-            status: "needs_information",
-            summary: "Thanks — I’ve saved the details you’ve shared so far.",
-            sections: [],
-            summaryCitationIds: [],
-            followUpQuestions: [questionForMissingField(nextMissingField)],
-          }
-        : {}),
-    });
-    if (!validateProfile(answer, workflow)) {
+    const answer = await generateStructuredAnswer(
+      workflow,
+      sources,
+      messages,
+      profileState,
+      requiresPersonalization,
+    );
+    if (requiresPersonalization && !validateProfile(answer, workflow)) {
       console.warn("[visa-chat] profile validation rejected model output", {
         workflowId: workflow.id,
         status: answer.status,
@@ -363,20 +557,47 @@ export async function generateVisaChatResult(
       });
       return safeFallback(workflow, sources);
     }
-    if (!validateEvidence(answer, sources)) {
+    if (
+      answer.status === "insufficient" ||
+      !validateEvidence(answer, sources)
+    ) {
       console.warn("[visa-chat] evidence validation rejected model output", {
         workflowId: workflow.id,
         status: answer.status,
         summaryCitationCount: answer.summaryCitationIds.length,
-        sectionCitationCounts: answer.sections.map((section) => section.citationIds.length),
+        sectionCitationCounts: answer.sections.map(
+          (section) => section.citationIds.length,
+        ),
       });
-      return safeFallback(workflow, sources);
+      const onlineSources = await searchOfficialWebEvidence(latestQuestion);
+      if (onlineSources.length === 0) return safeFallback(workflow, sources);
+      const combinedSources = [...sources, ...onlineSources];
+      const onlineAnswer = await generateStructuredAnswer(
+        workflow,
+        combinedSources,
+        messages,
+        profileState,
+        requiresPersonalization,
+      );
+      if (
+        (requiresPersonalization && !validateProfile(onlineAnswer, workflow)) ||
+        !validateEvidence(onlineAnswer, combinedSources)
+      ) {
+        return safeFallback(workflow, combinedSources);
+      }
+      return {
+        answer: onlineAnswer,
+        workflow,
+        sources: combinedSources,
+        generated: true,
+      };
     }
     return { answer, workflow, sources, generated: true };
   } catch (error) {
     console.error("[visa-chat] generation failed", {
       error: error instanceof Error ? error.name : "UnknownError",
-      message: error instanceof Error ? error.message : "Unknown generation failure",
+      message:
+        error instanceof Error ? error.message : "Unknown generation failure",
       statusCode:
         typeof error === "object" && error !== null && "statusCode" in error
           ? error.statusCode

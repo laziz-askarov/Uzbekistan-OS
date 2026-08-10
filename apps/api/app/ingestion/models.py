@@ -111,10 +111,7 @@ class SourceRegistryEntry(BaseModel):
 
     @property
     def automatic_fetch_eligible(self) -> bool:
-        return (
-            self.manual_ingestion_eligible
-            and self.crawl_policy is CrawlPolicy.ALLOWED
-        )
+        return self.manual_ingestion_eligible and self.crawl_policy is CrawlPolicy.ALLOWED
 
 
 class SourceRegistry(BaseModel):

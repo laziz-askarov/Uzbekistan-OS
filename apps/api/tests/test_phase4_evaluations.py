@@ -22,9 +22,7 @@ from app.retrieval.planning import QueryRequest, RetrievalPlanner, RetrievalPlan
 ROOT = Path(__file__).resolve().parents[3]
 BENCHMARK_PATH = ROOT / "data/evaluations/phase-4-benchmark.v1.json"
 GATE_POLICY_PATH = ROOT / "data/evaluations/phase-4-gates.v1.json"
-PLANNING_BASELINE_PATH = (
-    ROOT / "data/evaluations/runs/phase-4-planning-baseline.v1.json"
-)
+PLANNING_BASELINE_PATH = ROOT / "data/evaluations/runs/phase-4-planning-baseline.v1.json"
 
 
 def test_frozen_benchmark_covers_every_flow_language_and_safety_category() -> None:

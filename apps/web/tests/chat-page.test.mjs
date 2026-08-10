@@ -34,10 +34,13 @@ test("chat workspace does not expose out-of-scope agent or appointment actions",
 test("chat sends bounded message history to the grounded server endpoint", async () => {
   const workspace = await readFile(workspaceUrl, "utf8");
   const api = await readFile(apiUrl, "utf8");
+  const ai = await readFile(aiUrl, "utf8");
   assert.match(workspace, /fetch\("\/api\/chat"/);
+  assert.match(workspace, /active\.messages[\s\S]*?\.slice\(-23\)/);
   assert.match(workspace, /MessageResponse/);
   assert.match(api, /chatRequestSchema\.safeParse/);
   assert.match(api, /x-request-id/);
+  assert.match(ai, /\.max\(24\)/);
 });
 
 test("chat starts with a clean conversation instead of a seeded visa workflow", async () => {
@@ -54,18 +57,21 @@ test("visa GPT calls use the direct server-side OpenAI provider", async () => {
   assert.match(ai, /const userContext = messages/);
   assert.match(ai, /selectVisaWorkflow\(userContext\)/);
   assert.match(ai, /evidenceForWorkflow\(workflow, userContext\)/);
-  assert.match(ai, /citations\.length === ids\.length && ids\.length > 0/);
+  assert.match(ai, /citations\.length === ids\.length[\s\S]*?ids\.length > 0/);
   assert.match(ai, /matched >= requiredMatches/);
   assert.match(ai, /validateProfile\(answer, workflow\)/);
   assert.match(ai, /extractProfile\(workflow, messages\)/);
-  assert.match(ai, /const answer = visaAnswerSchema\.parse/);
+  assert.match(ai, /return visaAnswerSchema\.parse/);
   assert.match(ai, /\.\.\.profileState/);
   assert.doesNotMatch(ai, /AI_GATEWAY_API_KEY|openai\/gpt-/);
 });
 
 test("visa intake retains explicit context and cannot re-ask collected fields", async () => {
   const ai = await readFile(aiUrl, "utf8");
-  assert.match(ai, /Read every message so facts stated earlier remain collected/);
+  assert.match(
+    ai,
+    /Read every message so facts stated earlier remain collected/,
+  );
   assert.match(ai, /US citizen/);
   assert.match(ai, /field: "nationality", value: "United States"/);
   assert.match(ai, /An explicit negative answer is still a supplied fact/);
@@ -93,13 +99,50 @@ test("completed visa guidance uses the designed workflow card presentation", asy
   const ai = await readFile(aiUrl, "utf8");
   assert.match(workspace, /completedSectionOrder/);
   assert.match(workspace, /orderedAnswerSections\(answer\)/);
-  assert.match(workspace, /"Completed visa guidance" : "Visa guidance status"/);
+  assert.match(
+    workspace,
+    /"Completed visa guidance"[\s\S]*?: "Visa guidance status"/,
+  );
   assert.match(workspace, /message\.answer\?\.status === "answered"/);
   assert.match(workspace, /styles\.workflowBanner/);
+  assert.match(workspace, /styles\.answerSummary/);
   assert.match(workspace, /styles\.profileSummary/);
   assert.match(workspace, /styles\.generatedSection/);
+  assert.match(workspace, /<details className=\{styles\.generatedSection\}/);
+  assert.match(workspace, /sectionVisual\(section\.heading\)/);
+  assert.match(workspace, /answer\.summaryCitationIds/);
   assert.match(workspace, /styles\.generatedSources/);
-  assert.match(ai, /Route; Fees; Requirements and documents; Application process/);
+  assert.match(workspace, /styles\.sectionCitations/);
+  assert.match(workspace, /Sources for \$\{section\.heading\}/);
+  assert.match(workspace, /answer\.status === "insufficient"/);
+  assert.match(workspace, /message\.sources \?\? \[\]\)\.slice\(0, 3\)/);
+  assert.match(
+    ai,
+    /Route; Fees; Requirements and documents; Application process/,
+  );
+});
+
+test("informational questions bypass intake while active route discovery retains it", async () => {
+  const ai = await readFile(aiUrl, "utf8");
+  assert.match(ai, /informationalQuestionPattern/);
+  assert.match(ai, /personalizedRoutePattern/);
+  assert.match(ai, /intakeIsInProgress\(messages\)/);
+  assert.match(ai, /In INFORMATION mode, answer the question immediately/);
+  assert.match(
+    ai,
+    /Do not ask for nationality, passport type, dates, purpose, sponsor, host/,
+  );
+  assert.match(ai, /requiresPersonalization[\s\S]*?await extractProfile/);
+  assert.match(ai, /questionNeedsPersonalization/);
+  assert.match(ai, /answer\.status === "insufficient"/);
+  assert.match(ai, /openai\.tools\.webSearch/);
+  assert.match(ai, /allowedDomains: \[\.\.\.officialSearchDomains\]/);
+  assert.match(ai, /Live official web search/);
+  assert.ok(
+    ai.indexOf("if (informationalQuestionPattern.test(latestQuestion))") <
+      ai.indexOf("if (intakeIsInProgress(messages))"),
+    "an informational question must interrupt an active intake",
+  );
 });
 
 test("visa requests are routed through explicit deterministic workflows", async () => {

@@ -105,7 +105,5 @@ class SqlAlchemyAdminIngestionRepository:
             started_at=job.started_at,
             completed_at=job.completed_at,
             error_code=str(job.error.get("code")) if job.error.get("code") else None,
-            error_message=(
-                str(job.error.get("message")) if job.error.get("message") else None
-            ),
+            error_message=(str(job.error.get("message")) if job.error.get("message") else None),
         )

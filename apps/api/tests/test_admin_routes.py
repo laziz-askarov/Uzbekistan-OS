@@ -285,6 +285,7 @@ class StubAdminIngestionService:
             review_item_id=uuid4(),
         )
 
+
 def pending_record() -> ReviewRecord:
     return ReviewRecord(
         id=uuid4(),

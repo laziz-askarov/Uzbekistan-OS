@@ -179,9 +179,7 @@ class SqlAlchemyRetrievalRepository:
                 content_hash=str(row["content_hash"]),
                 citations=citations,
                 audiences=SqlAlchemyRetrievalRepository._string_list(row.get("audiences")),
-                nationalities=SqlAlchemyRetrievalRepository._string_list(
-                    row.get("nationalities")
-                ),
+                nationalities=SqlAlchemyRetrievalRepository._string_list(row.get("nationalities")),
                 residency_statuses=SqlAlchemyRetrievalRepository._string_list(
                     row.get("residency_statuses")
                 ),

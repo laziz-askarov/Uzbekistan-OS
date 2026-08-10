@@ -147,9 +147,7 @@ class Phase4Evaluator:
             )
             metrics["retrieval.eligibility_violations"] = _available(violations, len(retrieval))
         else:
-            metrics["retrieval.eligibility_violations"] = _blocked(
-                "no retrieval observations"
-            )
+            metrics["retrieval.eligibility_violations"] = _blocked("no retrieval observations")
 
         generation = [item for item in observations if item.generation is not None]
         answered = [
@@ -247,16 +245,12 @@ class Phase4Evaluator:
         return metrics
 
     @staticmethod
-    def _distribution_metric(
-        values: list[int], percentile: float, reason: str
-    ) -> MetricResult:
+    def _distribution_metric(values: list[int], percentile: float, reason: str) -> MetricResult:
         value = _percentile(values, percentile)
         return _available(value, len(values)) if value is not None else _blocked(reason)
 
     @staticmethod
-    def _evaluate_gate(
-        gate: GateDefinition, metrics: dict[str, MetricResult]
-    ) -> GateResult:
+    def _evaluate_gate(gate: GateDefinition, metrics: dict[str, MetricResult]) -> GateResult:
         metric = metrics.get(gate.metric)
         if metric is None:
             return GateResult(

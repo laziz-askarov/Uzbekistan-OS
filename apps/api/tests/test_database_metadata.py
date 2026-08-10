@@ -170,7 +170,6 @@ def test_lifecycle_and_index_jobs_encode_audit_retry_and_idempotency() -> None:
         "result",
     } <= set(jobs.c.keys())
     assert any(
-        isinstance(constraint, UniqueConstraint)
-        and constraint.name == "uq_index_jobs_version_key"
+        isinstance(constraint, UniqueConstraint) and constraint.name == "uq_index_jobs_version_key"
         for constraint in jobs.constraints
     )
