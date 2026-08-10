@@ -55,9 +55,7 @@ class BenchmarkCase(BaseModel):
             and not self.expected_sources
             and BenchmarkBlocker.APPROVED_CONTENT not in self.blockers
         ):
-            raise ValueError(
-                "answered cases without sources must be blocked on approved content"
-            )
+            raise ValueError("answered cases without sources must be blocked on approved content")
         if self.expected_outcome is not ExpectedOutcome.ANSWERED and self.expected_sources:
             raise ValueError("non-answer cases cannot declare expected sources")
         return self
@@ -86,9 +84,7 @@ class BenchmarkManifest(BaseModel):
                 case.language for case in self.cases if case.workflow_id == workflow_id
             }
             if workflow_languages != set(QueryLanguage):
-                raise ValueError(
-                    f"workflow {workflow_id} must cover English, Uzbek, and Russian"
-                )
+                raise ValueError(f"workflow {workflow_id} must cover English, Uzbek, and Russian")
         return self
 
 

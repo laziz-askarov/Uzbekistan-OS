@@ -21,6 +21,7 @@ def test_retrieval_queries_use_eligibility_view_and_current_source_policy() -> N
 
 
 def test_vector_literal_is_deterministic_and_not_sql_syntax() -> None:
-    assert SqlAlchemyRetrievalRepository._vector_literal(
-        [0.1, -2.5, 3.0]
-    ) == "[0.10000000000000001,-2.5,3]"
+    assert (
+        SqlAlchemyRetrievalRepository._vector_literal([0.1, -2.5, 3.0])
+        == "[0.10000000000000001,-2.5,3]"
+    )

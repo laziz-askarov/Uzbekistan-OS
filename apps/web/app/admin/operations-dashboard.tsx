@@ -102,7 +102,8 @@ function inferredContentType(file: File) {
 function fileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("The selected file could not be read."));
+    reader.onerror = () =>
+      reject(new Error("The selected file could not be read."));
     reader.onload = () => {
       const result = reader.result;
       if (typeof result !== "string" || !result.includes(",")) {
@@ -146,7 +147,8 @@ export default function OperationsDashboard() {
     const payload = (await response.json()) as Envelope<T> & ErrorEnvelope;
     if (!response.ok) {
       throw new Error(
-        payload.error?.message ?? `Request failed with status ${response.status}.`,
+        payload.error?.message ??
+          `Request failed with status ${response.status}.`,
       );
     }
     return payload.data;
@@ -212,8 +214,13 @@ export default function OperationsDashboard() {
         headers: { "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ source_id: source.id, max_attempts: 3 }),
       });
-      setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
-      setMessage(`Crawler job ${compactId(job.id)} queued for ${source.title}.`);
+      setJobs((current) => [
+        job,
+        ...current.filter((item) => item.id !== job.id),
+      ]);
+      setMessage(
+        `Crawler job ${compactId(job.id)} queued for ${source.title}.`,
+      );
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -261,7 +268,9 @@ export default function OperationsDashboard() {
       );
       setUploadSource(null);
       setUploadFile(null);
-      const nextJobs = await request<IngestionJob[]>("/admin/ingestion/jobs?limit=50");
+      const nextJobs = await request<IngestionJob[]>(
+        "/admin/ingestion/jobs?limit=50",
+      );
       setJobs(nextJobs);
     } catch (caught) {
       setError(errorMessage(caught));
@@ -287,7 +296,9 @@ export default function OperationsDashboard() {
   const stats = useMemo(
     () => ({
       active: sources.filter((source) => source.active).length,
-      scheduled: sources.filter((source) => source.schedule_interval_minutes !== null).length,
+      scheduled: sources.filter(
+        (source) => source.schedule_interval_minutes !== null,
+      ).length,
       review: jobs.filter((job) => job.status === "succeeded").length,
       attention: jobs.filter((job) =>
         ["retry_scheduled", "dead_lettered"].includes(job.status),
@@ -303,7 +314,10 @@ export default function OperationsDashboard() {
           <Brand />
           <ThemeToggle className={styles.themeButton} />
         </header>
-        <section className={styles.connectPanel} aria-labelledby="connect-title">
+        <section
+          className={styles.connectPanel}
+          aria-labelledby="connect-title"
+        >
           <p className={styles.eyebrow}>Restricted operations</p>
           <h1 id="connect-title">Manage trusted knowledge sources.</h1>
           <p>
@@ -330,8 +344,16 @@ export default function OperationsDashboard() {
             The token stays in page memory and is cleared when you disconnect or
             close this tab. Source approval is managed in the reviewed registry.
           </p>
-          {error ? <p className={styles.error} role="alert">{error}</p> : null}
-          {message ? <p className={styles.notice} role="status">{message}</p> : null}
+          {error ? (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          ) : null}
+          {message ? (
+            <p className={styles.notice} role="status">
+              {message}
+            </p>
+          ) : null}
         </section>
       </main>
     );
@@ -344,7 +366,11 @@ export default function OperationsDashboard() {
         <nav className={styles.topActions} aria-label="Admin utilities">
           <Link href="/admin/reviews">Review queue</Link>
           <ThemeToggle className={styles.themeButton} />
-          <button className={styles.quietButton} onClick={disconnect} type="button">
+          <button
+            className={styles.quietButton}
+            onClick={disconnect}
+            type="button"
+          >
             Disconnect
           </button>
         </nav>
@@ -356,8 +382,8 @@ export default function OperationsDashboard() {
             <p className={styles.eyebrow}>Knowledge operations</p>
             <h1>Ingestion control center</h1>
             <p>
-              Curate official evidence, operate allowlisted crawlers, and follow every
-              job into the human review queue.
+              Curate official evidence, operate allowlisted crawlers, and follow
+              every job into the human review queue.
             </p>
           </div>
           <button
@@ -371,37 +397,74 @@ export default function OperationsDashboard() {
         </section>
 
         <section className={styles.stats} aria-label="Ingestion summary">
-          <Stat label="Active sources" value={stats.active} detail={`${sources.length} configured`} />
-          <Stat label="Scheduled" value={stats.scheduled} detail="Registry controlled" />
-          <Stat label="Processed" value={stats.review} detail="Recent successful jobs" />
-          <Stat label="Needs attention" value={stats.attention} detail="Retry or failed" attention={stats.attention > 0} />
+          <Stat
+            label="Active sources"
+            value={stats.active}
+            detail={`${sources.length} configured`}
+          />
+          <Stat
+            label="Scheduled"
+            value={stats.scheduled}
+            detail="Registry controlled"
+          />
+          <Stat
+            label="Processed"
+            value={stats.review}
+            detail="Recent successful jobs"
+          />
+          <Stat
+            label="Needs attention"
+            value={stats.attention}
+            detail="Retry or failed"
+            attention={stats.attention > 0}
+          />
         </section>
 
         <div className={styles.feedback} aria-live="polite">
-          {error ? <p className={styles.error} role="alert">{error}</p> : null}
-          {message ? <p className={styles.notice} role="status">{message}</p> : null}
+          {error ? (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          ) : null}
+          {message ? (
+            <p className={styles.notice} role="status">
+              {message}
+            </p>
+          ) : null}
         </div>
 
         {uploadSource ? (
-          <section className={styles.uploadPanel} aria-labelledby="upload-heading">
+          <section
+            className={styles.uploadPanel}
+            aria-labelledby="upload-heading"
+          >
             <div>
               <p className={styles.eyebrow}>Manual evidence</p>
               <h2 id="upload-heading">Upload for {uploadSource.title}</h2>
               <p>
-                Accepted: PDF, HTML, XHTML, or plain text. Maximum 10 MB. The file is
-                checksum-verified, stored as source evidence, and queued for review.
+                Accepted: PDF, HTML, XHTML, or plain text. Maximum 10 MB. The
+                file is checksum-verified, stored as source evidence, and queued
+                for review.
               </p>
             </div>
             <form onSubmit={uploadEvidence}>
               <label className={styles.filePicker} htmlFor="evidence-file">
-                <span>{uploadFile ? uploadFile.name : "Choose official document"}</span>
-                <small>{uploadFile ? `${Math.ceil(uploadFile.size / 1024)} KB` : "PDF, HTML, or TXT"}</small>
+                <span>
+                  {uploadFile ? uploadFile.name : "Choose official document"}
+                </span>
+                <small>
+                  {uploadFile
+                    ? `${Math.ceil(uploadFile.size / 1024)} KB`
+                    : "PDF, HTML, or TXT"}
+                </small>
               </label>
               <input
                 accept=".pdf,.html,.htm,.txt,application/pdf,text/html,application/xhtml+xml,text/plain"
                 className={styles.visuallyHidden}
                 id="evidence-file"
-                onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
+                onChange={(event) =>
+                  setUploadFile(event.target.files?.[0] ?? null)
+                }
                 type="file"
               />
               <div className={styles.formActions}>
@@ -417,10 +480,14 @@ export default function OperationsDashboard() {
                 </button>
                 <button
                   className={styles.primaryButton}
-                  disabled={!uploadFile || activeAction === `upload:${uploadSource.id}`}
+                  disabled={
+                    !uploadFile || activeAction === `upload:${uploadSource.id}`
+                  }
                   type="submit"
                 >
-                  {activeAction === `upload:${uploadSource.id}` ? "Processing…" : "Upload and process"}
+                  {activeAction === `upload:${uploadSource.id}`
+                    ? "Processing…"
+                    : "Upload and process"}
                 </button>
               </div>
             </form>
@@ -449,12 +516,22 @@ export default function OperationsDashboard() {
             {filteredSources.map((source) => (
               <article className={styles.sourceCard} key={source.id}>
                 <div className={styles.sourceHeader}>
-                  <div className={styles.sourceIcon} data-type={source.source_type} aria-hidden="true">
+                  <div
+                    className={styles.sourceIcon}
+                    data-type={source.source_type}
+                    aria-hidden="true"
+                  >
                     {source.source_type === "pdf" ? "PDF" : "WWW"}
                   </div>
                   <div>
                     <div className={styles.pills}>
-                      <span data-tone={source.registry_status === "approved" ? "success" : "neutral"}>
+                      <span
+                        data-tone={
+                          source.registry_status === "approved"
+                            ? "success"
+                            : "neutral"
+                        }
+                      >
                         {source.registry_status}
                       </span>
                       <span>{sourceTypeLabel(source.source_type)}</span>
@@ -464,12 +541,33 @@ export default function OperationsDashboard() {
                   </div>
                 </div>
                 <dl className={styles.sourceMeta}>
-                  <div><dt>Domains</dt><dd>{source.domains.join(", ")}</dd></div>
-                  <div><dt>Languages</dt><dd>{source.languages.map((item) => item.toUpperCase()).join(", ")}</dd></div>
-                  <div><dt>Policy</dt><dd>{source.crawl_policy.replace("_", " ")}</dd></div>
-                  <div><dt>Verified</dt><dd>{formatDate(source.last_verified_at)}</dd></div>
+                  <div>
+                    <dt>Domains</dt>
+                    <dd>{source.domains.join(", ")}</dd>
+                  </div>
+                  <div>
+                    <dt>Languages</dt>
+                    <dd>
+                      {source.languages
+                        .map((item) => item.toUpperCase())
+                        .join(", ")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Policy</dt>
+                    <dd>{source.crawl_policy.replace("_", " ")}</dd>
+                  </div>
+                  <div>
+                    <dt>Verified</dt>
+                    <dd>{formatDate(source.last_verified_at)}</dd>
+                  </div>
                 </dl>
-                <a className={styles.sourceLink} href={source.url} rel="noreferrer" target="_blank">
+                <a
+                  className={styles.sourceLink}
+                  href={source.url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
                   View official source <span aria-hidden="true">↗</span>
                 </a>
                 <div className={styles.cardActions}>
@@ -477,19 +575,32 @@ export default function OperationsDashboard() {
                     className={styles.secondaryButton}
                     disabled={!source.manual_upload_eligible}
                     onClick={() => startUpload(source)}
-                    title={source.manual_upload_eligible ? "Upload source evidence" : "Source is not approved for manual uploads"}
+                    title={
+                      source.manual_upload_eligible
+                        ? "Upload source evidence"
+                        : "Source is not approved for manual uploads"
+                    }
                     type="button"
                   >
                     Upload document
                   </button>
                   <button
                     className={styles.primaryButton}
-                    disabled={!source.automatic_fetch_eligible || activeAction === `crawl:${source.id}`}
+                    disabled={
+                      !source.automatic_fetch_eligible ||
+                      activeAction === `crawl:${source.id}`
+                    }
                     onClick={() => void runCrawler(source)}
-                    title={source.automatic_fetch_eligible ? "Run the approved crawler" : "Source is not approved for automatic crawling"}
+                    title={
+                      source.automatic_fetch_eligible
+                        ? "Run the approved crawler"
+                        : "Source is not approved for automatic crawling"
+                    }
                     type="button"
                   >
-                    {activeAction === `crawl:${source.id}` ? "Queuing…" : "Run crawler"}
+                    {activeAction === `crawl:${source.id}`
+                      ? "Queuing…"
+                      : "Run crawler"}
                   </button>
                 </div>
               </article>
@@ -498,12 +609,15 @@ export default function OperationsDashboard() {
           {!filteredSources.length ? (
             <div className={styles.emptyState}>
               <strong>No matching sources</strong>
-              <span>Approved sources appear after the reviewed registry is deployed.</span>
+              <span>
+                Approved sources appear after the reviewed registry is deployed.
+              </span>
             </div>
           ) : null}
           <p className={styles.registryNote}>
-            Approval, crawl policy, adapter, and schedule remain version-controlled in
-            the source registry so the dashboard cannot silently expand crawler scope.
+            Approval, crawl policy, adapter, and schedule remain
+            version-controlled in the source registry so the dashboard cannot
+            silently expand crawler scope.
           </p>
         </section>
 
@@ -518,21 +632,52 @@ export default function OperationsDashboard() {
           <div className={styles.tableFrame}>
             <table>
               <thead>
-                <tr><th>Source</th><th>Status</th><th>Attempt</th><th>Queued</th><th>Result</th></tr>
+                <tr>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Attempt</th>
+                  <th>Queued</th>
+                  <th>Result</th>
+                </tr>
               </thead>
               <tbody>
                 {jobs.map((job) => (
                   <tr key={job.id}>
-                    <td><strong>{job.source_title}</strong><small>{compactId(job.id)}</small></td>
-                    <td><span className={styles.jobStatus} data-status={job.status}>{job.status.replace("_", " ")}</span></td>
-                    <td>{job.attempt_count} / {job.max_attempts}</td>
+                    <td>
+                      <strong>{job.source_title}</strong>
+                      <small>{compactId(job.id)}</small>
+                    </td>
+                    <td>
+                      <span
+                        className={styles.jobStatus}
+                        data-status={job.status}
+                      >
+                        {job.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td>
+                      {job.attempt_count} / {job.max_attempts}
+                    </td>
                     <td>{formatDate(job.scheduled_at)}</td>
-                    <td>{job.error_message ?? (job.completed_at ? formatDate(job.completed_at) : "Pending")}</td>
+                    <td>
+                      {job.error_message ??
+                        (job.completed_at
+                          ? formatDate(job.completed_at)
+                          : "Pending")}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {!jobs.length ? <div className={styles.emptyState}><strong>No ingestion jobs yet</strong><span>Run an eligible crawler or upload an approved document to begin.</span></div> : null}
+            {!jobs.length ? (
+              <div className={styles.emptyState}>
+                <strong>No ingestion jobs yet</strong>
+                <span>
+                  Run an eligible crawler or upload an approved document to
+                  begin.
+                </span>
+              </div>
+            ) : null}
           </div>
         </section>
       </div>
@@ -543,16 +688,33 @@ export default function OperationsDashboard() {
 function Brand() {
   return (
     <Link className={styles.brand} href="/" aria-label="Uzbekistan OS home">
-      <span className={styles.brandMark} aria-hidden="true">U</span>
-      <span><strong>Uzbekistan OS</strong><small>Admin operations</small></span>
+      <span className={styles.brandMark} aria-hidden="true">
+        U
+      </span>
+      <span>
+        <strong>Uzbekistan OS</strong>
+        <small>Admin operations</small>
+      </span>
     </Link>
   );
 }
 
-function Stat({ label, value, detail, attention = false }: { label: string; value: number; detail: string; attention?: boolean }) {
+function Stat({
+  label,
+  value,
+  detail,
+  attention = false,
+}: {
+  label: string;
+  value: number;
+  detail: string;
+  attention?: boolean;
+}) {
   return (
     <article className={styles.statCard} data-attention={attention}>
-      <span>{label}</span><strong>{value}</strong><small>{detail}</small>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
     </article>
   );
 }

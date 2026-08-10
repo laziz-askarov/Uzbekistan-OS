@@ -85,8 +85,7 @@ def test_expired_document_is_removed_from_retrievable_view() -> None:
 
         before = session.scalar(
             text(
-                "SELECT count(*) FROM knowledge.retrievable_chunks "
-                "WHERE document_id = :document_id"
+                "SELECT count(*) FROM knowledge.retrievable_chunks WHERE document_id = :document_id"
             ),
             {"document_id": document.id},
         )
@@ -127,8 +126,7 @@ def test_expired_document_is_removed_from_retrievable_view() -> None:
 
         after = session.scalar(
             text(
-                "SELECT count(*) FROM knowledge.retrievable_chunks "
-                "WHERE document_id = :document_id"
+                "SELECT count(*) FROM knowledge.retrievable_chunks WHERE document_id = :document_id"
             ),
             {"document_id": document.id},
         )

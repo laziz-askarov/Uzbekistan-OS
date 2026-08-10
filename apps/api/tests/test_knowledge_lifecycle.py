@@ -42,9 +42,7 @@ class MemoryLifecycleRepository:
         idempotency_key,
         requested_at,
     ):
-        self.index_requests.append(
-            (document_id, request, principal, idempotency_key, requested_at)
-        )
+        self.index_requests.append((document_id, request, principal, idempotency_key, requested_at))
         return IndexJobResult(
             index_job_id=uuid4(),
             document_id=document_id,

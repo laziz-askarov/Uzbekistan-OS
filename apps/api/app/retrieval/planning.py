@@ -235,9 +235,7 @@ class RetrievalPlanner:
     @staticmethod
     def _terms(query: str, intent: RetrievalIntent) -> list[str]:
         tokens = [
-            token
-            for token in re.findall(r"[^\W_]+", query, flags=re.UNICODE)
-            if len(token) > 1
+            token for token in re.findall(r"[^\W_]+", query, flags=re.UNICODE) if len(token) > 1
         ]
         intent_terms = intent.value.split("_") if intent is not RetrievalIntent.GENERAL else []
         return list(dict.fromkeys([*tokens, *intent_terms]))[:32]

@@ -234,7 +234,5 @@ class HybridRetrievalService:
         ):
             return False
         return not (
-            context.location
-            and candidate.locations
-            and context.location not in candidate.locations
+            context.location and candidate.locations and context.location not in candidate.locations
         )

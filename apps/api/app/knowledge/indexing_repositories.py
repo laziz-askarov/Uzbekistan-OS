@@ -41,9 +41,7 @@ class SqlAlchemyIndexingRepository:
 
         chunks = tuple(
             self.session.scalars(
-                select(Chunk)
-                .where(Chunk.document_version_id == version.id)
-                .order_by(Chunk.ordinal)
+                select(Chunk).where(Chunk.document_version_id == version.id).order_by(Chunk.ordinal)
             )
         )
         if not chunks:

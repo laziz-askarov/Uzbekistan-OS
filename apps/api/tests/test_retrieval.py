@@ -41,9 +41,7 @@ def candidate(
         ordinal=0,
         content=content,
         content_hash=sha256(content.encode()).hexdigest(),
-        citations=(
-            [{"source_id": SOURCE_ID, "locator": "Overview section"}] if citations else []
-        ),
+        citations=([{"source_id": SOURCE_ID, "locator": "Overview section"}] if citations else []),
         audiences=["international-visitor"],
         nationalities=nationalities or [],
     )
