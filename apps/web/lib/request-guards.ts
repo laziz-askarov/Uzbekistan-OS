@@ -29,3 +29,12 @@ export function acceptsJson(request: Request) {
     ?.toLowerCase()
     .startsWith("application/json");
 }
+
+export function hasTrustedOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
+    return false;
+  }
+  return !origin || origin === new URL(request.url).origin;
+}

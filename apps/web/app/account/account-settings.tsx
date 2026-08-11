@@ -572,7 +572,8 @@ export default function AccountSettings({
             <strong>Export your account</strong>
             <span>
               Download a JSON copy of your profile, conversations, messages,
-              checklists, account details, and current usage-limit records.
+              checklists, guidance reports, account details, and current
+              usage-limit records.
             </span>
           </div>
           <a className="pill pill-light" href="/api/account/export">
@@ -585,9 +586,10 @@ export default function AccountSettings({
             <strong>Delete account permanently</strong>
             <p id="delete-account-help">
               This removes your account, profile image, saved conversations,
-              messages, and checklists from the active service. This cannot be
-              undone. Limited records may remain temporarily in provider logs or
-              backups as described in the Privacy Policy.
+              messages, checklists, and guidance reports from the active
+              service. This cannot be undone. Limited records may remain
+              temporarily in provider logs or backups as described in the
+              Privacy Policy.
             </p>
           </div>
           <label htmlFor="delete-account-confirmation">

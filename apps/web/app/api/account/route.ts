@@ -6,18 +6,10 @@ import {
 } from "@/lib/monitoring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { hasTrustedOrigin } from "@/lib/request-guards";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-function hasTrustedOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  const fetchSite = request.headers.get("sec-fetch-site");
-  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
-    return false;
-  }
-  return !origin || origin === new URL(request.url).origin;
-}
 
 export async function DELETE(request: Request) {
   const context = createRequestContext(request, "/api/account");

@@ -21,6 +21,7 @@ test("account export is authenticated, complete, paginated, and not cached", asy
     "messages",
     "checklists",
     "abuse_rate_limits",
+    "guidance_feedback",
   ]) {
     assert.match(route, new RegExp(`["]${dataset}["]`));
   }

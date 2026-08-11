@@ -12,12 +12,14 @@
 }
 
 .workspace button,
-.workspace textarea {
+.workspace textarea,
+.workspace select {
   font: inherit;
 }
 
 .workspace button:focus-visible,
 .workspace textarea:focus-visible,
+.workspace select:focus-visible,
 .workspace a:focus-visible,
 .workspace summary:focus-visible {
   outline: 3px solid rgba(37, 99, 235, 0.55);
@@ -390,6 +392,127 @@
   margin-top: 14px;
   display: grid;
   gap: 10px;
+}
+
+.feedbackControl {
+  margin-top: 12px;
+}
+
+.feedbackTrigger {
+  min-height: 38px;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.feedbackTrigger:hover {
+  color: #334155;
+  background: #f8fafc;
+}
+
+.feedbackForm {
+  margin-top: 8px;
+  padding: 16px;
+  display: grid;
+  gap: 13px;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.feedbackField {
+  display: grid;
+  gap: 6px;
+}
+
+.feedbackField label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.feedbackField label span,
+.feedbackField small {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.feedbackField select,
+.feedbackField textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  outline: none;
+  color: #0f172a;
+  background: #fff;
+}
+
+.feedbackField select {
+  min-height: 42px;
+}
+
+.feedbackField textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.feedbackField small {
+  justify-self: end;
+  font-size: 10px;
+}
+
+.feedbackActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feedbackActions button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  color: #334155;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.feedbackActions button:first-child {
+  color: #fff;
+  border-color: #0f172a;
+  background: #0f172a;
+}
+
+.feedbackActions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.feedbackError,
+.feedbackThanks {
+  margin: 9px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.feedbackError {
+  color: #b91c1c;
+}
+
+.feedbackThanks {
+  color: #166534;
 }
 
 .intakeCard {

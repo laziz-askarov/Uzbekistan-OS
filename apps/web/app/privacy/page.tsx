@@ -47,9 +47,11 @@ const sections = [
           <li>
             <strong>Conversations and guidance:</strong> questions, travel or
             immigration details you type, assistant responses, citations, and
-            saved conversation titles. This may include nationality, travel
-            dates, host or sponsor details, and other information relevant to
-            your request.
+            saved conversation titles. If you report incorrect, outdated, or
+            unclear guidance, we also collect the issue category, optional
+            comments, the response being reported, and its review status. This
+            may include nationality, travel dates, host or sponsor details, and
+            other information relevant to your request.
           </li>
           <li>
             <strong>Security and operational data:</strong> request IDs, dates
@@ -83,6 +85,10 @@ const sections = [
         <ul>
           <li>create, verify, secure, and support your account;</li>
           <li>provide personalized guidance and save conversation history;</li>
+          <li>
+            review reports of incorrect, outdated, unclear, or incomplete
+            guidance and improve the supporting evidence;
+          </li>
           <li>send account confirmation, recovery, and SMS verification;</li>
           <li>
             retrieve official sources and generate structured assistant
@@ -209,11 +215,12 @@ const sections = [
           active or until you remove them through the available controls.
         </p>
         <p>
-          Deleting a conversation removes that conversation and its messages
-          from the active customer database. Deleting your account removes your
-          authentication account and active profile, profile image, saved
-          conversations, messages, checklists, and account-linked usage-limit
-          records. These actions cannot be undone.
+          Deleting a conversation removes that conversation and its messages and
+          related guidance reports from the active customer database. Deleting
+          your account removes your authentication account and active profile,
+          profile image, saved conversations, messages, checklists, guidance
+          reports, and account-linked usage-limit records. These actions cannot
+          be undone.
         </p>
         <p>
           Short-term rate-limit records are also removed on a rolling basis.

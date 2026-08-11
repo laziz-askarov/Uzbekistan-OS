@@ -95,12 +95,24 @@ export async function GET(request: Request) {
     }
 
     const admin = createAdminClient();
-    const { data: usageLimits, error: usageError } = await admin
-      .from("abuse_rate_limits")
-      .select("scope,window_start,request_count,updated_at")
-      .eq("user_id", data.user.id)
-      .order("window_start", { ascending: true });
+    const [usageResult, feedbackResult] = await Promise.all([
+      admin
+        .from("abuse_rate_limits")
+        .select("scope,window_start,request_count,updated_at")
+        .eq("user_id", data.user.id)
+        .order("window_start", { ascending: true }),
+      admin
+        .from("guidance_feedback")
+        .select(
+          "id,conversation_id,message_id,category,details,status,admin_notes,reviewed_at,created_at,updated_at",
+        )
+        .eq("reporter_id", data.user.id)
+        .order("created_at", { ascending: true }),
+    ]);
+    const { data: usageLimits, error: usageError } = usageResult;
+    const { data: guidanceFeedback, error: feedbackError } = feedbackResult;
     if (usageError) throw usageError;
+    if (feedbackError) throw feedbackError;
 
     const exportedAt = new Date().toISOString();
     const exportData = {
@@ -126,6 +138,7 @@ export async function GET(request: Request) {
       messages,
       checklists,
       usage_limits: usageLimits ?? [],
+      guidance_feedback: guidanceFeedback ?? [],
     };
 
     logEvent("info", "account_export_completed", context, {
@@ -133,6 +146,7 @@ export async function GET(request: Request) {
       conversationCount: conversations.length,
       messageCount: messages.length,
       checklistCount: checklists.length,
+      feedbackCount: guidanceFeedback?.length ?? 0,
       includesAvatar: avatar !== null,
     });
 

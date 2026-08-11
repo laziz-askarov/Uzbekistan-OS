@@ -21,6 +21,7 @@ type Message = {
   workflow?: { id: string; title: string; description: string };
   sources?: VisaApiSource[];
   generated?: boolean;
+  persisted?: boolean;
 };
 
 type Chat = { id: string; title: string; messages: Message[] };
@@ -229,6 +230,160 @@ function ConversationHistoryItem({
       >
         <Icon name="trash" size={14} />
       </button>
+    </div>
+  );
+}
+
+type FeedbackCategory = "incorrect" | "outdated" | "unclear" | "other";
+
+const feedbackCategories: Array<{
+  value: FeedbackCategory;
+  label: string;
+}> = [
+  { value: "incorrect", label: "Incorrect information" },
+  { value: "outdated", label: "Outdated information" },
+  { value: "unclear", label: "Unclear or incomplete" },
+  { value: "other", label: "Other issue" },
+];
+
+function FeedbackControl({
+  conversationId,
+  messageId,
+}: {
+  conversationId: string;
+  messageId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState<FeedbackCategory>("incorrect");
+  const [details, setDetails] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "submitted">(
+    "idle",
+  );
+  const [error, setError] = useState<string | null>(null);
+  const formId = `guidance-feedback-${messageId}`;
+
+  async function submitFeedback(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (status === "submitting") return;
+    setStatus("submitting");
+    setError(null);
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "x-request-id": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          conversationId,
+          messageId,
+          category,
+          details: details.trim() || null,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        message?: string;
+      } | null;
+      if (response.status === 409) {
+        setStatus("submitted");
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Feedback could not be recorded.");
+      }
+      setStatus("submitted");
+    } catch (caught) {
+      setStatus("idle");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Feedback could not be recorded.",
+      );
+    }
+  }
+
+  if (status === "submitted") {
+    return (
+      <p className={styles.feedbackThanks} role="status">
+        Thank you. This response was added to the review queue.
+      </p>
+    );
+  }
+
+  return (
+    <div className={styles.feedbackControl}>
+      <button
+        aria-controls={formId}
+        aria-expanded={open}
+        className={styles.feedbackTrigger}
+        onClick={() => {
+          setOpen((current) => !current);
+          setError(null);
+        }}
+        type="button"
+      >
+        <span aria-hidden="true">⚑</span>
+        Report incorrect or outdated guidance
+      </button>
+      {open ? (
+        <form
+          className={styles.feedbackForm}
+          id={formId}
+          onSubmit={submitFeedback}
+        >
+          <div className={styles.feedbackField}>
+            <label htmlFor={`${formId}-category`}>Issue type</label>
+            <select
+              id={`${formId}-category`}
+              onChange={(event) =>
+                setCategory(event.target.value as FeedbackCategory)
+              }
+              value={category}
+            >
+              {feedbackCategories.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.feedbackField}>
+            <label htmlFor={`${formId}-details`}>
+              What should we review? <span>(optional)</span>
+            </label>
+            <textarea
+              id={`${formId}-details`}
+              maxLength={1200}
+              onChange={(event) => setDetails(event.target.value)}
+              placeholder="Tell us what seems wrong or what may have changed."
+              rows={3}
+              value={details}
+            />
+            <small>{details.length}/1,200</small>
+          </div>
+          <div className={styles.feedbackActions}>
+            <button disabled={status === "submitting"} type="submit">
+              {status === "submitting" ? "Sending…" : "Send feedback"}
+            </button>
+            <button
+              disabled={status === "submitting"}
+              onClick={() => {
+                setOpen(false);
+                setError(null);
+              }}
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+          {error ? (
+            <p className={styles.feedbackError} role="alert">
+              {error}
+            </p>
+          ) : null}
+        </form>
+      ) : null}
     </div>
   );
 }
@@ -619,6 +774,7 @@ export default function ChatWorkspace() {
         workflow: result.workflow,
         sources: result.sources,
         generated: result.generated,
+        persisted: false,
       };
       setChats((current) =>
         current.map((chat) =>
@@ -644,6 +800,21 @@ export default function ChatWorkspace() {
       if (replyError) {
         setSendError(
           "Your answer is ready, but it could not be saved to account history.",
+        );
+      } else {
+        setChats((current) =>
+          current.map((chat) =>
+            chat.id === targetChatId
+              ? {
+                  ...chat,
+                  messages: chat.messages.map((message) =>
+                    message.id === reply.id
+                      ? { ...message, persisted: true }
+                      : message,
+                  ),
+                }
+              : chat,
+          ),
         );
       }
     } catch {
@@ -841,6 +1012,13 @@ export default function ChatWorkspace() {
                     )}
                     {message.answer ? (
                       <GeneratedAnswerCard message={message} />
+                    ) : null}
+                    {message.role === "assistant" &&
+                    message.persisted !== false ? (
+                      <FeedbackControl
+                        conversationId={active.id}
+                        messageId={message.id}
+                      />
                     ) : null}
                   </div>
                 </article>
