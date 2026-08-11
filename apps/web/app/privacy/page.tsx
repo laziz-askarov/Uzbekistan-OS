@@ -56,9 +56,9 @@ const sections = [
           <li>
             <strong>Security and operational data:</strong> request IDs, dates
             and times, route and response status, rate-limit usage, device and
-            network information, and diagnostic events. Our application logs do
-            not intentionally record chat text, passwords, one-time codes, phone
-            numbers, or email addresses.
+            network information, CAPTCHA challenge results, and diagnostic
+            events. Our application logs do not intentionally record chat text,
+            passwords, one-time codes, phone numbers, or email addresses.
           </li>
           <li>
             <strong>Analytics and performance data:</strong> page views,
@@ -163,6 +163,10 @@ const sections = [
           <li>
             <strong>Vercel</strong> for website hosting, security logs,
             cookie-free web analytics, and performance monitoring; and
+          </li>
+          <li>
+            <strong>Cloudflare</strong> for Turnstile CAPTCHA challenges used to
+            identify automated or abusive account activity; and
           </li>
           <li>
             <strong>DevSMS</strong> for phone verification, which receives the
@@ -270,9 +274,10 @@ const sections = [
         <p>
           We use access controls, encrypted connections, owner-scoped database
           policies, private profile-image storage, signed access links,
-          authenticated sessions, request-size limits, and rate limits. No
-          online service can guarantee absolute security. Use a unique password
-          and tell us promptly if you believe your account has been compromised.
+          authenticated sessions, CAPTCHA challenges, request-size limits, and
+          rate limits. No online service can guarantee absolute security. Use a
+          unique password and tell us promptly if you believe your account has
+          been compromised.
         </p>
       </>
     ),
@@ -322,9 +327,9 @@ export default function PrivacyPage() {
         <p>
           We use account details and saved conversations to provide personalized
           visa guidance. We do not sell personal information. The service uses
-          Supabase, OpenAI, Vercel, and DevSMS, and data may currently be
-          processed outside Uzbekistan. Do not enter passport numbers, PINFLs,
-          payment details, or government credentials in chat.
+          Supabase, OpenAI, Vercel, Cloudflare, and DevSMS, and data may
+          currently be processed outside Uzbekistan. Do not enter passport
+          numbers, PINFLs, payment details, or government credentials in chat.
         </p>
       }
       title="Privacy Policy"

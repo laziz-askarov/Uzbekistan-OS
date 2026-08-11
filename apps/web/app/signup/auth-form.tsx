@@ -2,8 +2,9 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { normalizeEmail, normalizeInternationalPhone } from "@/lib/auth-inputs";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 import Link from "next/link";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useMemo, useState } from "react";
 
 type Mode = "create" | "signin";
 type Method = "email" | "phone";
@@ -15,6 +16,9 @@ function friendlyError(message: string, method: Method) {
   }
   if (normalized.includes("rate limit")) {
     return "Too many attempts. Please wait before trying again.";
+  }
+  if (normalized.includes("captcha")) {
+    return "Complete the security check and try again.";
   }
   if (normalized.includes("password should be")) {
     return "Use a password with at least 8 characters.";
@@ -36,6 +40,9 @@ function friendlyError(message: string, method: Method) {
 
 export default function AuthForm() {
   const supabase = useMemo(() => createClient(), []);
+  const turnstileSiteKey =
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
+  const captchaEnabled = turnstileSiteKey.length > 0;
   const [mode, setMode] = useState<Mode>("create");
   const [method, setMethod] = useState<Method>("email");
   const [email, setEmail] = useState("");
@@ -48,12 +55,34 @@ export default function AuthForm() {
   );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+
+  const handleCaptchaError = useCallback(() => {
+    setMessage(
+      "The security check could not load. Please refresh and try again.",
+    );
+  }, []);
+
+  function resetCaptcha() {
+    setCaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  }
+
+  function hasCaptchaToken() {
+    if (captchaEnabled && !captchaToken) {
+      setMessage("Complete the security check before continuing.");
+      return false;
+    }
+    return true;
+  }
 
   function resetFeedback() {
     setPhoneStep("credentials");
     setOtp("");
     setPassword("");
     setMessage(null);
+    resetCaptcha();
   }
 
   function switchMode() {
@@ -77,6 +106,7 @@ export default function AuthForm() {
       return;
     }
     if (!validatePassword()) return;
+    if (!hasCaptchaToken()) return;
 
     setBusy(true);
     setMessage(null);
@@ -86,6 +116,7 @@ export default function AuthForm() {
           email: nextEmail,
           password,
           options: {
+            ...(captchaToken ? { captchaToken } : {}),
             emailRedirectTo: `${window.location.origin}/auth/callback?next=/account`,
           },
         });
@@ -99,6 +130,7 @@ export default function AuthForm() {
         const { error } = await supabase.auth.signInWithPassword({
           email: nextEmail,
           password,
+          options: captchaToken ? { captchaToken } : undefined,
         });
         if (error) throw error;
         window.location.assign("/account");
@@ -112,6 +144,7 @@ export default function AuthForm() {
       );
     } finally {
       setBusy(false);
+      resetCaptcha();
     }
   }
 
@@ -121,11 +154,13 @@ export default function AuthForm() {
       setMessage("Enter your account email address first.");
       return;
     }
+    if (!hasCaptchaToken()) return;
 
     setBusy(true);
     setMessage(null);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(nextEmail, {
+        ...(captchaToken ? { captchaToken } : {}),
         redirectTo: `${window.location.origin}/auth/callback?next=/account/password`,
       });
       if (error) throw error;
@@ -141,6 +176,7 @@ export default function AuthForm() {
       );
     } finally {
       setBusy(false);
+      resetCaptcha();
     }
   }
 
@@ -154,6 +190,7 @@ export default function AuthForm() {
       return;
     }
     if (!validatePassword()) return;
+    if (!hasCaptchaToken()) return;
 
     setBusy(true);
     setMessage(null);
@@ -162,7 +199,10 @@ export default function AuthForm() {
         const { data, error } = await supabase.auth.signUp({
           phone: nextPhone,
           password,
-          options: { channel: "sms" },
+          options: {
+            ...(captchaToken ? { captchaToken } : {}),
+            channel: "sms",
+          },
         });
         if (error) throw error;
         if (data.session) {
@@ -176,6 +216,7 @@ export default function AuthForm() {
         const { error } = await supabase.auth.signInWithPassword({
           phone: nextPhone,
           password,
+          options: captchaToken ? { captchaToken } : undefined,
         });
         if (error) throw error;
         window.location.assign("/account");
@@ -189,6 +230,7 @@ export default function AuthForm() {
       );
     } finally {
       setBusy(false);
+      resetCaptcha();
     }
   }
 
@@ -280,9 +322,17 @@ export default function AuthForm() {
               ? "We'll email you a confirmation link after signup."
               : "Use the email and password for your account."}
           </p>
+          {captchaEnabled ? (
+            <TurnstileWidget
+              onError={handleCaptchaError}
+              onToken={setCaptchaToken}
+              resetSignal={captchaResetSignal}
+              siteKey={turnstileSiteKey}
+            />
+          ) : null}
           <button
             className="pill pill-dark auth-submit"
-            disabled={busy}
+            disabled={busy || (captchaEnabled && !captchaToken)}
             type="submit"
           >
             {busy ? "Please wait…" : submitLabel}
@@ -344,9 +394,17 @@ export default function AuthForm() {
               ? "We'll text you a verification code after signup."
               : "Use your international phone number and password."}
           </p>
+          {captchaEnabled ? (
+            <TurnstileWidget
+              onError={handleCaptchaError}
+              onToken={setCaptchaToken}
+              resetSignal={captchaResetSignal}
+              siteKey={turnstileSiteKey}
+            />
+          ) : null}
           <button
             className="pill pill-dark auth-submit"
-            disabled={busy}
+            disabled={busy || (captchaEnabled && !captchaToken)}
             type="submit"
           >
             {busy ? "Please wait…" : submitLabel}

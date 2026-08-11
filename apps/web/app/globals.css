@@ -999,6 +999,20 @@ a:focus-visible {
   margin-top: 12px;
   border: 0;
 }
+.auth-captcha {
+  width: 100%;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.auth-captcha > div {
+  width: 100%;
+}
+.auth-captcha-label {
+  margin: 0 0 7px !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 700;
+}
 .auth-back {
   width: 100%;
   margin-top: 8px;

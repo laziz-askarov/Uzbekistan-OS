@@ -17,6 +17,8 @@ test("privacy policy reflects the services and data flows in production", async 
   assert.match(privacy, /Supabase/);
   assert.match(privacy, /OpenAI/);
   assert.match(privacy, /Vercel/);
+  assert.match(privacy, /Cloudflare/);
+  assert.match(privacy, /Turnstile CAPTCHA/);
   assert.match(privacy, /DevSMS/);
   assert.match(privacy, /saved conversation/i);
   assert.match(privacy, /profile image/i);

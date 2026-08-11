@@ -37,6 +37,39 @@ test("chat enforces durable account quotas before model generation", async () =>
   assert.match(migration, /grant execute[\s\S]*to authenticated/);
 });
 
+test("feedback and account exports enforce durable hourly quotas", async () => {
+  const feedback = await readFile(
+    new URL("app/api/feedback/route.ts", webRoot),
+    "utf8",
+  );
+  const accountExport = await readFile(
+    new URL("app/api/account/export/route.ts", webRoot),
+    "utf8",
+  );
+  const migration = await readFile(
+    new URL(
+      "supabase/migrations/202608110008_action_rate_limits.sql",
+      repoRoot,
+    ),
+    "utf8",
+  );
+
+  assert.match(feedback, /rpc\("consume_action_quota"/);
+  assert.match(feedback, /requested_scope: "feedback_hour"/);
+  assert.match(feedback, /guidance_feedback_rate_limited/);
+  assert.match(accountExport, /rpc\("consume_action_quota"/);
+  assert.match(accountExport, /requested_scope: "account_export_hour"/);
+  assert.match(accountExport, /account_export_rate_limited/);
+  assert.match(feedback, /status: 429/);
+  assert.match(accountExport, /status: 429/);
+  assert.match(feedback, /"retry-after"/);
+  assert.match(accountExport, /"retry-after"/);
+  assert.match(migration, /when 'feedback_hour' then 10/);
+  assert.match(migration, /when 'account_export_hour' then 3/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /grant execute[\s\S]*to authenticated/);
+});
+
 test("public POST routes reject oversized bodies before provider work", async () => {
   const chat = await readFile(
     new URL("app/api/chat/route.ts", webRoot),

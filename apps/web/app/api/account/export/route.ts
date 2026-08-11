@@ -5,11 +5,18 @@ import {
 } from "@/lib/monitoring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const PAGE_SIZE = 500;
+const actionQuotaSchema = z.object({
+  allowed: z.boolean(),
+  remaining: z.number().int().min(0),
+  retry_after_seconds: z.number().int().min(0),
+  limit_scope: z.literal("account_export_hour"),
+});
 
 type QueryClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -47,6 +54,48 @@ export async function GET(request: Request) {
       return Response.json(
         { error: "authentication_required" },
         { status: 401, headers: requestHeaders(context) },
+      );
+    }
+
+    const { data: quota, error: quotaError } = await supabase
+      .rpc("consume_action_quota", {
+        requested_scope: "account_export_hour",
+      })
+      .single();
+    const parsedQuota = actionQuotaSchema.safeParse(quota);
+    if (quotaError || !parsedQuota.success) {
+      logEvent("error", "account_export_quota_unavailable", context, {
+        status: 503,
+        error: quotaError?.code ?? "InvalidQuotaResult",
+      });
+      return Response.json(
+        {
+          error: "export_unavailable",
+          message: "Your account export is temporarily unavailable.",
+        },
+        { status: 503, headers: requestHeaders(context) },
+      );
+    }
+    if (!parsedQuota.data.allowed) {
+      const retryAfter = Math.max(1, parsedQuota.data.retry_after_seconds);
+      logEvent("warning", "account_export_rate_limited", context, {
+        status: 429,
+        limitScope: parsedQuota.data.limit_scope,
+        retryAfterSeconds: retryAfter,
+      });
+      return Response.json(
+        {
+          error: "rate_limited",
+          message:
+            "You have reached the account export limit. Try again later.",
+        },
+        {
+          status: 429,
+          headers: requestHeaders(context, {
+            "retry-after": String(retryAfter),
+            "x-ratelimit-remaining": "0",
+          }),
+        },
       );
     }
 
@@ -158,6 +207,7 @@ export async function GET(request: Request) {
         "content-type": "application/json; charset=utf-8",
         "x-content-type-options": "nosniff",
         "x-frame-options": "DENY",
+        "x-ratelimit-remaining": String(parsedQuota.data.remaining),
       }),
     });
   } catch (error) {

@@ -18,6 +18,12 @@ export const runtime = "nodejs";
 export const maxDuration = 15;
 
 const maximumBodyBytes = 2 * 1024;
+const actionQuotaSchema = z.object({
+  allowed: z.boolean(),
+  remaining: z.number().int().min(0),
+  retry_after_seconds: z.number().int().min(0),
+  limit_scope: z.literal("feedback_hour"),
+});
 const feedbackSchema = z.object({
   conversationId: z.uuid(),
   messageId: z.uuid(),
@@ -25,8 +31,14 @@ const feedbackSchema = z.object({
   details: z.string().trim().min(1).max(1200).nullable(),
 });
 
-function responseHeaders(context: ReturnType<typeof createRequestContext>) {
-  return requestHeaders(context, { "cache-control": "no-store" });
+function responseHeaders(
+  context: ReturnType<typeof createRequestContext>,
+  additional: Record<string, string> = {},
+) {
+  return requestHeaders(context, {
+    "cache-control": "no-store",
+    ...additional,
+  });
 }
 
 export async function POST(request: Request) {
@@ -136,6 +148,46 @@ export async function POST(request: Request) {
       );
     }
 
+    const { data: quota, error: quotaError } = await supabase
+      .rpc("consume_action_quota", { requested_scope: "feedback_hour" })
+      .single();
+    const parsedQuota = actionQuotaSchema.safeParse(quota);
+    if (quotaError || !parsedQuota.success) {
+      logEvent("error", "guidance_feedback_quota_unavailable", context, {
+        status: 503,
+        error: quotaError?.code ?? "InvalidQuotaResult",
+      });
+      return NextResponse.json(
+        {
+          error: "feedback_unavailable",
+          message: "Feedback could not be recorded. Please try again.",
+        },
+        { status: 503, headers: responseHeaders(context) },
+      );
+    }
+    if (!parsedQuota.data.allowed) {
+      const retryAfter = Math.max(1, parsedQuota.data.retry_after_seconds);
+      logEvent("warning", "guidance_feedback_rate_limited", context, {
+        status: 429,
+        limitScope: parsedQuota.data.limit_scope,
+        retryAfterSeconds: retryAfter,
+      });
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          message:
+            "You have reached the feedback limit. Please try again later.",
+        },
+        {
+          status: 429,
+          headers: responseHeaders(context, {
+            "retry-after": String(retryAfter),
+            "x-ratelimit-remaining": "0",
+          }),
+        },
+      );
+    }
+
     const { error: insertError } = await supabase
       .from("guidance_feedback")
       .insert({
@@ -167,7 +219,12 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(
       { data: { recorded: true } },
-      { status: 201, headers: responseHeaders(context) },
+      {
+        status: 201,
+        headers: responseHeaders(context, {
+          "x-ratelimit-remaining": String(parsedQuota.data.remaining),
+        }),
+      },
     );
   } catch (error) {
     logEvent("error", "guidance_feedback_failed", context, {

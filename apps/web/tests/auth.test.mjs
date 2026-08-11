@@ -19,13 +19,40 @@ test("email and international phone registration use passwords", async () => {
   assert.match(form, /supabase\.auth\.verifyOtp/);
   assert.match(form, /supabase\.auth\.signUp/g);
   assert.match(form, /supabase\.auth\.signInWithPassword/g);
-  assert.match(form, /options: \{ channel: "sms" \}/);
+  assert.match(form, /channel: "sms"/);
   assert.match(form, /resetPasswordForEmail/);
   assert.match(form, /Forgot password\? Recover by email/);
   assert.match(form, /Already have an account\? Sign in/g);
   assert.match(form, /No PINFL or passport number required/);
   assert.doesNotMatch(form, /auth-tabs|signInAnonymously|signInWithOtp/);
   assert.doesNotMatch(form, /Continue with Google|Continue with Apple/);
+});
+
+test("account authentication sends single-use Turnstile tokens to Supabase", async () => {
+  const form = await readFile(
+    new URL("app/signup/auth-form.tsx", webRoot),
+    "utf8",
+  );
+  const widget = await readFile(
+    new URL("components/turnstile-widget.tsx", webRoot),
+    "utf8",
+  );
+  const exampleEnvironment = await readFile(
+    new URL(".env.example", webRoot),
+    "utf8",
+  );
+
+  assert.match(form, /process\.env\.NEXT_PUBLIC_TURNSTILE_SITE_KEY/);
+  assert.match(form, /captchaToken/g);
+  assert.match(form, /resetCaptcha\(\)/g);
+  assert.match(form, /resetPasswordForEmail/);
+  assert.match(widget, /next\/script/);
+  assert.match(widget, /render=explicit/);
+  assert.match(widget, /action: "account_auth"/);
+  assert.match(widget, /"expired-callback"/);
+  assert.match(widget, /turnstile\.remove/);
+  assert.match(exampleEnvironment, /NEXT_PUBLIC_TURNSTILE_SITE_KEY=/);
+  assert.doesNotMatch(exampleEnvironment, /TURNSTILE_SECRET_KEY/);
 });
 
 test("auth inputs keep readable text and Safari autofill colors", async () => {
