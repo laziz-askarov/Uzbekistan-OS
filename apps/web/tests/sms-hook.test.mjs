@@ -37,3 +37,11 @@ test("DevSMS adapter uses the registration OTP template and server-only token", 
   assert.doesNotMatch(provider, /NEXT_PUBLIC_DEVSMS|ESKIZ_SMS_API_TOKEN/);
   assert.doesNotMatch(provider, /Only valid \+998/);
 });
+
+test("DevSMS adapter accepts documented numeric and string SMS costs", async () => {
+  const provider = await readFile(providerUrl, "utf8");
+  assert.match(
+    provider,
+    /total_cost: z\.union\(\[z\.string\(\), z\.number\(\)\]\)\.optional\(\)/,
+  );
+});

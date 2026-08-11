@@ -9,7 +9,7 @@ const devSmsResponseSchema = z.object({
       request_id: z.string().optional(),
       status: z.string().optional(),
       parts_count: z.number().int().positive().optional(),
-      total_cost: z.string().optional(),
+      total_cost: z.union([z.string(), z.number()]).optional(),
     })
     .optional(),
 });
