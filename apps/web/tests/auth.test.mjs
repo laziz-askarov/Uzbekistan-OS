@@ -41,6 +41,16 @@ test("server auth uses cookie sessions and verified user lookup", async () => {
   assert.doesNotMatch(proxy, /auth\.getSession\(\)/);
 });
 
+test("browser Supabase config uses statically analyzable public variables", async () => {
+  const config = await readFile(
+    new URL("lib/supabase/config.ts", webRoot),
+    "utf8",
+  );
+  assert.match(config, /process\.env\.NEXT_PUBLIC_SUPABASE_URL/);
+  assert.match(config, /process\.env\.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
+  assert.doesNotMatch(config, /process\.env\[variable\]/);
+});
+
 test("RLS migration isolates workspace data and protects identity level", async () => {
   const migration = await readFile(
     new URL(
