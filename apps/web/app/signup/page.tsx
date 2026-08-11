@@ -58,7 +58,7 @@ export default function SignupPage() {
           <h2 id="signup-card-title">Create your free account</h2>
           <p>
             Keep your conversations and personalized visa plan available across
-            devices. Start with your Uzbekistan mobile number.
+            devices. Start with your email address—no password required.
           </p>
           <AuthForm />
           <Link className="pill pill-light signup-guest" href="/chat">

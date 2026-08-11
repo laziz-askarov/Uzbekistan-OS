@@ -5,16 +5,9 @@ import { type FormEvent, useMemo, useState } from "react";
 
 type Mode = "create" | "signin";
 
-function normalizeInternationalPhone(input: string) {
-  const compact = input.trim().replace(/[\s().-]/g, "");
-  const candidate = compact.startsWith("+")
-    ? compact
-    : /^998\d{9}$/.test(compact)
-      ? `+${compact}`
-      : /^\d{9}$/.test(compact)
-        ? `+998${compact}`
-        : null;
-  return candidate && /^\+[1-9]\d{7,14}$/.test(candidate) ? candidate : null;
+function normalizeEmail(input: string) {
+  const email = input.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
 
 function friendlyError(message: string) {
@@ -23,13 +16,16 @@ function friendlyError(message: string) {
     return "Guest account upgrades are not enabled yet. Please contact support.";
   }
   if (normalized.includes("provider is not enabled")) {
-    return "This sign-in option is not enabled yet.";
+    return "Email sign-in is not enabled yet.";
   }
   if (normalized.includes("rate limit")) {
-    return "Too many attempts. Please wait before requesting another code.";
+    return "Too many attempts. Please wait before requesting another link.";
   }
-  if (normalized.includes("already been registered")) {
-    return "This number already has an account. Choose Sign in instead.";
+  if (
+    normalized.includes("already been registered") ||
+    normalized.includes("already registered")
+  ) {
+    return "This email already has an account. Choose Sign in instead.";
   }
   return message;
 }
@@ -37,30 +33,27 @@ function friendlyError(message: string) {
 export default function AuthForm() {
   const supabase = useMemo(() => createClient(), []);
   const [mode, setMode] = useState<Mode>("create");
-  const [phone, setPhone] = useState("");
-  const [normalizedPhone, setNormalizedPhone] = useState<string | null>(null);
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function requestOtp(event: FormEvent<HTMLFormElement>) {
+  async function requestEmailLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const nextPhone = normalizeInternationalPhone(phone);
-    if (!nextPhone) {
-      setMessage(
-        "Enter a valid international mobile number with its country code, such as +998 90 123 45 67.",
-      );
+    const nextEmail = normalizeEmail(email);
+    if (!nextEmail) {
+      setMessage("Enter a valid email address.");
       return;
     }
 
     setBusy(true);
     setMessage(null);
+    const emailRedirectTo = `${window.location.origin}/auth/callback?next=/account`;
+
     try {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithOtp({
-          phone: nextPhone,
-          options: { shouldCreateUser: false },
+          email: nextEmail,
+          options: { emailRedirectTo, shouldCreateUser: false },
         });
         if (error) throw error;
       } else {
@@ -74,43 +67,20 @@ export default function AuthForm() {
           window.location.assign("/account");
           return;
         }
-        const { error } = await supabase.auth.updateUser({ phone: nextPhone });
+        const { error } = await supabase.auth.updateUser(
+          { email: nextEmail },
+          { emailRedirectTo },
+        );
         if (error) throw error;
       }
-      setNormalizedPhone(nextPhone);
-      setStep("otp");
-      setMessage(`We sent a 6-digit code to ${nextPhone}.`);
-    } catch (error) {
-      setMessage(
-        friendlyError(
-          error instanceof Error ? error.message : "Unable to send code.",
-        ),
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
 
-  async function verifyOtp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!normalizedPhone || !/^\d{6}$/.test(otp)) {
-      setMessage("Enter the 6-digit code from your text message.");
-      return;
-    }
-    setBusy(true);
-    setMessage(null);
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: normalizedPhone,
-        token: otp,
-        type: mode === "create" ? "phone_change" : "sms",
-      });
-      if (error) throw error;
-      window.location.assign("/account");
+      setMessage(
+        `Check ${nextEmail} for your secure ${mode === "create" ? "account confirmation" : "sign-in"} link.`,
+      );
     } catch (error) {
       setMessage(
         friendlyError(
-          error instanceof Error ? error.message : "Unable to verify code.",
+          error instanceof Error ? error.message : "Unable to send email.",
         ),
       );
     } finally {
@@ -128,7 +98,6 @@ export default function AuthForm() {
             key={value}
             onClick={() => {
               setMode(value);
-              setStep("phone");
               setMessage(null);
             }}
             type="button"
@@ -138,69 +107,38 @@ export default function AuthForm() {
         ))}
       </div>
 
-      {step === "phone" ? (
-        <form onSubmit={requestOtp}>
-          <label htmlFor="phone">Mobile number</label>
-          <div className="phone-field">
-            <input
-              autoComplete="tel"
-              id="phone"
-              inputMode="tel"
-              maxLength={24}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="+998 90 123 45 67"
-              required
-              type="tel"
-              value={phone}
-            />
-          </div>
-          <p className="phone-hint">
-            Uzbekistan numbers can be entered with or without +998. Other
-            countries require the international country code.
-          </p>
-          <button
-            className="pill pill-dark auth-submit"
-            disabled={busy}
-            type="submit"
-          >
-            {busy
-              ? "Sending code…"
-              : mode === "create"
-                ? "Continue with phone"
-                : "Send sign-in code"}
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={verifyOtp}>
-          <label htmlFor="otp">Verification code</label>
+      <form onSubmit={requestEmailLink}>
+        <label htmlFor="email">Email address</label>
+        <div className="auth-input-field">
           <input
-            autoComplete="one-time-code"
-            className="otp-field"
-            id="otp"
-            inputMode="numeric"
-            maxLength={6}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
-            placeholder="000000"
+            autoCapitalize="none"
+            autoComplete="email"
+            id="email"
+            inputMode="email"
+            maxLength={254}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
             required
-            value={otp}
+            spellCheck={false}
+            type="email"
+            value={email}
           />
-          <button
-            className="pill pill-dark auth-submit"
-            disabled={busy}
-            type="submit"
-          >
-            {busy ? "Verifying…" : "Verify and continue"}
-          </button>
-          <button
-            className="auth-back"
-            disabled={busy}
-            onClick={() => setStep("phone")}
-            type="button"
-          >
-            Use a different number
-          </button>
-        </form>
-      )}
+        </div>
+        <p className="auth-input-hint">
+          We&apos;ll email you a secure link. No password required.
+        </p>
+        <button
+          className="pill pill-dark auth-submit"
+          disabled={busy}
+          type="submit"
+        >
+          {busy
+            ? "Sending link…"
+            : mode === "create"
+              ? "Continue with email"
+              : "Send sign-in link"}
+        </button>
+      </form>
 
       {message ? (
         <p className="auth-message" role="status">

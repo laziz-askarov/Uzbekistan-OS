@@ -941,7 +941,7 @@ a:focus-visible {
   font-size: 13px;
   font-weight: 700;
 }
-.phone-field {
+.auth-input-field {
   min-height: 50px;
   display: flex;
   align-items: center;
@@ -949,10 +949,11 @@ a:focus-visible {
   border-radius: 12px;
   overflow: hidden;
 }
-.phone-field:focus-within {
+.auth-input-field:focus-within {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgb(37 99 235 / 15%);
 }
+.auth-input-field input,
 .phone-field input,
 .otp-field {
   width: 100%;
@@ -960,10 +961,26 @@ a:focus-visible {
   padding: 0 13px;
   border: 0;
   outline: 0;
+  color: #0f172a;
   background: #fff;
+  caret-color: #0f172a;
   font: inherit;
   font-size: 16px;
+  -webkit-text-fill-color: #0f172a;
 }
+.auth-input-field input::placeholder,
+.phone-field input::placeholder,
+.otp-field::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+  -webkit-text-fill-color: #94a3b8;
+}
+.auth-input-field input:-webkit-autofill,
+.phone-field input:-webkit-autofill {
+  box-shadow: 0 0 0 1000px #fff inset;
+  -webkit-text-fill-color: #0f172a;
+}
+.auth-input-hint,
 .phone-hint {
   margin: 7px 2px 0 !important;
   color: #64748b !important;

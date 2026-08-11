@@ -41,8 +41,9 @@ test("personalized workspace explains the complete visa plan", () => {
   }
 });
 
-test("signup screen supports progressive phone authentication", () => {
+test("signup screen supports progressive email authentication", () => {
   assert.match(signupSource, /Create your free account/);
+  assert.match(signupSource, /Start with your email address/);
   assert.match(signupSource, /<AuthForm \/>/);
   assert.match(signupSource, /Continue as guest/);
 });

@@ -17,6 +17,6 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.redirect(
-    new URL("/signup?error=oauth_callback_failed", url.origin),
+    new URL("/signup?error=auth_callback_failed", url.origin),
   );
 }
