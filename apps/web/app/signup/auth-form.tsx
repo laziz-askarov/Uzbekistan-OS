@@ -118,23 +118,6 @@ export default function AuthForm() {
     }
   }
 
-  async function oauth(provider: "google" | "apple") {
-    setBusy(true);
-    setMessage(null);
-    const redirectTo = `${window.location.origin}/auth/callback?next=/account`;
-    const { data } = await supabase.auth.getUser();
-    const result = data.user?.is_anonymous
-      ? await supabase.auth.linkIdentity({ provider, options: { redirectTo } })
-      : await supabase.auth.signInWithOAuth({
-          provider,
-          options: { redirectTo },
-        });
-    if (result.error) {
-      setMessage(friendlyError(result.error.message));
-      setBusy(false);
-    }
-  }
-
   return (
     <div className="auth-form">
       <div className="auth-tabs" aria-label="Account action">
@@ -224,25 +207,6 @@ export default function AuthForm() {
           {message}
         </p>
       ) : null}
-      <div className="auth-divider">
-        <span>or</span>
-      </div>
-      <div className="auth-oauth">
-        <button
-          disabled={busy}
-          onClick={() => void oauth("google")}
-          type="button"
-        >
-          Continue with Google
-        </button>
-        <button
-          disabled={busy}
-          onClick={() => void oauth("apple")}
-          type="button"
-        >
-          Continue with Apple
-        </button>
-      </div>
       <p className="auth-privacy">
         No password, PINFL, or passport number required.
       </p>

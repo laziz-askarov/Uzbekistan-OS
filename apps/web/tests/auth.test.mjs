@@ -18,6 +18,7 @@ test("phone auth accepts international numbers and upgrades anonymous accounts",
   assert.match(form, /shouldCreateUser: false/);
   assert.match(form, /No password, PINFL, or passport number required/);
   assert.doesNotMatch(form, /type="password"/);
+  assert.doesNotMatch(form, /Continue with Google|Continue with Apple/);
 });
 
 test("server auth uses cookie sessions and verified user lookup", async () => {
