@@ -14,7 +14,8 @@ export default async function AccountPage() {
     .select("display_name, preferred_language, identity_level")
     .eq("user_id", data.user.id)
     .maybeSingle();
-  const phone = data.user.phone ?? "Verified account";
+  const contact = data.user.email ?? data.user.phone ?? "Verified account";
+  const contactLabel = data.user.email ? "Email" : "Phone";
 
   return (
     <main className="account-page">
@@ -27,13 +28,15 @@ export default async function AccountPage() {
         <p>Your conversations and saved plans are protected by your account.</p>
         <dl>
           <div>
-            <dt>Phone</dt>
-            <dd>{phone}</dd>
+            <dt>{contactLabel}</dt>
+            <dd>{contact}</dd>
           </div>
           <div>
             <dt>Identity level</dt>
             <dd>
-              {profile?.identity_level === 2 ? "Phone verified" : "Account"}
+              {profile?.identity_level === 2
+                ? `${contactLabel} verified`
+                : "Account"}
             </dd>
           </div>
           <div>

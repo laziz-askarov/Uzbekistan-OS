@@ -4,7 +4,7 @@ import test from "node:test";
 
 const webRoot = new URL("..", import.meta.url);
 
-test("email auth sends passwordless links and upgrades anonymous accounts", async () => {
+test("email is primary and international phone OTP is secondary", async () => {
   const form = await readFile(
     new URL("app/signup/auth-form.tsx", webRoot),
     "utf8",
@@ -12,13 +12,14 @@ test("email auth sends passwordless links and upgrades anonymous accounts", asyn
   assert.match(form, /type="email"/);
   assert.match(form, /Continue with email/);
   assert.match(form, /emailRedirectTo/);
-  assert.match(form, /signInAnonymously/);
-  assert.match(form, /\{ email: nextEmail \}/);
-  assert.match(form, /supabase\.auth\.updateUser/);
-  assert.match(form, /shouldCreateUser: false/);
+  assert.match(form, /Continue with phone/);
+  assert.match(form, /normalizeInternationalPhone/);
+  assert.match(form, /\^\\\+\[1-9\]\\d\{7,14\}\$/);
+  assert.match(form, /supabase\.auth\.verifyOtp/);
+  assert.match(form, /shouldCreateUser: mode === "create"/g);
   assert.match(form, /No password, PINFL, or passport number required/);
   assert.doesNotMatch(form, /type="password"/);
-  assert.doesNotMatch(form, /Continue with phone/);
+  assert.doesNotMatch(form, /signInAnonymously|updateUser/);
   assert.doesNotMatch(form, /Continue with Google|Continue with Apple/);
 });
 
@@ -48,6 +49,20 @@ test("server auth uses cookie sessions and verified user lookup", async () => {
   assert.match(proxy, /auth\.getClaims\(\)/);
   assert.match(account, /auth\.getUser\(\)/);
   assert.doesNotMatch(proxy, /auth\.getSession\(\)/);
+});
+
+test("chat page and API reject missing or anonymous accounts", async () => {
+  const page = await readFile(new URL("app/chat/page.tsx", webRoot), "utf8");
+  const api = await readFile(new URL("app/api/chat/route.ts", webRoot), "utf8");
+  const signup = await readFile(
+    new URL("app/signup/page.tsx", webRoot),
+    "utf8",
+  );
+  assert.match(page, /!data\.user \|\| data\.user\.is_anonymous/);
+  assert.match(page, /redirect\("\/signup"\)/);
+  assert.match(api, /authentication_required/);
+  assert.match(api, /status: 401/);
+  assert.doesNotMatch(signup, /Continue as guest/);
 });
 
 test("browser Supabase config uses statically analyzable public variables", async () => {

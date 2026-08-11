@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import ChatWorkspace from "./chat-workspace";
 
 export const metadata: Metadata = {
@@ -7,6 +9,10 @@ export const metadata: Metadata = {
     "A signed-in workspace preview for structured, official-source-backed Uzbekistan visa guidance.",
 };
 
-export default function ChatPage() {
+export default async function ChatPage() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user || data.user.is_anonymous) redirect("/signup");
+
   return <ChatWorkspace />;
 }

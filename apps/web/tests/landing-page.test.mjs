@@ -41,11 +41,12 @@ test("personalized workspace explains the complete visa plan", () => {
   }
 });
 
-test("signup screen supports progressive email authentication", () => {
+test("signup screen requires an account and offers email with phone fallback", () => {
   assert.match(signupSource, /Create your free account/);
-  assert.match(signupSource, /Start with your email address/);
+  assert.match(signupSource, /Use email for the simplest setup/);
+  assert.match(signupSource, /choose phone to\s+receive/);
   assert.match(signupSource, /<AuthForm \/>/);
-  assert.match(signupSource, /Continue as guest/);
+  assert.doesNotMatch(signupSource, /Continue as guest/);
 });
 
 test("landing page exposes every official non-electronic visa category", () => {

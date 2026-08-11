@@ -58,12 +58,10 @@ export default function SignupPage() {
           <h2 id="signup-card-title">Create your free account</h2>
           <p>
             Keep your conversations and personalized visa plan available across
-            devices. Start with your email address—no password required.
+            devices. Use email for the simplest setup, or choose phone to
+            receive a verification code.
           </p>
           <AuthForm />
-          <Link className="pill pill-light signup-guest" href="/chat">
-            Continue as guest
-          </Link>
           <Link className="signup-back" href="/">
             Return to visa guide
           </Link>

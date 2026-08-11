@@ -375,7 +375,6 @@ export default function ChatWorkspace() {
   const [account, setAccount] = useState<{
     id: string;
     label: string;
-    anonymous: boolean;
   } | null>(null);
   const active = chats.find((chat) => chat.id === activeId) ?? chats[0];
 
@@ -388,7 +387,6 @@ export default function ChatWorkspace() {
       setAccount({
         id: user.id,
         label: user.phone ?? user.email ?? "Signed-in account",
-        anonymous: Boolean(user.is_anonymous),
       });
       const { data: conversations } = await supabase
         .from("conversations")
@@ -423,17 +421,11 @@ export default function ChatWorkspace() {
 
   async function ensureIdentity() {
     const { data } = await supabase.auth.getUser();
-    let user = data.user;
-    if (!user) {
-      const anonymous = await supabase.auth.signInAnonymously();
-      if (anonymous.error) throw anonymous.error;
-      user = anonymous.data.user;
-    }
-    if (!user) throw new Error("Unable to create a secure guest session");
+    const user = data.user;
+    if (!user || user.is_anonymous) throw new Error("Authentication required");
     setAccount({
       id: user.id,
-      label: user.phone ?? user.email ?? "Guest session",
-      anonymous: Boolean(user.is_anonymous),
+      label: user.phone ?? user.email ?? "Signed-in account",
     });
     return user;
   }
@@ -513,7 +505,7 @@ export default function ChatWorkspace() {
             messages: [...activeHistory, { role: "user", content: value }],
           }),
         }),
-        persistence.catch(() => null),
+        persistence,
       ]);
       if (!response.ok) throw new Error("Chat request failed");
       const result = (await response.json()) as VisaApiResult;
@@ -536,29 +528,23 @@ export default function ChatWorkspace() {
             : chat,
         ),
       );
-      if (user) {
-        const { error: replyError } = await supabase.from("messages").insert({
-          id: reply.id,
-          conversation_id: targetChatId,
-          owner_id: user.id,
-          role: "assistant",
-          content: {
-            role: reply.role,
-            text: reply.text,
-            answer: reply.answer,
-            workflow: reply.workflow,
-            sources: reply.sources,
-            generated: reply.generated,
-          },
-        });
-        if (replyError) {
-          setSendError(
-            "Your answer is ready, but it could not be saved to account history.",
-          );
-        }
-      } else {
+      const { error: replyError } = await supabase.from("messages").insert({
+        id: reply.id,
+        conversation_id: targetChatId,
+        owner_id: user.id,
+        role: "assistant",
+        content: {
+          role: reply.role,
+          text: reply.text,
+          answer: reply.answer,
+          workflow: reply.workflow,
+          sources: reply.sources,
+          generated: reply.generated,
+        },
+      });
+      if (replyError) {
         setSendError(
-          "Your answer is ready, but this conversation is only stored on this device until account service is available.",
+          "Your answer is ready, but it could not be saved to account history.",
         );
       }
     } catch {
@@ -655,20 +641,13 @@ export default function ChatWorkspace() {
             ) : null}
           </nav>
           <div className={styles.account}>
-            <div className={styles.avatar}>
-              {account?.anonymous === false ? "U" : "V"}
-            </div>
+            <div className={styles.avatar}>U</div>
             <div>
-              <strong>
-                {account?.anonymous === false ? "Your account" : "Visitor"}
-              </strong>
-              <span>{account?.label ?? "Guest access"}</span>
+              <strong>Your account</strong>
+              <span>{account?.label ?? "Loading account…"}</span>
             </div>
-            <Link
-              className={styles.accountLink}
-              href={account?.anonymous === false ? "/account" : "/signup"}
-            >
-              {account?.anonymous === false ? "Manage" : "Save"}
+            <Link className={styles.accountLink} href="/account">
+              Manage
             </Link>
           </div>
         </div>
@@ -692,13 +671,11 @@ export default function ChatWorkspace() {
             <em>Grounded GPT</em>
           </div>
           <Link
-            aria-label={
-              account?.anonymous === false ? "Open account" : "Create account"
-            }
-            href={account?.anonymous === false ? "/account" : "/signup"}
+            aria-label="Open account"
+            href="/account"
             className={styles.avatar}
           >
-            {account?.anonymous === false ? "U" : "V"}
+            U
           </Link>
         </header>
 

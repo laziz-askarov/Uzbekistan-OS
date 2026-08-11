@@ -931,6 +931,28 @@ a:focus-visible {
   background: #fff;
   box-shadow: 0 1px 4px rgb(15 23 42 / 10%);
 }
+.auth-methods {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.auth-methods button {
+  min-height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #475569;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-methods button[aria-pressed="true"] {
+  border-color: #0f172a;
+  color: #fff;
+  background: #0f172a;
+}
 .auth-form form {
   margin-top: 20px;
 }
@@ -1050,10 +1072,6 @@ a:focus-visible {
   text-align: center;
   font-size: 12px !important;
   line-height: 18px !important;
-}
-.signup-guest {
-  width: 100%;
-  margin-top: 12px;
 }
 .signup-back {
   min-height: 44px;
