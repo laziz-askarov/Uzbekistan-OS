@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ["@uzbekistan-os/design-system"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/sign/**",
+      },
+    ],
+  },
   turbopack: {
     root: repositoryRoot,
   },

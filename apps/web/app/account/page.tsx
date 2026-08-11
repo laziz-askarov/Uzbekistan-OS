@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import AccountSettings from "./account-settings";
 
 export const metadata = { title: "Your account | Uzbekistan OS" };
 
@@ -11,11 +12,21 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, preferred_language, identity_level")
+    .select(
+      "first_name, last_name, display_name, nationality, avatar_path, identity_level",
+    )
     .eq("user_id", data.user.id)
     .maybeSingle();
-  const contact = data.user.email ?? data.user.phone ?? "Verified account";
-  const contactLabel = data.user.email ? "Email" : "Phone";
+
+  const avatarPath = profile?.avatar_path ?? null;
+  const avatarUrl = avatarPath
+    ? ((
+        await supabase.storage.from("avatars").createSignedUrl(avatarPath, 3600)
+      ).data?.signedUrl ?? null)
+    : null;
+  const profileName = [profile?.first_name, profile?.last_name]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <main className="account-page">
@@ -24,27 +35,37 @@ export default async function AccountPage() {
       </Link>
       <section className="account-card">
         <p className="section-kicker">Your account</p>
-        <h1>{profile?.display_name || "Welcome to Uzbekistan OS"}</h1>
-        <p>Your conversations and saved plans are protected by your account.</p>
-        <dl>
+        <div className="account-hero">
           <div>
-            <dt>{contactLabel}</dt>
-            <dd>{contact}</dd>
+            <h1>
+              {profileName ||
+                profile?.display_name ||
+                "Welcome to Uzbekistan OS"}
+            </h1>
+            <p>
+              Keep your personal details and verified sign-in methods up to
+              date.
+            </p>
           </div>
-          <div>
-            <dt>Identity level</dt>
-            <dd>
-              {profile?.identity_level === 2
-                ? `${contactLabel} verified`
-                : "Account"}
-            </dd>
-          </div>
-          <div>
-            <dt>Language</dt>
-            <dd>{profile?.preferred_language ?? "English"}</dd>
-          </div>
-        </dl>
-        <div className="account-actions">
+          <span className="account-verification">
+            {profile?.identity_level === 2 ? "Verified account" : "Account"}
+          </span>
+        </div>
+
+        <AccountSettings
+          initialEmail={data.user.email ?? ""}
+          initialPhone={data.user.phone ?? ""}
+          initialProfile={{
+            firstName: profile?.first_name ?? "",
+            lastName: profile?.last_name ?? "",
+            nationality: profile?.nationality ?? "",
+            avatarPath,
+            avatarUrl,
+          }}
+          userId={data.user.id}
+        />
+
+        <footer className="account-actions">
           <Link className="pill pill-dark" href="/chat">
             Open assistant
           </Link>
@@ -53,11 +74,7 @@ export default async function AccountPage() {
               Sign out
             </button>
           </form>
-        </div>
-        <p className="account-note">
-          OneID verification will only be requested for future
-          identity-dependent government services.
-        </p>
+        </footer>
       </section>
     </main>
   );

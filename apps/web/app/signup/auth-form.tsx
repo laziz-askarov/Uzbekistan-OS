@@ -1,27 +1,11 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { normalizeEmail, normalizeInternationalPhone } from "@/lib/auth-inputs";
 import { type FormEvent, useMemo, useState } from "react";
 
 type Mode = "create" | "signin";
 type Method = "email" | "phone";
-
-function normalizeEmail(input: string) {
-  const email = input.trim().toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
-}
-
-function normalizeInternationalPhone(input: string) {
-  const compact = input.trim().replace(/[\s().-]/g, "");
-  const candidate = compact.startsWith("+")
-    ? compact
-    : /^998\d{9}$/.test(compact)
-      ? `+${compact}`
-      : /^\d{9}$/.test(compact)
-        ? `+998${compact}`
-        : null;
-  return candidate && /^\+[1-9]\d{7,14}$/.test(candidate) ? candidate : null;
-}
 
 function friendlyError(message: string, method: Method) {
   const normalized = message.toLowerCase();
@@ -122,6 +106,35 @@ export default function AuthForm() {
       setMessage(
         friendlyError(
           error instanceof Error ? error.message : "Unable to continue.",
+          "email",
+        ),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendPasswordRecovery() {
+    const nextEmail = normalizeEmail(email);
+    if (!nextEmail) {
+      setMessage("Enter your account email address first.");
+      return;
+    }
+
+    setBusy(true);
+    setMessage(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(nextEmail, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/account/password`,
+      });
+      if (error) throw error;
+      setMessage(`We sent password recovery instructions to ${nextEmail}.`);
+    } catch (error) {
+      setMessage(
+        friendlyError(
+          error instanceof Error
+            ? error.message
+            : "Unable to send recovery instructions.",
           "email",
         ),
       );
@@ -283,6 +296,16 @@ export default function AuthForm() {
               ? "Already have an account? Sign in"
               : "Need an account? Create one"}
           </button>
+          {mode === "signin" ? (
+            <button
+              className="auth-recovery"
+              disabled={busy}
+              onClick={sendPasswordRecovery}
+              type="button"
+            >
+              Forgot password? Recover by email
+            </button>
+          ) : null}
         </form>
       ) : phoneStep === "credentials" ? (
         <form onSubmit={submitPhone}>

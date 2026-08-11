@@ -1080,13 +1080,13 @@ a:focus-visible {
 }
 
 .account-page {
-  width: min(calc(100% - 40px), 840px);
+  width: min(calc(100% - 40px), 1040px);
   min-height: 100vh;
   margin: 0 auto;
   padding: 28px 0 64px;
 }
 .account-card {
-  margin-top: 12vh;
+  margin-top: clamp(40px, 7vh, 84px);
   padding: clamp(28px, 5vw, 56px);
   border: 1px solid #e5e7eb;
   border-radius: 28px;
@@ -1095,7 +1095,7 @@ a:focus-visible {
 }
 .account-card h1 {
   margin: 8px 0 12px;
-  font-size: clamp(36px, 6vw, 58px);
+  font-size: clamp(36px, 5vw, 52px);
   line-height: 1;
   letter-spacing: -0.045em;
 }
@@ -1103,25 +1103,217 @@ a:focus-visible {
   color: #64748b;
   line-height: 25px;
 }
-.account-card dl {
-  margin: 32px 0;
-  border-top: 1px solid #e5e7eb;
-}
-.account-card dl div {
-  padding: 15px 0;
+.account-hero {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 28px;
 }
-.account-card dt {
-  color: #64748b;
-}
-.account-card dd {
+.account-hero p,
+.account-section-copy {
   margin: 0;
+  color: #64748b;
+  line-height: 24px;
+}
+.account-verification {
+  min-height: 34px;
+  margin-top: 8px;
+  padding: 7px 13px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #166534;
+  background: #f0fdf4;
+  font-size: 13px;
   font-weight: 700;
 }
+.account-settings {
+  margin-top: 44px;
+  display: grid;
+  gap: 24px;
+}
+.account-section {
+  padding: 30px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+.account-section h2 {
+  margin: 4px 0 20px;
+  font-size: 26px;
+  letter-spacing: -0.025em;
+}
+.account-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.profile-image-control {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.profile-avatar {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  color: #fff;
+  background: #0f172a;
+  font-size: 26px;
+  font-weight: 800;
+}
+.profile-avatar img {
+  object-fit: cover;
+}
+.profile-image-actions {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+}
+.profile-image-actions input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.profile-image-actions label {
+  min-height: 40px;
+  padding: 9px 15px;
+  cursor: pointer;
+}
+.profile-image-actions:has(input:focus-visible) label {
+  outline: 3px solid rgb(37 99 235 / 25%);
+  outline-offset: 2px;
+}
+.account-text-action,
+.auth-recovery {
+  min-height: 36px;
+  padding: 6px 0;
+  border: 0;
+  color: #475569;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-recovery {
+  width: 100%;
+  margin-top: 2px;
+  text-align: center;
+}
+.account-form,
+.account-inline-form {
+  display: grid;
+  gap: 16px;
+}
+.account-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.account-form label,
+.account-inline-form label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+.account-form input,
+.account-inline-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  outline: none;
+  color: #0f172a;
+  background: #fff;
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  font: inherit;
+  font-size: 15px;
+}
+.account-form input:focus,
+.account-inline-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+.account-form input:-webkit-autofill,
+.account-inline-form input:-webkit-autofill {
+  -webkit-text-fill-color: #0f172a;
+  box-shadow: 0 0 0 1000px #fff inset;
+}
+.account-save {
+  width: fit-content;
+  min-width: 150px;
+  border: 0;
+}
+.account-inline-form {
+  margin-top: 22px;
+}
+.account-inline-form > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.account-inline-form .pill {
+  min-width: 138px;
+  border: 1px solid #cbd5e1;
+}
+.account-inline-form small {
+  color: #64748b;
+  font-size: 12px;
+}
+.account-recovery {
+  margin-top: 28px;
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+.account-recovery div {
+  display: grid;
+  gap: 4px;
+}
+.account-recovery strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+.account-recovery span {
+  color: #64748b;
+  font-size: 13px;
+}
+.account-notice {
+  margin: 0;
+  padding: 13px 15px;
+  border-radius: 11px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.account-notice-success {
+  color: #166534;
+  background: #f0fdf4;
+}
+.account-notice-error {
+  color: #991b1b;
+  background: #fef2f2;
+}
 .account-actions {
+  margin-top: 28px;
   display: flex;
   gap: 10px;
 }
@@ -1132,9 +1324,13 @@ a:focus-visible {
   min-width: 150px;
   border: 0;
 }
-.account-note {
+.password-card {
+  width: min(100%, 620px);
+  margin-right: auto;
+  margin-left: auto;
+}
+.password-form {
   margin-top: 28px;
-  font-size: 13px;
 }
 
 .landing-footer {
@@ -1326,6 +1522,42 @@ a:focus-visible {
   }
   .signup-card {
     padding: 28px 24px;
+  }
+  .account-page {
+    width: calc(100% - 32px);
+    padding-top: 20px;
+  }
+  .account-card {
+    margin-top: 56px;
+    padding: 28px 24px;
+  }
+  .account-hero,
+  .account-section-heading,
+  .account-recovery {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .account-verification {
+    width: fit-content;
+    margin-top: 0;
+  }
+  .profile-image-control {
+    align-items: flex-start;
+  }
+  .account-form-grid,
+  .account-inline-form > div {
+    grid-template-columns: 1fr;
+  }
+  .account-inline-form .pill,
+  .account-recovery .pill {
+    width: 100%;
+  }
+  .account-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .account-actions .pill {
+    width: 100%;
   }
   .route-explainer,
   .common-visas,

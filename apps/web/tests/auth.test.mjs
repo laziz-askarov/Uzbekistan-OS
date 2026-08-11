@@ -9,16 +9,19 @@ test("email and international phone registration use passwords", async () => {
     new URL("app/signup/auth-form.tsx", webRoot),
     "utf8",
   );
+  const inputs = await readFile(new URL("lib/auth-inputs.ts", webRoot), "utf8");
   assert.match(form, /type="email"/);
   assert.match(form, /type="password"/g);
   assert.match(form, /minLength=\{8\}/g);
   assert.match(form, /emailRedirectTo/);
   assert.match(form, /normalizeInternationalPhone/);
-  assert.match(form, /\^\\\+\[1-9\]\\d\{7,14\}\$/);
+  assert.match(inputs, /\^\\\+\[1-9\]\\d\{7,14\}\$/);
   assert.match(form, /supabase\.auth\.verifyOtp/);
   assert.match(form, /supabase\.auth\.signUp/g);
   assert.match(form, /supabase\.auth\.signInWithPassword/g);
   assert.match(form, /options: \{ channel: "sms" \}/);
+  assert.match(form, /resetPasswordForEmail/);
+  assert.match(form, /Forgot password\? Recover by email/);
   assert.match(form, /Already have an account\? Sign in/g);
   assert.match(form, /No PINFL or passport number required/);
   assert.doesNotMatch(form, /auth-tabs|signInAnonymously|signInWithOtp/);
