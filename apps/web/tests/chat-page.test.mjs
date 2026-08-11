@@ -50,6 +50,18 @@ test("chat starts with a clean conversation instead of a seeded visa workflow", 
   assert.doesNotMatch(workspace, /eVisaGuide/);
 });
 
+test("chat creates a secure guest identity and persists account-owned history", async () => {
+  const workspace = await readFile(workspaceUrl, "utf8");
+  assert.match(workspace, /signInAnonymously/);
+  assert.match(workspace, /from\("conversations"\)/);
+  assert.match(workspace, /from\("messages"\)/);
+  assert.match(workspace, /owner_id: user\.id/);
+  assert.match(
+    workspace,
+    /href=\{account\?\.anonymous === false \? "\/account" : "\/signup"\}/,
+  );
+});
+
 test("visa GPT calls use the direct server-side OpenAI provider", async () => {
   const ai = await readFile(aiUrl, "utf8");
   assert.match(ai, /from "@ai-sdk\/openai"/);

@@ -41,10 +41,10 @@ test("personalized workspace explains the complete visa plan", () => {
   }
 });
 
-test("signup screen is transparent while secure authentication is pending", () => {
+test("signup screen supports progressive phone authentication", () => {
   assert.match(signupSource, /Create your free account/);
-  assert.match(signupSource, /No personal\s+details are being collected/);
-  assert.match(signupSource, /disabled/);
+  assert.match(signupSource, /<AuthForm \/>/);
+  assert.match(signupSource, /Continue as guest/);
 });
 
 test("landing page exposes every official non-electronic visa category", () => {

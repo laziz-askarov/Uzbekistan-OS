@@ -197,6 +197,13 @@
   line-height: 16px;
 }
 
+.accountLink {
+  margin-left: auto;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .mainPanel {
   min-width: 0;
   flex: 1;

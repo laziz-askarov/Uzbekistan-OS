@@ -3,11 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MessageResponse } from "@/components/ai-elements/message";
-import { type FormEvent, type KeyboardEvent, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import styles from "./chat-workspace.module.css";
 
 type Message = {
-  id: number;
+  id: string;
   role: "user" | "assistant";
   text: string;
   answer?: VisaApiAnswer;
@@ -16,7 +23,7 @@ type Message = {
   generated?: boolean;
 };
 
-type Chat = { id: number; title: string; messages: Message[] };
+type Chat = { id: string; title: string; messages: Message[] };
 
 type VisaApiAnswer = {
   status: "answered" | "needs_information" | "insufficient";
@@ -53,9 +60,9 @@ const suggestions = [
   ["✓", "What happens after I arrive?"],
 ] as const;
 
-const initialChats: Chat[] = [
-  { id: 1, title: "New conversation", messages: [] },
-];
+function newLocalChat(): Chat {
+  return { id: crypto.randomUUID(), title: "New conversation", messages: [] };
+}
 
 const completedSectionOrder = [
   "route",
@@ -357,29 +364,88 @@ function GeneratedAnswerCard({ message }: { message: Message }) {
 }
 
 export default function ChatWorkspace() {
-  const [chats, setChats] = useState<Chat[]>(initialChats);
-  const [activeId, setActiveId] = useState(1);
+  const supabase = useMemo(() => createClient(), []);
+  const [chats, setChats] = useState<Chat[]>(() => [newLocalChat()]);
+  const [activeId, setActiveId] = useState(() => chats[0].id);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const nextChatId = useRef(2);
-  const nextMessageId = useRef(1);
+  const [account, setAccount] = useState<{
+    id: string;
+    label: string;
+    anonymous: boolean;
+  } | null>(null);
   const active = chats.find((chat) => chat.id === activeId) ?? chats[0];
 
-  function createChat() {
-    const chat = {
-      id: nextChatId.current++,
-      title: "New conversation",
-      messages: [],
+  useEffect(() => {
+    let cancelled = false;
+    async function restoreWorkspace() {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (!user || cancelled) return;
+      setAccount({
+        id: user.id,
+        label: user.phone ?? user.email ?? "Signed-in account",
+        anonymous: Boolean(user.is_anonymous),
+      });
+      const { data: conversations } = await supabase
+        .from("conversations")
+        .select("id,title,updated_at")
+        .order("updated_at", { ascending: false });
+      if (!conversations?.length || cancelled) return;
+      const ids = conversations.map((conversation) => conversation.id);
+      const { data: messages } = await supabase
+        .from("messages")
+        .select("id,conversation_id,content")
+        .in("conversation_id", ids)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      const restored = conversations.map((conversation) => ({
+        id: conversation.id,
+        title: conversation.title,
+        messages: (messages ?? [])
+          .filter((message) => message.conversation_id === conversation.id)
+          .map((message) => ({
+            ...(message.content as Omit<Message, "id">),
+            id: message.id,
+          })),
+      }));
+      setChats(restored);
+      setActiveId(restored[0].id);
+    }
+    void restoreWorkspace();
+    return () => {
+      cancelled = true;
     };
+  }, [supabase]);
+
+  async function ensureIdentity() {
+    const { data } = await supabase.auth.getUser();
+    let user = data.user;
+    if (!user) {
+      const anonymous = await supabase.auth.signInAnonymously();
+      if (anonymous.error) throw anonymous.error;
+      user = anonymous.data.user;
+    }
+    if (!user) throw new Error("Unable to create a secure guest session");
+    setAccount({
+      id: user.id,
+      label: user.phone ?? user.email ?? "Guest session",
+      anonymous: Boolean(user.is_anonymous),
+    });
+    return user;
+  }
+
+  function createChat() {
+    const chat = newLocalChat();
     setChats((current) => [chat, ...current]);
     setActiveId(chat.id);
     setMobileSidebarOpen(false);
   }
 
-  function selectChat(id: number) {
+  function selectChat(id: string) {
     setActiveId(id);
     setMobileSidebarOpen(false);
   }
@@ -388,7 +454,7 @@ export default function ChatWorkspace() {
     const value = text.trim();
     if (!value || isSending) return;
     const userMessage: Message = {
-      id: nextMessageId.current++,
+      id: crypto.randomUUID(),
       role: "user",
       text: value,
     };
@@ -415,19 +481,45 @@ export default function ChatWorkspace() {
     setSendError(null);
     setIsSending(true);
 
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          messages: [...activeHistory, { role: "user", content: value }],
-        }),
+    const nextTitle =
+      active.messages.length === 0
+        ? `${value.slice(0, 42)}${value.length > 42 ? "…" : ""}`
+        : active.title;
+    const persistence = ensureIdentity().then(async (user) => {
+      const { error: conversationError } = await supabase
+        .from("conversations")
+        .upsert(
+          { id: targetChatId, owner_id: user.id, title: nextTitle },
+          { onConflict: "id" },
+        );
+      if (conversationError) throw conversationError;
+      const { error: messageError } = await supabase.from("messages").insert({
+        id: userMessage.id,
+        conversation_id: targetChatId,
+        owner_id: user.id,
+        role: "user",
+        content: { role: userMessage.role, text: userMessage.text },
       });
+      if (messageError) throw messageError;
+      return user;
+    });
+
+    try {
+      const [response, user] = await Promise.all([
+        fetch("/api/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            messages: [...activeHistory, { role: "user", content: value }],
+          }),
+        }),
+        persistence.catch(() => null),
+      ]);
       if (!response.ok) throw new Error("Chat request failed");
       const result = (await response.json()) as VisaApiResult;
       const nextQuestion = result.answer.followUpQuestions[0];
       const reply: Message = {
-        id: nextMessageId.current++,
+        id: crypto.randomUUID(),
         role: "assistant",
         text: nextQuestion
           ? `${result.answer.summary}\n\n${nextQuestion}`
@@ -444,6 +536,31 @@ export default function ChatWorkspace() {
             : chat,
         ),
       );
+      if (user) {
+        const { error: replyError } = await supabase.from("messages").insert({
+          id: reply.id,
+          conversation_id: targetChatId,
+          owner_id: user.id,
+          role: "assistant",
+          content: {
+            role: reply.role,
+            text: reply.text,
+            answer: reply.answer,
+            workflow: reply.workflow,
+            sources: reply.sources,
+            generated: reply.generated,
+          },
+        });
+        if (replyError) {
+          setSendError(
+            "Your answer is ready, but it could not be saved to account history.",
+          );
+        }
+      } else {
+        setSendError(
+          "Your answer is ready, but this conversation is only stored on this device until account service is available.",
+        );
+      }
     } catch {
       setSendError(
         "The visa assistant is unavailable right now. Please try again in a moment.",
@@ -538,11 +655,21 @@ export default function ChatWorkspace() {
             ) : null}
           </nav>
           <div className={styles.account}>
-            <div className={styles.avatar}>V</div>
-            <div>
-              <strong>Visitor</strong>
-              <span>Preview account</span>
+            <div className={styles.avatar}>
+              {account?.anonymous === false ? "U" : "V"}
             </div>
+            <div>
+              <strong>
+                {account?.anonymous === false ? "Your account" : "Visitor"}
+              </strong>
+              <span>{account?.label ?? "Guest access"}</span>
+            </div>
+            <Link
+              className={styles.accountLink}
+              href={account?.anonymous === false ? "/account" : "/signup"}
+            >
+              {account?.anonymous === false ? "Manage" : "Save"}
+            </Link>
           </div>
         </div>
       </aside>
@@ -564,7 +691,15 @@ export default function ChatWorkspace() {
             <span>Visa Assistant</span>
             <em>Grounded GPT</em>
           </div>
-          <div className={styles.avatar}>V</div>
+          <Link
+            aria-label={
+              account?.anonymous === false ? "Open account" : "Create account"
+            }
+            href={account?.anonymous === false ? "/account" : "/signup"}
+            className={styles.avatar}
+          >
+            {account?.anonymous === false ? "U" : "V"}
+          </Link>
         </header>
 
         <div className={styles.messages}>

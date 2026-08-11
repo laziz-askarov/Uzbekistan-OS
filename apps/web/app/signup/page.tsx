@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import AuthForm from "./auth-form";
 
 export const metadata: Metadata = {
   title: "Create your account | Uzbekistan OS",
@@ -53,23 +54,15 @@ export default function SignupPage() {
               width={28}
             />
           </span>
-          <p className="signup-step">Account setup</p>
+          <p className="signup-step">Progressive account</p>
           <h2 id="signup-card-title">Create your free account</h2>
           <p>
-            Secure account creation is the next integration step. No personal
-            details are being collected on this preview yet.
+            Keep your conversations and personalized visa plan available across
+            devices. Start with your Uzbekistan mobile number.
           </p>
-          <div className="signup-preview" role="status">
-            <strong>Coming next</strong>
-            <span>
-              Email signup, secure sign-in, and your saved visa workspace.
-            </span>
-          </div>
-          <button className="pill pill-dark signup-disabled" disabled>
-            Create free account
-          </button>
-          <Link className="pill pill-light" href="/chat">
-            Open workspace preview
+          <AuthForm />
+          <Link className="pill pill-light signup-guest" href="/chat">
+            Continue as guest
           </Link>
           <Link className="signup-back" href="/">
             Return to visa guide

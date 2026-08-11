@@ -11,7 +11,7 @@ Reviewer and publication actions need durable internal identities even though th
 
 - Represent people as internal principals keyed by a unique verified `(provider, subject)` pair. Authentication middleware is responsible for verification; request headers and bodies are not trusted identity sources.
 - Provision application roles independently of the external identity provider. Seed `content_reviewer`, `knowledge_publisher`, and `admin` roles, and deny access to unknown or disabled principals.
-- Keep authentication choice D-003 open. This boundary supports email/password, OAuth, or another verified provider without selecting one.
+- Keep this internal boundary provider-neutral. ADR 0023 later selected Supabase progressive identity for customer accounts without coupling administrative roles to a provider SDK.
 - Keep review and publication permissions separate. An approved review does not publish content, and `content_reviewer` alone cannot publish.
 - Publish only from an active source with an `allowed` or `manual_only` policy owned by an active, official organization.
 - Publish only a schema-valid candidate whose section order, identifiers, headings, and bodies exactly match the reviewed extraction artifact. Citations must reference the reviewed source, and quoted evidence must occur in the approved section.
