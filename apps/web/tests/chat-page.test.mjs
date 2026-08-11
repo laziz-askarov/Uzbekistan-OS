@@ -63,6 +63,11 @@ test("chat requires an account and persists account-owned history", async () => 
   assert.match(workspace, /owner_id: user\.id/);
   assert.match(page, /redirect\("\/signup"\)/);
   assert.match(workspace, /href="\/account"/);
+  assert.match(workspace, /select\("first_name,last_name"\)/);
+  assert.match(workspace, /aria-label="Open account settings"/);
+  assert.match(workspace, /<Icon name="gear"/);
+  assert.doesNotMatch(workspace, /label: user\.(?:phone|email)/);
+  assert.doesNotMatch(workspace, />Manage</);
 });
 
 test("visa GPT calls use the direct server-side OpenAI provider", async () => {

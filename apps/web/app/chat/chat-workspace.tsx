@@ -122,7 +122,7 @@ function Icon({
   name,
   size = 16,
 }: {
-  name: "shield" | "panel" | "plus" | "send" | "arrow" | "external";
+  name: "shield" | "panel" | "plus" | "send" | "arrow" | "external" | "gear";
   size?: number;
 }) {
   const common = {
@@ -166,6 +166,13 @@ function Icon({
     return (
       <svg {...common}>
         <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      </svg>
+    );
+  if (name === "gear")
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.97 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34H9A1.7 1.7 0 0 0 10 3.08V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 7l-.06.06a1.7 1.7 0 0 0-.34 1.88V9A1.7 1.7 0 0 0 20.92 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
       </svg>
     );
   return (
@@ -374,7 +381,8 @@ export default function ChatWorkspace() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [account, setAccount] = useState<{
     id: string;
-    label: string;
+    name: string;
+    initials: string;
   } | null>(null);
   const active = chats.find((chat) => chat.id === activeId) ?? chats[0];
 
@@ -384,14 +392,27 @@ export default function ChatWorkspace() {
       const { data } = await supabase.auth.getUser();
       const user = data.user;
       if (!user || cancelled) return;
+      const [{ data: profile }, { data: conversations }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("first_name,last_name")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("conversations")
+          .select("id,title,updated_at")
+          .order("updated_at", { ascending: false }),
+      ]);
+      if (cancelled) return;
+      const firstName = profile?.first_name?.trim() ?? "";
+      const lastName = profile?.last_name?.trim() ?? "";
+      const name = [firstName, lastName].filter(Boolean).join(" ");
       setAccount({
         id: user.id,
-        label: user.phone ?? user.email ?? "Signed-in account",
+        name: name || "Your account",
+        initials:
+          `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "U",
       });
-      const { data: conversations } = await supabase
-        .from("conversations")
-        .select("id,title,updated_at")
-        .order("updated_at", { ascending: false });
       if (!conversations?.length || cancelled) return;
       const ids = conversations.map((conversation) => conversation.id);
       const { data: messages } = await supabase
@@ -423,10 +444,6 @@ export default function ChatWorkspace() {
     const { data } = await supabase.auth.getUser();
     const user = data.user;
     if (!user || user.is_anonymous) throw new Error("Authentication required");
-    setAccount({
-      id: user.id,
-      label: user.phone ?? user.email ?? "Signed-in account",
-    });
     return user;
   }
 
@@ -641,13 +658,17 @@ export default function ChatWorkspace() {
             ) : null}
           </nav>
           <div className={styles.account}>
-            <div className={styles.avatar}>U</div>
-            <div>
-              <strong>Your account</strong>
-              <span>{account?.label ?? "Loading account…"}</span>
+            <div className={styles.avatar}>{account?.initials ?? "U"}</div>
+            <div className={styles.accountIdentity}>
+              <strong>{account?.name ?? "Loading account…"}</strong>
             </div>
-            <Link className={styles.accountLink} href="/account">
-              Manage
+            <Link
+              aria-label="Open account settings"
+              className={styles.accountLink}
+              href="/account"
+              title="Account settings"
+            >
+              <Icon name="gear" size={18} />
             </Link>
           </div>
         </div>
@@ -675,7 +696,7 @@ export default function ChatWorkspace() {
             href="/account"
             className={styles.avatar}
           >
-            U
+            {account?.initials ?? "U"}
           </Link>
         </header>
 

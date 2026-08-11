@@ -180,28 +180,35 @@
   border-radius: 50%;
 }
 
-.account div:last-child {
+.accountIdentity {
   min-width: 0;
   display: flex;
+  flex: 1;
   flex-direction: column;
 }
 
 .account strong {
+  overflow: hidden;
   font-size: 14px;
   line-height: 18px;
-}
-
-.account span {
-  color: #9ca3af;
-  font-size: 12px;
-  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .accountLink {
+  width: 36px;
+  height: 36px;
   margin-left: auto;
-  color: var(--blue);
-  font-size: 12px;
-  font-weight: 700;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  color: #64748b;
+}
+
+.accountLink:hover {
+  color: var(--ink);
+  background: #e5e7eb;
 }
 
 .mainPanel {
