@@ -116,8 +116,13 @@
 }
 
 .newChat:hover,
-.history button:hover {
+.historySelect:hover {
   background: #e5e7eb;
+}
+
+.newChat:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .history {
@@ -133,9 +138,17 @@
   font-weight: 650;
 }
 
-.history button {
+.historyItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 11px;
+}
+
+.historySelect {
   width: 100%;
   padding: 9px 12px;
+  padding-right: 38px;
   overflow: hidden;
   color: #6b7280;
   border: 0;
@@ -148,10 +161,46 @@
   cursor: pointer;
 }
 
-.history .chatActive {
+.historySelect.chatActive {
   color: var(--ink);
   background: #e5e7eb;
   font-weight: 600;
+}
+
+.historyDelete {
+  position: absolute;
+  right: 5px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.historyItem:hover .historyDelete,
+.historyItem:focus-within .historyDelete {
+  opacity: 1;
+}
+
+.historyDelete:hover {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.historyDelete:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (hover: none) {
+  .historyDelete {
+    opacity: 1;
+  }
 }
 
 .account {

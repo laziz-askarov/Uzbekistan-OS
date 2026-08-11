@@ -1304,6 +1304,89 @@ a:focus-visible {
   color: #64748b;
   font-size: 13px;
 }
+.account-data-action {
+  margin-top: 24px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+}
+.account-data-action > div {
+  display: grid;
+  gap: 5px;
+}
+.account-data-action strong,
+.account-danger > div strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+.account-data-action span,
+.account-danger p {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 20px;
+}
+.account-data-action .pill {
+  flex: 0 0 auto;
+  border: 1px solid #cbd5e1;
+}
+.account-danger {
+  margin-top: 20px;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fff7f7;
+}
+.account-danger p {
+  max-width: 800px;
+  margin: 5px 0 0;
+}
+.account-danger label {
+  display: block;
+  color: #7f1d1d;
+  font-size: 13px;
+  font-weight: 650;
+}
+.account-danger-actions {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  gap: 10px;
+}
+.account-danger input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 13px;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  outline: none;
+  color: #0f172a;
+  background: #fff;
+  -webkit-text-fill-color: #0f172a;
+  font: inherit;
+}
+.account-danger input:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgb(220 38 38 / 12%);
+}
+.account-delete-button {
+  border: 1px solid #b91c1c;
+  color: #fff;
+  background: #b91c1c;
+}
+.account-delete-button:hover:not(:disabled) {
+  background: #991b1b;
+}
+.account-delete-button:disabled {
+  border-color: #fecaca;
+  color: #991b1b;
+  background: #fee2e2;
+}
 .account-notice {
   margin: 0;
   padding: 13px 15px;
@@ -1564,7 +1647,8 @@ a:focus-visible {
   }
   .account-hero,
   .account-section-heading,
-  .account-recovery {
+  .account-recovery,
+  .account-data-action {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1580,7 +1664,14 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
   .account-inline-form .pill,
-  .account-recovery .pill {
+  .account-recovery .pill,
+  .account-data-action .pill {
+    width: 100%;
+  }
+  .account-danger-actions {
+    grid-template-columns: 1fr;
+  }
+  .account-delete-button {
     width: 100%;
   }
   .account-actions {

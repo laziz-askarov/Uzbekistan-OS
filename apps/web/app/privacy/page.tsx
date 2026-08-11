@@ -202,19 +202,27 @@ const sections = [
     content: (
       <>
         <p>
-          Account details, profile information, profile images, and saved
-          conversations are generally retained while your account remains active
-          or until they are deleted or no longer needed to provide the service.
-          You can update profile and contact details and remove your profile
-          image in account settings.
+          Saved conversations do not currently expire automatically. We keep a
+          saved conversation and its messages until you delete that conversation
+          or delete your account. Account details, profile information, optional
+          profile images, and checklists are kept while your account remains
+          active or until you remove them through the available controls.
         </p>
         <p>
-          Short-term rate-limit records are removed on a rolling basis.
-          Operational logs, backups, authentication records, analytics, SMS
-          delivery records, and AI-provider records are retained according to
-          security needs, legal requirements, and provider schedules. After a
-          deletion request, limited copies may remain temporarily in backups or
-          where retention is legally required.
+          Deleting a conversation removes that conversation and its messages
+          from the active customer database. Deleting your account removes your
+          authentication account and active profile, profile image, saved
+          conversations, messages, checklists, and account-linked usage-limit
+          records. These actions cannot be undone.
+        </p>
+        <p>
+          Short-term rate-limit records are also removed on a rolling basis.
+          Operational logs, backups, authentication events, analytics, SMS
+          delivery records, and AI-provider records follow security, legal, and
+          provider retention schedules. Limited copies may therefore remain
+          temporarily in provider systems or backups after you use a deletion
+          control. As described above, OpenAI API records may remain for up to
+          30 days under its default controls.
         </p>
       </>
     ),
@@ -227,8 +235,11 @@ const sections = [
         <p>
           Subject to applicable law, you may ask to access, correct, receive,
           restrict, object to, or delete your personal information, or withdraw
-          consent. Account settings provide direct controls for several profile
-          and contact fields. For other requests, email{" "}
+          consent. Account settings let you download a current JSON export of
+          your account data or permanently delete your account, and conversation
+          history includes a control to delete each saved conversation. You can
+          also update several profile and contact fields there. For other
+          requests, email{" "}
           <a href="mailto:info@uzbekistanos.com">info@uzbekistanos.com</a> from
           the address associated with your account so we can verify the request.
         </p>

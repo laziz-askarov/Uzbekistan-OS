@@ -122,7 +122,15 @@ function Icon({
   name,
   size = 16,
 }: {
-  name: "shield" | "panel" | "plus" | "send" | "arrow" | "external" | "gear";
+  name:
+    | "shield"
+    | "panel"
+    | "plus"
+    | "send"
+    | "arrow"
+    | "external"
+    | "gear"
+    | "trash";
   size?: number;
 }) {
   const common = {
@@ -175,10 +183,53 @@ function Icon({
         <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.97 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34H9A1.7 1.7 0 0 0 10 3.08V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 7l-.06.06a1.7 1.7 0 0 0-.34 1.88V9A1.7 1.7 0 0 0 20.92 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
       </svg>
     );
+  if (name === "trash")
+    return (
+      <svg {...common}>
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v5M14 11v5" />
+      </svg>
+    );
   return (
     <svg {...common}>
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
+  );
+}
+
+function ConversationHistoryItem({
+  chat,
+  active,
+  deleting,
+  onSelect,
+  onDelete,
+}: {
+  chat: Chat;
+  active: boolean;
+  deleting: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (chat: Chat) => void;
+}) {
+  return (
+    <div className={styles.historyItem}>
+      <button
+        aria-current={active ? "page" : undefined}
+        className={`${styles.historySelect} ${active ? styles.chatActive : ""}`}
+        onClick={() => onSelect(chat.id)}
+        type="button"
+      >
+        {chat.title}
+      </button>
+      <button
+        aria-label={`Delete ${chat.title}`}
+        className={styles.historyDelete}
+        disabled={deleting}
+        onClick={() => onDelete(chat)}
+        title={`Delete ${chat.title}`}
+        type="button"
+      >
+        <Icon name="trash" size={14} />
+      </button>
+    </div>
   );
 }
 
@@ -377,6 +428,7 @@ export default function ChatWorkspace() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [account, setAccount] = useState<{
@@ -448,6 +500,7 @@ export default function ChatWorkspace() {
   }
 
   function createChat() {
+    if (deletingChatId) return;
     const chat = newLocalChat();
     setChats((current) => [chat, ...current]);
     setActiveId(chat.id);
@@ -459,9 +512,38 @@ export default function ChatWorkspace() {
     setMobileSidebarOpen(false);
   }
 
+  async function deleteConversation(chat: Chat) {
+    const confirmed = window.confirm(
+      `Delete “${chat.title}” and all of its messages? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingChatId(chat.id);
+    setSendError(null);
+    try {
+      const user = await ensureIdentity();
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", chat.id)
+        .eq("owner_id", user.id);
+      if (error) throw error;
+
+      const remaining = chats.filter((item) => item.id !== chat.id);
+      const nextChats = remaining.length > 0 ? remaining : [newLocalChat()];
+      setChats(nextChats);
+      if (activeId === chat.id) setActiveId(nextChats[0].id);
+      setMobileSidebarOpen(false);
+    } catch {
+      setSendError("This conversation could not be deleted. Please try again.");
+    } finally {
+      setDeletingChatId(null);
+    }
+  }
+
   async function sendMessage(text: string) {
     const value = text.trim();
-    if (!value || isSending) return;
+    if (!value || isSending || deletingChatId) return;
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -622,6 +704,7 @@ export default function ChatWorkspace() {
               type="button"
               onClick={createChat}
               className={styles.newChat}
+              disabled={deletingChatId !== null}
             >
               <Icon name="plus" size={15} />
               New chat
@@ -630,29 +713,27 @@ export default function ChatWorkspace() {
           <nav className={styles.history} aria-label="Saved conversations">
             <p>Today</p>
             {chats.slice(0, 1).map((chat) => (
-              <button
-                type="button"
+              <ConversationHistoryItem
                 key={chat.id}
-                onClick={() => selectChat(chat.id)}
-                aria-current={chat.id === activeId ? "page" : undefined}
-                className={chat.id === activeId ? styles.chatActive : ""}
-              >
-                {chat.title}
-              </button>
+                active={chat.id === activeId}
+                chat={chat}
+                deleting={deletingChatId !== null || isSending}
+                onDelete={(item) => void deleteConversation(item)}
+                onSelect={selectChat}
+              />
             ))}
             {chats.length > 1 ? (
               <>
                 <p>Previous</p>
                 {chats.slice(1).map((chat) => (
-                  <button
-                    type="button"
+                  <ConversationHistoryItem
                     key={chat.id}
-                    onClick={() => selectChat(chat.id)}
-                    aria-current={chat.id === activeId ? "page" : undefined}
-                    className={chat.id === activeId ? styles.chatActive : ""}
-                  >
-                    {chat.title}
-                  </button>
+                    active={chat.id === activeId}
+                    chat={chat}
+                    deleting={deletingChatId !== null || isSending}
+                    onDelete={(item) => void deleteConversation(item)}
+                    onSelect={selectChat}
+                  />
                 ))}
               </>
             ) : null}

@@ -46,6 +46,7 @@ export default function AccountSettings({
   const [phone, setPhone] = useState(initialPhone);
   const [pendingPhone, setPendingPhone] = useState<string | null>(null);
   const [phoneOtp, setPhoneOtp] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
 
@@ -311,6 +312,45 @@ export default function AccountSettings({
     }
   }
 
+  async function deleteAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (deleteConfirmation !== "DELETE") {
+      setNotice({
+        kind: "error",
+        text: "Type DELETE exactly to confirm permanent account deletion.",
+      });
+      return;
+    }
+
+    setBusy("delete-account");
+    setNotice(null);
+    try {
+      const response = await fetch("/api/account", {
+        method: "DELETE",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ confirmation: deleteConfirmation }),
+      });
+      const result = (await response.json().catch(() => null)) as {
+        message?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(
+          result?.message ?? "Your account could not be deleted.",
+        );
+      }
+      window.location.assign("/signup");
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        text: errorMessage(error, "Unable to delete your account."),
+      });
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="account-settings">
       <section className="account-section" aria-labelledby="profile-heading">
@@ -517,6 +557,63 @@ export default function AccountSettings({
             {busy === "recovery" ? "Sending…" : "Send recovery email"}
           </button>
         </div>
+      </section>
+
+      <section className="account-section" aria-labelledby="privacy-heading">
+        <p className="section-kicker">Data & privacy</p>
+        <h2 id="privacy-heading">Retention and controls</h2>
+        <p className="account-section-copy">
+          Saved conversations do not expire automatically. They remain in your
+          account until you delete each conversation or delete your account.
+        </p>
+
+        <div className="account-data-action">
+          <div>
+            <strong>Export your account</strong>
+            <span>
+              Download a JSON copy of your profile, conversations, messages,
+              checklists, account details, and current usage-limit records.
+            </span>
+          </div>
+          <a className="pill pill-light" href="/api/account/export">
+            Download account data
+          </a>
+        </div>
+
+        <form className="account-danger" onSubmit={deleteAccount}>
+          <div>
+            <strong>Delete account permanently</strong>
+            <p id="delete-account-help">
+              This removes your account, profile image, saved conversations,
+              messages, and checklists from the active service. This cannot be
+              undone. Limited records may remain temporarily in provider logs or
+              backups as described in the Privacy Policy.
+            </p>
+          </div>
+          <label htmlFor="delete-account-confirmation">
+            Type <strong>DELETE</strong> to confirm
+          </label>
+          <div className="account-danger-actions">
+            <input
+              aria-describedby="delete-account-help"
+              autoComplete="off"
+              disabled={busy !== null}
+              id="delete-account-confirmation"
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              spellCheck={false}
+              value={deleteConfirmation}
+            />
+            <button
+              className="pill account-delete-button"
+              disabled={busy !== null || deleteConfirmation !== "DELETE"}
+              type="submit"
+            >
+              {busy === "delete-account"
+                ? "Deleting account…"
+                : "Delete account permanently"}
+            </button>
+          </div>
+        </form>
       </section>
 
       {notice ? (

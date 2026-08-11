@@ -203,10 +203,11 @@ const sections = [
           operation is no longer practical.
         </p>
         <p>
-          You may stop using the service at any time. To request account and
-          personal-data deletion, contact{" "}
+          You may stop using the service at any time. You can permanently delete
+          your account through account settings, or contact{" "}
           <a href="mailto:info@uzbekistanos.com">info@uzbekistanos.com</a> from
-          the email associated with your account.
+          the email associated with your account if you need help with an
+          account or personal-data request.
         </p>
       </>
     ),
