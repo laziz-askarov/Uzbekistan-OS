@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const eskizResponseSchema = z.object({
+const devSmsResponseSchema = z.object({
   success: z.boolean(),
   message: z.string().optional(),
   data: z
@@ -14,7 +14,7 @@ const eskizResponseSchema = z.object({
     .optional(),
 });
 
-export type EskizSmsResult = z.infer<typeof eskizResponseSchema>;
+export type DevSmsResult = z.infer<typeof devSmsResponseSchema>;
 
 function requiredEnvironmentVariable(name: string) {
   const value = process.env[name]?.trim();
@@ -22,7 +22,7 @@ function requiredEnvironmentVariable(name: string) {
   return value;
 }
 
-export function normalizePhoneForEskiz(phone: string) {
+export function normalizePhoneForDevSms(phone: string) {
   const compact = phone.trim().replace(/[\s().-]/g, "");
   if (!/^\+[1-9]\d{7,14}$/.test(compact)) {
     throw new Error("A valid E.164 international phone number is required");
@@ -30,27 +30,26 @@ export function normalizePhoneForEskiz(phone: string) {
   return compact.slice(1);
 }
 
-export async function sendEskizOtp(
+export async function sendDevSmsOtp(
   phone: string,
   otp: string,
   options: { signal?: AbortSignal } = {},
-): Promise<EskizSmsResult> {
+): Promise<DevSmsResult> {
   if (!/^\d{4,8}$/.test(otp)) throw new Error("Invalid OTP format");
 
   const apiUrl =
-    process.env.ESKIZ_SMS_API_URL?.trim() ||
-    "https://devsms.uz/api/send_sms.php";
+    process.env.DEVSMS_API_URL?.trim() || "https://devsms.uz/api/send_sms.php";
   const response = await fetch(apiUrl, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${requiredEnvironmentVariable("ESKIZ_SMS_API_TOKEN")}`,
+      authorization: `Bearer ${requiredEnvironmentVariable("DEVSMS_API_TOKEN")}`,
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      phone: normalizePhoneForEskiz(phone),
+      phone: normalizePhoneForDevSms(phone),
       type: "universal_otp",
-      template_type: 1,
-      service_name: process.env.ESKIZ_SMS_SERVICE_NAME?.trim() || "UzOS",
+      template_type: 3,
+      service_name: process.env.DEVSMS_SERVICE_NAME?.trim() || "UzOS",
       otp_code: otp,
     }),
     cache: "no-store",
@@ -58,9 +57,9 @@ export async function sendEskizOtp(
   });
 
   const body: unknown = await response.json().catch(() => null);
-  const parsed = eskizResponseSchema.safeParse(body);
+  const parsed = devSmsResponseSchema.safeParse(body);
   if (!response.ok || !parsed.success || !parsed.data.success) {
-    throw new Error("Eskiz rejected the OTP delivery request");
+    throw new Error(`DevSMS rejected the OTP request (${response.status})`);
   }
   return parsed.data;
 }

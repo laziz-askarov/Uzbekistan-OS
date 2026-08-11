@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sendEskizOtp } from "@/lib/eskiz-sms";
+import { sendDevSmsOtp } from "@/lib/devsms";
 import { Webhook } from "standardwebhooks";
 import { z } from "zod";
 
@@ -51,14 +51,14 @@ export async function POST(request: Request) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3_500);
     try {
-      const result = await sendEskizOtp(
+      const result = await sendDevSmsOtp(
         parsed.data.user.phone,
         parsed.data.sms.otp,
         { signal: controller.signal },
       );
       console.info("sms_hook_delivery_accepted", {
         requestId,
-        provider: "eskiz",
+        provider: "devsms",
         providerRequestId: result.data?.request_id,
         parts: result.data?.parts_count,
         reportedCost: result.data?.total_cost,
@@ -67,10 +67,11 @@ export async function POST(request: Request) {
     } finally {
       clearTimeout(timeout);
     }
-  } catch {
+  } catch (error) {
     console.error("sms_hook_delivery_failed", {
       requestId,
       category: "provider",
+      error: error instanceof Error ? error.message : "UnknownError",
     });
     return hookError(502, "Unable to deliver verification code", 502);
   }
