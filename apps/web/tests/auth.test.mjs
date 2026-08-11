@@ -4,22 +4,24 @@ import test from "node:test";
 
 const webRoot = new URL("..", import.meta.url);
 
-test("email is primary and international phone OTP is secondary", async () => {
+test("email and international phone registration use passwords", async () => {
   const form = await readFile(
     new URL("app/signup/auth-form.tsx", webRoot),
     "utf8",
   );
   assert.match(form, /type="email"/);
-  assert.match(form, /Continue with email/);
+  assert.match(form, /type="password"/g);
+  assert.match(form, /minLength=\{8\}/g);
   assert.match(form, /emailRedirectTo/);
-  assert.match(form, /Continue with phone/);
   assert.match(form, /normalizeInternationalPhone/);
   assert.match(form, /\^\\\+\[1-9\]\\d\{7,14\}\$/);
   assert.match(form, /supabase\.auth\.verifyOtp/);
-  assert.match(form, /shouldCreateUser: mode === "create"/g);
-  assert.match(form, /No password, PINFL, or passport number required/);
-  assert.doesNotMatch(form, /type="password"/);
-  assert.doesNotMatch(form, /signInAnonymously|updateUser/);
+  assert.match(form, /supabase\.auth\.signUp/g);
+  assert.match(form, /supabase\.auth\.signInWithPassword/g);
+  assert.match(form, /options: \{ channel: "sms" \}/);
+  assert.match(form, /Already have an account\? Sign in/g);
+  assert.match(form, /No PINFL or passport number required/);
+  assert.doesNotMatch(form, /auth-tabs|signInAnonymously|signInWithOtp/);
   assert.doesNotMatch(form, /Continue with Google|Continue with Apple/);
 });
 

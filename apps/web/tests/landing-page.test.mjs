@@ -43,8 +43,8 @@ test("personalized workspace explains the complete visa plan", () => {
 
 test("signup screen requires an account and offers email with phone fallback", () => {
   assert.match(signupSource, /Create your free account/);
-  assert.match(signupSource, /Use email for the simplest setup/);
-  assert.match(signupSource, /choose phone to\s+receive/);
+  assert.match(signupSource, /Register with email and a password/);
+  assert.match(signupSource, /verify your number by SMS/);
   assert.match(signupSource, /<AuthForm \/>/);
   assert.doesNotMatch(signupSource, /Continue as guest/);
 });

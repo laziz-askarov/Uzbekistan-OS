@@ -58,8 +58,8 @@ export default function SignupPage() {
           <h2 id="signup-card-title">Create your free account</h2>
           <p>
             Keep your conversations and personalized visa plan available across
-            devices. Use email for the simplest setup, or choose phone to
-            receive a verification code.
+            devices. Register with email and a password, or choose phone and
+            verify your number by SMS.
           </p>
           <AuthForm />
           <Link className="signup-back" href="/">

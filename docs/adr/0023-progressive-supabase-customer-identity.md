@@ -12,9 +12,9 @@ Uzbekistan OS provides durable, access-controlled customer workspaces. Public vi
 
 - Use Supabase Auth and PostgreSQL RLS for customer identity and workspace ownership.
 - Require a verified customer account before entering the interactive assistant or calling its generation API. Do not create anonymous Supabase users in the application.
-- Make passwordless email links the primary account creation and sign-in method so foreign visitors can register without a local SIM.
-- Offer international phone OTP as the secondary account method. Keep the signed Send SMS HTTP Hook and Eskiz-backed provider adapter behind the Supabase provider boundary.
-- Permit Google and Apple as secondary identity providers after their provider credentials and redirect URLs are configured. Do not add password authentication to the MVP.
+- Make email plus password the primary account creation and sign-in method. Require email confirmation after registration.
+- Offer international phone plus password as the secondary account method, with SMS OTP required to confirm a new phone registration. Keep the signed Send SMS HTTP Hook and Eskiz-backed provider adapter behind the Supabase provider boundary.
+- Permit Google and Apple as secondary identity providers after their provider credentials and redirect URLs are configured.
 - Represent progressive trust with identity levels: `0` anonymous, `1` account, `2` verified contact method, and `3` OneID verified.
 - Keep trust fields server-controlled. Customers may update ordinary profile fields but cannot update their email, phone, identity level, or OneID verification fields through RLS-protected client access.
 - Do not collect PINFL, passport numbers, or other government identifiers during ordinary account creation.

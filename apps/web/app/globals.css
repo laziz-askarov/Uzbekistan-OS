@@ -907,32 +907,7 @@ a:focus-visible {
 .auth-form {
   margin-top: 26px;
 }
-.auth-tabs {
-  padding: 4px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  border-radius: 12px;
-  background: #f1f5f9;
-}
-.auth-tabs button {
-  min-height: 40px;
-  border: 0;
-  border-radius: 9px;
-  color: #64748b;
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.auth-tabs button[aria-pressed="true"] {
-  color: #0f172a;
-  background: #fff;
-  box-shadow: 0 1px 4px rgb(15 23 42 / 10%);
-}
 .auth-methods {
-  margin-top: 16px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
@@ -962,6 +937,10 @@ a:focus-visible {
   color: #334155;
   font-size: 13px;
   font-weight: 700;
+}
+.auth-input-field + label,
+.phone-field + label {
+  margin-top: 14px;
 }
 .auth-input-field {
   min-height: 50px;
@@ -1028,6 +1007,22 @@ a:focus-visible {
   color: #475569;
   background: transparent;
   cursor: pointer;
+}
+.auth-mode-switch {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  border: 0;
+  color: #334155;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-mode-switch:hover {
+  color: #0f172a;
+  text-decoration: underline;
 }
 .auth-message {
   margin: 13px 0 0;

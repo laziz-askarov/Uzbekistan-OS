@@ -29,13 +29,22 @@ function friendlyError(message: string, method: Method) {
     return `${method === "email" ? "Email" : "Phone"} sign-in is not enabled yet.`;
   }
   if (normalized.includes("rate limit")) {
-    return `Too many attempts. Please wait before requesting another ${method === "email" ? "link" : "code"}.`;
+    return "Too many attempts. Please wait before trying again.";
+  }
+  if (normalized.includes("password should be")) {
+    return "Use a password with at least 8 characters.";
+  }
+  if (normalized.includes("invalid login credentials")) {
+    return `${method === "email" ? "Email" : "Phone number"} or password is incorrect.`;
+  }
+  if (normalized.includes("email not confirmed")) {
+    return "Confirm your email before signing in.";
   }
   if (
     normalized.includes("already been registered") ||
     normalized.includes("already registered")
   ) {
-    return `This ${method === "email" ? "email" : "number"} already has an account. Choose Sign in instead.`;
+    return `This ${method === "email" ? "email" : "number"} already has an account. Sign in instead.`;
   }
   return message;
 }
@@ -46,44 +55,73 @@ export default function AuthForm() {
   const [method, setMethod] = useState<Method>("email");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
-  const [phoneStep, setPhoneStep] = useState<"phone" | "otp">("phone");
+  const [phoneStep, setPhoneStep] = useState<"credentials" | "otp">(
+    "credentials",
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   function resetFeedback() {
-    setPhoneStep("phone");
+    setPhoneStep("credentials");
     setOtp("");
+    setPassword("");
     setMessage(null);
   }
 
-  async function requestEmailLink(event: FormEvent<HTMLFormElement>) {
+  function switchMode() {
+    setMode((current) => (current === "create" ? "signin" : "create"));
+    resetFeedback();
+  }
+
+  function validatePassword() {
+    if (password.length < 8) {
+      setMessage("Use a password with at least 8 characters.");
+      return false;
+    }
+    return true;
+  }
+
+  async function submitEmail(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextEmail = normalizeEmail(email);
     if (!nextEmail) {
       setMessage("Enter a valid email address.");
       return;
     }
+    if (!validatePassword()) return;
 
     setBusy(true);
     setMessage(null);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: nextEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/account`,
-          shouldCreateUser: mode === "create",
-        },
-      });
-      if (error) throw error;
-      setMessage(
-        `Check ${nextEmail} for your secure ${mode === "create" ? "account confirmation" : "sign-in"} link.`,
-      );
+      if (mode === "create") {
+        const { data, error } = await supabase.auth.signUp({
+          email: nextEmail,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/account`,
+          },
+        });
+        if (error) throw error;
+        if (data.session) {
+          window.location.assign("/account");
+          return;
+        }
+        setMessage(`Check ${nextEmail} to confirm your account.`);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: nextEmail,
+          password,
+        });
+        if (error) throw error;
+        window.location.assign("/account");
+      }
     } catch (error) {
       setMessage(
         friendlyError(
-          error instanceof Error ? error.message : "Unable to send email.",
+          error instanceof Error ? error.message : "Unable to continue.",
           "email",
         ),
       );
@@ -92,7 +130,7 @@ export default function AuthForm() {
     }
   }
 
-  async function requestPhoneOtp(event: FormEvent<HTMLFormElement>) {
+  async function submitPhone(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextPhone = normalizeInternationalPhone(phone);
     if (!nextPhone) {
@@ -101,22 +139,37 @@ export default function AuthForm() {
       );
       return;
     }
+    if (!validatePassword()) return;
 
     setBusy(true);
     setMessage(null);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: nextPhone,
-        options: { shouldCreateUser: mode === "create" },
-      });
-      if (error) throw error;
-      setNormalizedPhone(nextPhone);
-      setPhoneStep("otp");
-      setMessage(`We sent a 6-digit code to ${nextPhone}.`);
+      if (mode === "create") {
+        const { data, error } = await supabase.auth.signUp({
+          phone: nextPhone,
+          password,
+          options: { channel: "sms" },
+        });
+        if (error) throw error;
+        if (data.session) {
+          window.location.assign("/account");
+          return;
+        }
+        setNormalizedPhone(nextPhone);
+        setPhoneStep("otp");
+        setMessage(`We sent a 6-digit verification code to ${nextPhone}.`);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          phone: nextPhone,
+          password,
+        });
+        if (error) throw error;
+        window.location.assign("/account");
+      }
     } catch (error) {
       setMessage(
         friendlyError(
-          error instanceof Error ? error.message : "Unable to send code.",
+          error instanceof Error ? error.message : "Unable to continue.",
           "phone",
         ),
       );
@@ -154,26 +207,11 @@ export default function AuthForm() {
     }
   }
 
+  const submitLabel = mode === "create" ? "Create account" : "Sign in";
+
   return (
     <div className="auth-form">
-      <div className="auth-tabs" aria-label="Account action">
-        {(["create", "signin"] as const).map((value) => (
-          <button
-            aria-pressed={mode === value}
-            disabled={busy}
-            key={value}
-            onClick={() => {
-              setMode(value);
-              resetFeedback();
-            }}
-            type="button"
-          >
-            {value === "create" ? "Create account" : "Sign in"}
-          </button>
-        ))}
-      </div>
-
-      <div className="auth-methods" aria-label="Sign-up method">
+      <div className="auth-methods" aria-label="Account method">
         {(["email", "phone"] as const).map((value) => (
           <button
             aria-pressed={method === value}
@@ -191,7 +229,7 @@ export default function AuthForm() {
       </div>
 
       {method === "email" ? (
-        <form onSubmit={requestEmailLink}>
+        <form onSubmit={submitEmail}>
           <label htmlFor="email">Email address</label>
           <div className="auth-input-field">
             <input
@@ -208,23 +246,46 @@ export default function AuthForm() {
               value={email}
             />
           </div>
+          <label htmlFor="email-password">Password</label>
+          <div className="auth-input-field">
+            <input
+              autoComplete={
+                mode === "create" ? "new-password" : "current-password"
+              }
+              id="email-password"
+              minLength={8}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="At least 8 characters"
+              required
+              type="password"
+              value={password}
+            />
+          </div>
           <p className="auth-input-hint">
-            We&apos;ll email you a secure link. No password required.
+            {mode === "create"
+              ? "We'll email you a confirmation link after signup."
+              : "Use the email and password for your account."}
           </p>
           <button
             className="pill pill-dark auth-submit"
             disabled={busy}
             type="submit"
           >
-            {busy
-              ? "Sending link…"
-              : mode === "create"
-                ? "Continue with email"
-                : "Send sign-in link"}
+            {busy ? "Please wait…" : submitLabel}
+          </button>
+          <button
+            className="auth-mode-switch"
+            disabled={busy}
+            onClick={switchMode}
+            type="button"
+          >
+            {mode === "create"
+              ? "Already have an account? Sign in"
+              : "Need an account? Create one"}
           </button>
         </form>
-      ) : phoneStep === "phone" ? (
-        <form onSubmit={requestPhoneOtp}>
+      ) : phoneStep === "credentials" ? (
+        <form onSubmit={submitPhone}>
           <label htmlFor="phone">Mobile number</label>
           <div className="phone-field">
             <input
@@ -239,20 +300,42 @@ export default function AuthForm() {
               value={phone}
             />
           </div>
+          <label htmlFor="phone-password">Password</label>
+          <div className="auth-input-field">
+            <input
+              autoComplete={
+                mode === "create" ? "new-password" : "current-password"
+              }
+              id="phone-password"
+              minLength={8}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="At least 8 characters"
+              required
+              type="password"
+              value={password}
+            />
+          </div>
           <p className="phone-hint">
-            Uzbekistan numbers can be entered with or without +998. Other
-            countries require the international country code.
+            {mode === "create"
+              ? "We'll text you a verification code after signup."
+              : "Use your international phone number and password."}
           </p>
           <button
             className="pill pill-dark auth-submit"
             disabled={busy}
             type="submit"
           >
-            {busy
-              ? "Sending code…"
-              : mode === "create"
-                ? "Continue with phone"
-                : "Send sign-in code"}
+            {busy ? "Please wait…" : submitLabel}
+          </button>
+          <button
+            className="auth-mode-switch"
+            disabled={busy}
+            onClick={switchMode}
+            type="button"
+          >
+            {mode === "create"
+              ? "Already have an account? Sign in"
+              : "Need an account? Create one"}
           </button>
         </form>
       ) : (
@@ -279,7 +362,7 @@ export default function AuthForm() {
           <button
             className="auth-back"
             disabled={busy}
-            onClick={() => setPhoneStep("phone")}
+            onClick={() => setPhoneStep("credentials")}
             type="button"
           >
             Use a different number
@@ -292,9 +375,7 @@ export default function AuthForm() {
           {message}
         </p>
       ) : null}
-      <p className="auth-privacy">
-        No password, PINFL, or passport number required.
-      </p>
+      <p className="auth-privacy">No PINFL or passport number required.</p>
     </div>
   );
 }
