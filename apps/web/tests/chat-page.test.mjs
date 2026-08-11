@@ -35,11 +35,16 @@ test("chat sends bounded message history to the grounded server endpoint", async
   const workspace = await readFile(workspaceUrl, "utf8");
   const api = await readFile(apiUrl, "utf8");
   const ai = await readFile(aiUrl, "utf8");
+  const monitoring = await readFile(
+    new URL("../lib/monitoring.ts", import.meta.url),
+    "utf8",
+  );
   assert.match(workspace, /fetch\("\/api\/chat"/);
   assert.match(workspace, /active\.messages[\s\S]*?\.slice\(-23\)/);
   assert.match(workspace, /MessageResponse/);
   assert.match(api, /chatRequestSchema\.safeParse/);
-  assert.match(api, /x-request-id/);
+  assert.match(api, /requestHeaders\(context/);
+  assert.match(monitoring, /"x-request-id"/);
   assert.match(ai, /\.max\(24\)/);
 });
 

@@ -1,10 +1,21 @@
-import { randomUUID } from "node:crypto";
 import { sendDevSmsOtp } from "@/lib/devsms";
+import {
+  createRequestContext,
+  logEvent,
+  requestHeaders,
+  safeErrorName,
+  type RequestContext,
+} from "@/lib/monitoring";
+import {
+  readLimitedText,
+  RequestBodyTooLargeError,
+} from "@/lib/request-guards";
 import { Webhook } from "standardwebhooks";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 export const maxDuration = 5;
+const maximumBodyBytes = 16 * 1024;
 
 const sendSmsHookSchema = z.object({
   user: z.object({
@@ -16,17 +27,45 @@ const sendSmsHookSchema = z.object({
   }),
 });
 
-function hookError(httpCode: number, message: string, status = httpCode) {
-  return Response.json({ error: { http_code: httpCode, message } }, { status });
+function hookError(
+  context: RequestContext,
+  httpCode: number,
+  message: string,
+  status = httpCode,
+) {
+  return Response.json(
+    { error: { http_code: httpCode, message } },
+    { status, headers: requestHeaders(context) },
+  );
 }
 
 export async function POST(request: Request) {
-  const requestId = request.headers.get("x-request-id") || randomUUID();
-  const payload = await request.text();
+  const context = createRequestContext(request, "/api/auth/send-sms");
+  logEvent("info", "api_request_started", context, { method: "POST" });
+  let payload: string;
+  try {
+    payload = await readLimitedText(request, maximumBodyBytes);
+  } catch (error) {
+    if (!(error instanceof RequestBodyTooLargeError)) {
+      logEvent("error", "api_request_failed", context, {
+        status: 400,
+        error: safeErrorName(error),
+      });
+      return hookError(context, 400, "Unable to read SMS request", 400);
+    }
+    logEvent("warning", "api_request_rejected", context, {
+      outcome: "payload_too_large",
+      status: 413,
+    });
+    return hookError(context, 413, "SMS request is too large", 413);
+  }
+
   const configuredSecret = process.env.SUPABASE_SEND_SMS_HOOK_SECRET?.trim();
   if (!configuredSecret) {
-    console.error("sms_hook_configuration_error", { requestId });
-    return hookError(503, "SMS delivery is not configured");
+    logEvent("error", "sms_hook_configuration_error", context, {
+      status: 503,
+    });
+    return hookError(context, 503, "SMS delivery is not configured");
   }
 
   const secret = configuredSecret.replace(/^v1,whsec_/, "");
@@ -37,14 +76,16 @@ export async function POST(request: Request) {
       Object.fromEntries(request.headers),
     );
   } catch {
-    console.warn("sms_hook_verification_failed", { requestId });
-    return hookError(401, "Invalid webhook signature", 401);
+    logEvent("warning", "sms_hook_verification_failed", context, {
+      status: 401,
+    });
+    return hookError(context, 401, "Invalid webhook signature", 401);
   }
 
   const parsed = sendSmsHookSchema.safeParse(event);
   if (!parsed.success) {
-    console.warn("sms_hook_invalid_payload", { requestId });
-    return hookError(400, "Invalid SMS request");
+    logEvent("warning", "sms_hook_invalid_payload", context, { status: 400 });
+    return hookError(context, 400, "Invalid SMS request");
   }
 
   try {
@@ -56,23 +97,24 @@ export async function POST(request: Request) {
         parsed.data.sms.otp,
         { signal: controller.signal },
       );
-      console.info("sms_hook_delivery_accepted", {
-        requestId,
+      logEvent("info", "sms_hook_delivery_accepted", context, {
+        status: 200,
+        outcome: "success",
         provider: "devsms",
         providerRequestId: result.data?.request_id,
         parts: result.data?.parts_count,
         reportedCost: result.data?.total_cost,
       });
-      return Response.json({});
+      return Response.json({}, { headers: requestHeaders(context) });
     } finally {
       clearTimeout(timeout);
     }
   } catch (error) {
-    console.error("sms_hook_delivery_failed", {
-      requestId,
+    logEvent("error", "sms_hook_delivery_failed", context, {
+      status: 502,
       category: "provider",
-      error: error instanceof Error ? error.message : "UnknownError",
+      error: safeErrorName(error),
     });
-    return hookError(502, "Unable to deliver verification code", 502);
+    return hookError(context, 502, "Unable to deliver verification code", 502);
   }
 }

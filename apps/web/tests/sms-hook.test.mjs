@@ -13,7 +13,10 @@ test("Supabase SMS hook verifies signed requests before sending", async () => {
   assert.match(route, /sendSmsHookSchema\.safeParse/);
   assert.match(route, /AbortController/);
   assert.match(route, /3_500/);
-  assert.match(route, /return Response\.json\(\{\}\)/);
+  assert.match(
+    route,
+    /return Response\.json\(\{\}, \{ headers: requestHeaders\(context\) \}\)/,
+  );
   assert.doesNotMatch(
     route,
     /console\.(?:info|warn|error)\([^\n]*(?:phone|otp)/i,
