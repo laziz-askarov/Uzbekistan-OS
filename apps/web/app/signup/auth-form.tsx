@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { normalizeEmail, normalizeInternationalPhone } from "@/lib/auth-inputs";
+import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
 
 type Mode = "create" | "signin";
@@ -398,7 +399,12 @@ export default function AuthForm() {
           {message}
         </p>
       ) : null}
-      <p className="auth-privacy">No PINFL or passport number required.</p>
+      <p className="auth-privacy">
+        By creating an account, you agree to the{" "}
+        <Link href="/terms">Terms of Use</Link> and acknowledge the{" "}
+        <Link href="/privacy">Privacy Policy</Link>.
+        {" No PINFL or passport number required."}
+      </p>
     </div>
   );
 }

@@ -859,15 +859,21 @@ export default function HomePage() {
             <span>Last content review: 9 August 2026.</span>
           </div>
         </div>
-        <a className="footer-link" href="#top">
-          <span>Back to top</span>
-          <Image
-            alt=""
-            height={16}
-            src="/landing/arrow-footer.svg"
-            width={16}
-          />
-        </a>
+        <div className="footer-navigation">
+          <nav className="footer-legal" aria-label="Legal">
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Use</a>
+          </nav>
+          <a className="footer-link" href="#top">
+            <span>Back to top</span>
+            <Image
+              alt=""
+              height={16}
+              src="/landing/arrow-footer.svg"
+              width={16}
+            />
+          </a>
+        </div>
       </footer>
     </div>
   );
