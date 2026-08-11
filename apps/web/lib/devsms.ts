@@ -24,10 +24,11 @@ function requiredEnvironmentVariable(name: string) {
 
 export function normalizePhoneForDevSms(phone: string) {
   const compact = phone.trim().replace(/[\s().-]/g, "");
-  if (!/^\+[1-9]\d{7,14}$/.test(compact)) {
-    throw new Error("A valid E.164 international phone number is required");
+  const digits = compact.startsWith("+") ? compact.slice(1) : compact;
+  if (!/^[1-9]\d{7,14}$/.test(digits)) {
+    throw new Error("A valid international phone number is required");
   }
-  return compact.slice(1);
+  return digits;
 }
 
 export async function sendDevSmsOtp(

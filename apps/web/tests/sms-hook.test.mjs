@@ -20,10 +20,16 @@ test("Supabase SMS hook verifies signed requests before sending", async () => {
   );
 });
 
-test("DevSMS adapter accepts E.164 international numbers and uses registration OTP", async () => {
+test("DevSMS adapter accepts Supabase and E.164 international numbers", async () => {
   const provider = await readFile(providerUrl, "utf8");
-  assert.match(provider, /\^\\\+\[1-9\]\\d\{7,14\}\$/);
-  assert.match(provider, /return compact\.slice\(1\)/);
+  assert.match(provider, /compact\.startsWith\("\+"\)/);
+  assert.match(provider, /\^\[1-9\]\\d\{7,14\}\$/);
+  assert.match(provider, /return digits/);
+  assert.doesNotMatch(provider, /\^\\\+\[1-9\]/);
+});
+
+test("DevSMS adapter uses the registration OTP template and server-only token", async () => {
+  const provider = await readFile(providerUrl, "utf8");
   assert.match(provider, /type: "universal_otp"/);
   assert.match(provider, /template_type: 3/);
   assert.match(provider, /DEVSMS_API_TOKEN/);
