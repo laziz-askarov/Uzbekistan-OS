@@ -1,0 +1,534 @@
+.page {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.topbar {
+  min-height: 72px;
+  padding: 16px clamp(20px, 4vw, 56px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  color: #fff;
+  background: #101827;
+  border-bottom: 1px solid #273244;
+}
+
+.topbar > div,
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand {
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -0.35px;
+}
+
+.workspaceLabel {
+  padding-left: 16px;
+  color: #bac4d2;
+  border-left: 1px solid #3b4657;
+}
+
+.identity {
+  color: #d8dee8;
+  font-size: 14px;
+}
+
+.identity a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.role {
+  padding: 4px 9px;
+  color: #dbeafe;
+  background: #1d4ed8;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.content {
+  width: min(1440px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 48px 0 80px;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.heading h1 {
+  margin: 0;
+  color: #101827;
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.heading p:not(.eyebrow) {
+  max-width: 700px;
+  margin: 12px 0 0;
+  color: #5b6677;
+}
+
+.total {
+  min-width: 150px;
+  display: grid;
+  text-align: right;
+}
+
+.total strong {
+  color: #101827;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.total span {
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.filters {
+  margin-top: 32px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr 1fr auto auto;
+  align-items: end;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #dce1e8;
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgb(16 24 39 / 5%);
+}
+
+.filters label,
+.reviewForm label {
+  display: grid;
+  gap: 7px;
+  color: #3b4657;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.filters select,
+.filters input,
+.reviewForm select,
+.reviewForm textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #111827;
+  background: #fff;
+  border: 1px solid #cbd2dc;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.reviewForm textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.filters select:focus-visible,
+.filters input:focus-visible,
+.reviewForm select:focus-visible,
+.reviewForm textarea:focus-visible,
+.filterButton:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.filterButton,
+.primaryButton,
+.secondaryButton {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filterButton,
+.primaryButton {
+  color: #fff;
+  background: #1d4ed8;
+  border: 1px solid #1d4ed8;
+}
+
+.filterButton:hover,
+.primaryButton:hover {
+  background: #1e40af;
+}
+
+.secondaryButton {
+  color: #1f2937;
+  background: #fff;
+  border: 1px solid #b8c0cc;
+}
+
+.secondaryButton:hover {
+  background: #f3f4f6;
+}
+
+.filterButton:disabled,
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.clearLink {
+  min-height: 44px;
+  padding: 10px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.reportList {
+  margin-top: 24px;
+  display: grid;
+  gap: 20px;
+}
+
+.reportCard {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #dce1e8;
+  border-radius: 18px;
+  box-shadow: 0 10px 32px rgb(16 24 39 / 4%);
+}
+
+.reportHeader,
+.reportFooter {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.reportHeader {
+  border-bottom: 1px solid #e7eaf0;
+}
+
+.reportHeader h2 {
+  margin: 10px 0 0;
+  color: #111827;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.reportHeader time,
+.reportFooter {
+  color: #687386;
+  font-size: 12px;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.incorrect {
+  color: #9f1239;
+  background: #ffe4e6;
+}
+
+.outdated {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.unclear {
+  color: #5b21b6;
+  background: #ede9fe;
+}
+
+.other,
+.dismissed {
+  color: #374151;
+  background: #e5e7eb;
+}
+
+.new {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.reviewing {
+  color: #854d0e;
+  background: #fef9c3;
+}
+
+.resolved {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.reportGrid {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  gap: 24px;
+}
+
+.fieldLabel {
+  margin: 0 0 8px;
+  color: #687386;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.responseText {
+  max-height: 310px;
+  padding: 18px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #1f2937;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  line-height: 1.65;
+}
+
+.reporter,
+.details,
+.assignment {
+  margin: 0;
+}
+
+.reporter {
+  color: #111827;
+  font-weight: 700;
+}
+
+.details {
+  margin-top: 12px;
+  color: #475569;
+  white-space: pre-wrap;
+}
+
+.reviewForm {
+  padding: 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e7eaf0;
+}
+
+.workflowFields {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 2fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.assignment {
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #334155;
+  background: #eef2f7;
+  border: 1px solid #d9e0e9;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.actionRow {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.formStatus {
+  min-height: 20px;
+  margin-top: 8px;
+  color: #9f1239;
+  font-size: 13px;
+  text-align: right;
+}
+
+.reportFooter {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  border-top: 1px solid #e7eaf0;
+}
+
+.emptyState {
+  margin-top: 24px;
+  padding: 72px 24px;
+  text-align: center;
+  background: #fff;
+  border: 1px dashed #b9c1cd;
+  border-radius: 18px;
+}
+
+.emptyState h2 {
+  margin: 0;
+  color: #111827;
+}
+
+.emptyState p {
+  margin: 8px 0 0;
+  color: #64748b;
+}
+
+.pagination {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.pagination a {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.pagination span[aria-disabled="true"] {
+  color: #9ca3af;
+}
+
+.errorState {
+  width: min(680px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 18vh 0 80px;
+}
+
+.errorState h1 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(34px, 6vw, 54px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.errorState > p:not(.eyebrow) {
+  color: #64748b;
+}
+
+.errorActions {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.secondaryLink {
+  color: #334155;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 980px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reportGrid,
+  .workflowFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar,
+  .heading,
+  .reportHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topbar {
+    gap: 12px;
+  }
+
+  .topbar > div,
+  .identity {
+    flex-wrap: wrap;
+  }
+
+  .identity {
+    font-size: 12px;
+  }
+
+  .content {
+    width: min(100% - 24px, 1440px);
+    padding-top: 32px;
+  }
+
+  .total {
+    text-align: left;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .reportHeader,
+  .reportGrid,
+  .reviewForm,
+  .reportFooter {
+    padding: 18px;
+  }
+
+  .actionRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actionRow button {
+    width: 100%;
+  }
+
+  .formStatus {
+    text-align: left;
+  }
+}

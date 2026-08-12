@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getStaffIdentity } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 import AccountSettings from "./account-settings";
 
@@ -27,6 +28,7 @@ export default async function AccountPage() {
   const profileName = [profile?.first_name, profile?.last_name]
     .filter(Boolean)
     .join(" ");
+  const staffIdentity = await getStaffIdentity();
 
   return (
     <main className="account-page">
@@ -66,6 +68,11 @@ export default async function AccountPage() {
         />
 
         <footer className="account-actions">
+          {staffIdentity ? (
+            <Link className="pill pill-light" href="/admin/feedback">
+              Review feedback
+            </Link>
+          ) : null}
           <Link className="pill pill-dark" href="/chat">
             Open assistant
           </Link>
