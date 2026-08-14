@@ -50,7 +50,7 @@ def test_runtime_loads_proposed_route_but_keeps_generation_disabled() -> None:
     runtime = load_ai_runtime_configuration(configured_settings())
 
     assert runtime.generation_enabled is False
-    assert runtime.prompts.resolve("grounded-answer").version == "1.1.0"
+    assert runtime.prompts.resolve("grounded-answer").version == "1.2.0"
     assert runtime.routes.routes[0].status == "proposed"
     assert runtime.routes.routes[0].reasoning_effort == "low"
     assert runtime.routes.routes[0].store is False

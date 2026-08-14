@@ -4,7 +4,14 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
-from app.ai.answers import ClaimCitation, GroundedAnswer, GroundedAnswerValidator
+from app.ai.answers import (
+    ClaimCitation,
+    ClarificationRequest,
+    ContextUsedItem,
+    GroundedAnswer,
+    GroundedAnswerValidator,
+)
+from app.ai.state import ConversationFact, ConversationState
 from app.retrieval.evidence import EvidenceItem, EvidencePack
 from app.retrieval.planning import QueryLanguage, RetrievalRisk
 from app.retrieval.service import CitationReference
@@ -72,12 +79,13 @@ def answer(**updates) -> GroundedAnswer:
     return GroundedAnswer.model_validate(values)
 
 
-def validate(candidate: GroundedAnswer, evidence=None):
+def validate(candidate: GroundedAnswer, evidence=None, state=None):
     return GroundedAnswerValidator().validate(
         answer=candidate,
         evidence=evidence or evidence_pack(),
         expected_language=QueryLanguage.EN,
         risk=RetrievalRisk.HIGH,
+        state=state,
     )
 
 
@@ -147,4 +155,72 @@ def test_answer_schema_rejects_extra_fields_and_invalid_shapes() -> None:
     with pytest.raises(ValidationError):
         GroundedAnswer.model_validate(
             {"status": "insufficient", "language": "en", "summary": "No evidence", "extra": True}
+        )
+
+
+def test_clarification_is_a_first_class_non_factual_response() -> None:
+    clarification = ClarificationRequest(
+        id="accommodation-type",
+        field="accommodation_type",
+        question="Where will you stay?",
+        reason="Hotel and private accommodation procedures differ.",
+        response_type="single_choice",
+        options=[
+            {"value": "hotel", "label": "Hotel"},
+            {"value": "private", "label": "Private accommodation"},
+        ],
+    )
+
+    response = GroundedAnswer.clarification_needed(QueryLanguage.EN, clarification)
+
+    assert response.status == "needs_clarification"
+    assert response.sections == []
+    assert response.clarification == clarification
+    assert response.next_actions[0].field == "accommodation_type"
+
+
+def test_context_acknowledgement_must_match_confirmed_state() -> None:
+    state = ConversationState(
+        language="en",
+        facts=[
+            ConversationFact(
+                field="nationality",
+                value="US",
+                status="confirmed",
+                source_message_id="message-1",
+                quote="US citizen",
+            )
+        ],
+    )
+    candidate = answer().model_copy(
+        update={
+            "context_used": [
+                ContextUsedItem(
+                    field="nationality",
+                    value="DE",
+                    source_message_id="message-1",
+                )
+            ]
+        }
+    )
+
+    result = validate(GroundedAnswer.model_validate(candidate.model_dump()), state=state)
+
+    assert result.accepted is False
+    assert result.issues[0].code == "answer_context_mismatch"
+
+
+def test_next_action_requires_a_bounded_target() -> None:
+    with pytest.raises(ValidationError, match="require a field"):
+        GroundedAnswer.model_validate(
+            answer().model_dump()
+            | {
+                "next_actions": [
+                    {
+                        "id": "change-context",
+                        "type": "change_context",
+                        "label": "Change details",
+                    }
+                ]
+            }
         )

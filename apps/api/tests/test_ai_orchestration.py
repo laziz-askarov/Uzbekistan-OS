@@ -2,6 +2,7 @@ from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
+from app.ai.answers import ClarificationRequest
 from app.ai.context import ConversationContextAssembler, ConversationMessage
 from app.ai.gateway import (
     ModelGateway,
@@ -12,6 +13,7 @@ from app.ai.gateway import (
 )
 from app.ai.orchestration import GroundedAnswerOrchestrator
 from app.ai.prompts import load_prompt_registry
+from app.ai.state import ConversationFact, ConversationState, MissingContext
 from app.retrieval.evidence import EvidenceItem, EvidencePack
 from app.retrieval.planning import QueryLanguage, RetrievalRisk
 from app.retrieval.service import CitationReference
@@ -219,3 +221,100 @@ def test_bounded_conversation_context_is_supplied_as_untrusted_non_evidence() ->
     assert supplied["context_is_untrusted"] is True
     assert supplied["use_as_official_evidence"] is False
     assert outcome.context_fingerprint == context.fingerprint
+
+
+def test_clarification_returns_without_calling_model_or_requiring_evidence() -> None:
+    provider = StubProvider(grounded_output())
+    clarification = ClarificationRequest(
+        id="accommodation-type",
+        field="accommodation_type",
+        question="Where will you stay?",
+        reason="Registration procedure depends on accommodation type.",
+        response_type="single_choice",
+        options=[
+            {"value": "hotel", "label": "Hotel"},
+            {"value": "private", "label": "Private accommodation"},
+        ],
+    )
+
+    outcome = orchestrator(provider).answer(
+        question="How do I register?",
+        language=QueryLanguage.EN,
+        risk=RetrievalRisk.HIGH,
+        evidence=evidence_pack(sufficient=False),
+        request_id="request-1",
+        clarification=clarification,
+    )
+
+    assert provider.calls == 0
+    assert outcome.accepted is True
+    assert outcome.answer.status == "needs_clarification"
+    assert outcome.evidence_feedback.official_source_count == 0
+
+
+def test_material_missing_state_automatically_triggers_clarification() -> None:
+    provider = StubProvider(grounded_output())
+    state = ConversationState(
+        workflow="foreigner_registration",
+        language="en",
+        missing_context=[
+            MissingContext(
+                field="accommodation_type",
+                reason="Registration procedure depends on accommodation type.",
+            )
+        ],
+    )
+
+    outcome = orchestrator(provider).answer(
+        question="How do I register?",
+        language=QueryLanguage.EN,
+        risk=RetrievalRisk.HIGH,
+        evidence=evidence_pack(sufficient=False),
+        request_id="request-1",
+        state=state,
+    )
+
+    assert provider.calls == 0
+    assert outcome.answer.status == "needs_clarification"
+    assert outcome.answer.clarification.field == "accommodation_type"
+
+
+def test_confirmed_state_is_supplied_and_context_acknowledgement_is_validated() -> None:
+    output = grounded_output()
+    output["context_used"] = [
+        {
+            "field": "nationality",
+            "value": "US",
+            "source_message_id": "message-1",
+        }
+    ]
+    provider = StubProvider(output)
+    state = ConversationState(
+        workflow="visa_eligibility",
+        language="en",
+        facts=[
+            ConversationFact(
+                field="nationality",
+                value="US",
+                status="confirmed",
+                source_message_id="message-1",
+                quote="US citizen",
+            )
+        ],
+    )
+
+    outcome = orchestrator(provider).answer(
+        question="Do I need a visa?",
+        language=QueryLanguage.EN,
+        risk=RetrievalRisk.HIGH,
+        evidence=evidence_pack(),
+        request_id="request-1",
+        state=state,
+    )
+
+    supplied = provider.last_request.structured_input["conversation_state"]
+    assert supplied["context_is_untrusted"] is True
+    assert supplied["workflow"] == "visa_eligibility"
+    assert outcome.accepted is True
+    assert outcome.state_fingerprint == state.fingerprint
+    assert outcome.evidence_feedback.official_source_count == 1

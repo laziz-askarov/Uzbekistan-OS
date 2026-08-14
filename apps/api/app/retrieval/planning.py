@@ -175,7 +175,12 @@ _RUSSIAN_MARKERS = {"для", "нужно", "как", "узбекистан", "�
 
 
 class RetrievalPlanner:
-    def plan(self, request: QueryRequest) -> RetrievalPlan:
+    def plan(
+        self,
+        request: QueryRequest,
+        *,
+        intent_hint: RetrievalIntent | None = None,
+    ) -> RetrievalPlan:
         normalized = request.query.casefold()
         if any(delimiter in normalized for delimiter in _ROLE_DELIMITERS):
             raise RetrievalPlanningError(
@@ -184,6 +189,8 @@ class RetrievalPlanner:
             )
         language = request.language or self._detect_language(normalized)
         intent = self._detect_intent(normalized)
+        if intent is RetrievalIntent.GENERAL and intent_hint is not None:
+            intent = intent_hint
         domains = _INTENT_DOMAINS[intent]
         risk = (
             RetrievalRisk.HIGH

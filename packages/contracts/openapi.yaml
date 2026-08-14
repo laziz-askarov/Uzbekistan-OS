@@ -160,8 +160,8 @@ paths:
       operationId: sendMessage
       summary: Send a message and stream the assistant response
       description: >-
-        Emits application-owned SSE events: start, chunk, citation, workflow,
-        done, and error. Provider-specific stream events are never exposed.
+        Emits application-owned SSE events: start, context, chunk, citation,
+        workflow, done, and error. Provider-specific stream events are never exposed.
       x-implementation-status: planned
       x-authorization:
         mode: optional-principal
@@ -171,6 +171,7 @@ paths:
         conflict: different-request
       x-sse-events:
         - $ref: "#/components/schemas/StreamStartEvent"
+        - $ref: "#/components/schemas/StreamContextEvent"
         - $ref: "#/components/schemas/StreamChunkEvent"
         - $ref: "#/components/schemas/StreamCitationEvent"
         - $ref: "#/components/schemas/StreamWorkflowEvent"
@@ -1059,6 +1060,110 @@ components:
         language: { $ref: "#/components/schemas/LanguageCode" }
         title: { type: [string, "null"], maxLength: 160 }
       additionalProperties: false
+    RetrievalIntent:
+      type: string
+      enum:
+        - arrival_entry
+        - visa_eligibility
+        - foreigner_registration
+        - moving
+        - business_registration
+        - residence_permit
+        - employment
+        - study
+        - banking
+        - pinfl
+        - healthcare
+        - renting
+        - customs
+        - stay_extension
+        - departure
+        - general
+    ConversationField:
+      type: string
+      enum:
+        - audience
+        - nationality
+        - residency_status
+        - location
+        - accommodation_type
+        - arrival_date
+        - length_of_stay
+        - applicant_role
+    ConversationFact:
+      type: object
+      required: [field, value, status, source_message_id, quote]
+      properties:
+        field: { $ref: "#/components/schemas/ConversationField" }
+        value: { type: string, minLength: 1, maxLength: 240 }
+        status: { type: string, enum: [confirmed, inferred] }
+        source_message_id:
+          { type: string, pattern: "^message-[a-z0-9-]{1,80}$" }
+        quote: { type: string, minLength: 1, maxLength: 2000 }
+        confidence: { type: [string, "null"], enum: [low, medium, high, null] }
+      additionalProperties: false
+    MissingConversationContext:
+      type: object
+      required: [field, reason]
+      properties:
+        field: { $ref: "#/components/schemas/ConversationField" }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+      additionalProperties: false
+    ConversationConflict:
+      type: object
+      required: [field, previous, proposed, resolution]
+      properties:
+        field: { $ref: "#/components/schemas/ConversationField" }
+        previous: { $ref: "#/components/schemas/ConversationFact" }
+        proposed: { $ref: "#/components/schemas/ConversationFact" }
+        resolution: { type: string, const: pending }
+      additionalProperties: false
+    ConversationState:
+      type: object
+      required:
+        - version
+        - language
+        - facts
+        - missing_context
+        - conflicts
+        - completed_steps
+        - last_document_version_ids
+        - fingerprint
+      properties:
+        version: { type: string, const: "1.0" }
+        workflow: { oneOf: [{ $ref: "#/components/schemas/RetrievalIntent" }, { type: "null" }] }
+        goal: { type: [string, "null"], minLength: 1, maxLength: 160 }
+        language: { $ref: "#/components/schemas/LanguageCode" }
+        facts:
+          type: array
+          maxItems: 32
+          items: { $ref: "#/components/schemas/ConversationFact" }
+        missing_context:
+          type: array
+          maxItems: 16
+          items: { $ref: "#/components/schemas/MissingConversationContext" }
+        conflicts:
+          type: array
+          maxItems: 16
+          items: { $ref: "#/components/schemas/ConversationConflict" }
+        current_step:
+          type: [string, "null"]
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        completed_steps:
+          type: array
+          maxItems: 64
+          uniqueItems: true
+          items: { type: string }
+        last_evidence_fingerprint:
+          type: [string, "null"]
+          pattern: "^[a-f0-9]{64}$"
+        last_document_version_ids:
+          type: array
+          maxItems: 32
+          uniqueItems: true
+          items: { type: string }
+        fingerprint: { type: string, pattern: "^[a-f0-9]{64}$", readOnly: true }
+      additionalProperties: false
     Conversation:
       type: object
       required: [id, language, created_at, updated_at]
@@ -1066,6 +1171,7 @@ components:
         id: { type: string, format: uuid }
         language: { $ref: "#/components/schemas/LanguageCode" }
         title: { type: [string, "null"] }
+        state: { oneOf: [{ $ref: "#/components/schemas/ConversationState" }, { type: "null" }] }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
       additionalProperties: false
@@ -1113,6 +1219,141 @@ components:
         content: { type: string, minLength: 1, maxLength: 12000 }
         language: { $ref: "#/components/schemas/LanguageCode" }
       additionalProperties: false
+    AnswerClaimCitation:
+      type: object
+      required: [evidence_id, quote]
+      properties:
+        evidence_id: { type: string, minLength: 1 }
+        quote: { type: string, minLength: 3, maxLength: 2000 }
+      additionalProperties: false
+    AnswerClaim:
+      type: object
+      required: [id, text, citations]
+      properties:
+        id: { type: string, pattern: "^claim-[a-z0-9-]{1,63}$" }
+        text: { type: string, minLength: 3, maxLength: 2000 }
+        citations:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items: { $ref: "#/components/schemas/AnswerClaimCitation" }
+      additionalProperties: false
+    GroundedAnswerSection:
+      type: object
+      required: [id, heading, claims]
+      properties:
+        id: { type: string, pattern: "^section-[a-z0-9-]{1,63}$" }
+        heading: { type: string, minLength: 1, maxLength: 160 }
+        claims:
+          type: array
+          minItems: 1
+          maxItems: 24
+          items: { $ref: "#/components/schemas/AnswerClaim" }
+      additionalProperties: false
+    ContextUsedItem:
+      type: object
+      required: [field, value, source_message_id]
+      properties:
+        field: { $ref: "#/components/schemas/ConversationField" }
+        value: { type: string, minLength: 1, maxLength: 240 }
+        source_message_id:
+          { type: string, pattern: "^message-[a-z0-9-]{1,80}$" }
+      additionalProperties: false
+    ClarificationOption:
+      type: object
+      required: [value, label]
+      properties:
+        value: { type: string, minLength: 1, maxLength: 120 }
+        label: { type: string, minLength: 1, maxLength: 160 }
+      additionalProperties: false
+    ClarificationRequest:
+      type: object
+      required: [id, field, question, reason, response_type, options]
+      properties:
+        id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        field: { $ref: "#/components/schemas/ConversationField" }
+        question: { type: string, minLength: 3, maxLength: 500 }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+        response_type: { type: string, enum: [single_choice, text] }
+        options:
+          type: array
+          maxItems: 8
+          items: { $ref: "#/components/schemas/ClarificationOption" }
+      additionalProperties: false
+    AnswerLimitation:
+      type: object
+      required: [code, message, evidence_ids]
+      properties:
+        code:
+          type: string
+          enum:
+            - source_missing_detail
+            - applicability_uncertain
+            - source_conflict
+            - context_missing
+        message: { type: string, minLength: 3, maxLength: 500 }
+        evidence_ids:
+          type: array
+          maxItems: 8
+          uniqueItems: true
+          items: { type: string }
+      additionalProperties: false
+    NextAction:
+      type: object
+      required: [id, type, label]
+      properties:
+        id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        type: { type: string, enum: [continue_flow, change_context, view_evidence] }
+        label: { type: string, minLength: 1, maxLength: 160 }
+        workflow: { oneOf: [{ $ref: "#/components/schemas/RetrievalIntent" }, { type: "null" }] }
+        field: { oneOf: [{ $ref: "#/components/schemas/ConversationField" }, { type: "null" }] }
+      additionalProperties: false
+    GroundedAnswer:
+      type: object
+      required:
+        - status
+        - language
+        - summary
+        - sections
+        - context_used
+        - limitations
+        - next_actions
+      properties:
+        status: { type: string, enum: [answered, needs_clarification, insufficient] }
+        language: { $ref: "#/components/schemas/LanguageCode" }
+        summary: { type: string, minLength: 1, maxLength: 2000 }
+        sections:
+          type: array
+          maxItems: 12
+          items: { $ref: "#/components/schemas/GroundedAnswerSection" }
+        clarification:
+          oneOf:
+            - { $ref: "#/components/schemas/ClarificationRequest" }
+            - { type: "null" }
+        context_used:
+          type: array
+          maxItems: 16
+          items: { $ref: "#/components/schemas/ContextUsedItem" }
+        limitations:
+          type: array
+          maxItems: 12
+          items: { $ref: "#/components/schemas/AnswerLimitation" }
+        next_actions:
+          type: array
+          maxItems: 8
+          items: { $ref: "#/components/schemas/NextAction" }
+      additionalProperties: false
+    EvidenceFeedback:
+      type: object
+      required: [evidence_fingerprint, official_source_count, document_version_ids]
+      properties:
+        evidence_fingerprint: { type: string, pattern: "^[a-f0-9]{64}$" }
+        official_source_count: { type: integer, minimum: 0 }
+        document_version_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+      additionalProperties: false
     StreamEventBase:
       type: object
       required: [stream_id, sequence]
@@ -1128,6 +1369,39 @@ components:
         data:
           allOf:
             - $ref: "#/components/schemas/StreamEventBase"
+      additionalProperties: false
+    StreamContextEvent:
+      type: object
+      required: [event, data]
+      properties:
+        event: { type: string, const: context }
+        data:
+          type: object
+          required:
+            - stream_id
+            - sequence
+            - state_fingerprint
+            - context_used
+            - missing_context
+            - conflicts
+          properties:
+            stream_id: { type: string, format: uuid }
+            sequence: { type: integer, minimum: 0 }
+            state_fingerprint: { type: string, pattern: "^[a-f0-9]{64}$" }
+            context_used:
+              type: array
+              items: { $ref: "#/components/schemas/ContextUsedItem" }
+            missing_context:
+              type: array
+              items: { $ref: "#/components/schemas/MissingConversationContext" }
+            conflicts:
+              type: array
+              items: { $ref: "#/components/schemas/ConversationConflict" }
+            clarification:
+              oneOf:
+                - { $ref: "#/components/schemas/ClarificationRequest" }
+                - { type: "null" }
+          additionalProperties: false
       additionalProperties: false
     StreamChunkEvent:
       type: object
@@ -1184,12 +1458,23 @@ components:
         event: { type: string, const: done }
         data:
           type: object
-          required: [stream_id, sequence, message_id, citation_count]
+          required:
+            - stream_id
+            - sequence
+            - message_id
+            - citation_count
+            - outcome
+            - answer
+            - evidence_feedback
           properties:
             stream_id: { type: string, format: uuid }
             sequence: { type: integer, minimum: 0 }
             message_id: { type: string, format: uuid }
             citation_count: { type: integer, minimum: 0 }
+            outcome:
+              { type: string, enum: [answered, needs_clarification, insufficient] }
+            answer: { $ref: "#/components/schemas/GroundedAnswer" }
+            evidence_feedback: { $ref: "#/components/schemas/EvidenceFeedback" }
           additionalProperties: false
       additionalProperties: false
     StreamErrorEvent:
@@ -1451,12 +1736,24 @@ components:
       properties:
         target_type:
           type: string
-          enum: [message, knowledge_document]
-        target_id: { type: string, format: uuid }
+          enum: [message, knowledge_document, claim, citation, applicability]
+        target_id: { type: string, minLength: 1, maxLength: 160 }
         rating:
           type: string
           enum: [helpful, not_helpful]
         reason: { type: [string, "null"], maxLength: 2000 }
+        reason_code:
+          type: [string, "null"]
+          enum:
+            - wrong_applicability
+            - incorrect_context
+            - outdated_information
+            - unsupported_claim
+            - citation_mismatch
+            - question_not_answered
+            - too_complex
+            - other
+            - null
       additionalProperties: false
     FeedbackData:
       type: object
@@ -1465,8 +1762,8 @@ components:
         id: { type: string, format: uuid }
         target_type:
           type: string
-          enum: [message, knowledge_document]
-        target_id: { type: string, format: uuid }
+          enum: [message, knowledge_document, claim, citation, applicability]
+        target_id: { type: string, minLength: 1, maxLength: 160 }
         rating:
           type: string
           enum: [helpful, not_helpful]
@@ -1825,6 +2122,81 @@ components:
         locator: { type: string, minLength: 1 }
         quote: { type: [string, "null"] }
       additionalProperties: false
+    CandidateRequirement:
+      type: object
+      required: [id, title, description, mandatory, citations]
+      properties:
+        id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        title: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        mandatory: { type: boolean }
+        applies_when:
+          type: array
+          items: { type: string, minLength: 1 }
+          uniqueItems: true
+          default: []
+        citations:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/CandidateCitation" }
+      additionalProperties: false
+    CandidateStep:
+      type: object
+      required: [id, ordinal, title, description, citations]
+      properties:
+        id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        ordinal: { type: integer, minimum: 1 }
+        title: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        requirement_ids:
+          type: array
+          items: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+          uniqueItems: true
+          default: []
+        citations:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/CandidateCitation" }
+      additionalProperties: false
+    CandidateFee:
+      type: object
+      required: [id, label, amount_type, citations]
+      properties:
+        id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        label: { type: string, minLength: 1 }
+        amount_type: { type: string, enum: [exact, range, variable, unknown] }
+        amount: { type: [number, "null"], minimum: 0 }
+        minimum_amount: { type: [number, "null"], minimum: 0 }
+        maximum_amount: { type: [number, "null"], minimum: 0 }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
+        unit: { type: [string, "null"], minLength: 1 }
+        payer: { type: [string, "null"], minLength: 1 }
+        payment_method: { type: [string, "null"], minLength: 1 }
+        refundable: { type: [boolean, "null"] }
+        conditions: { type: [string, "null"], minLength: 1 }
+        citations:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/CandidateCitation" }
+      additionalProperties: false
+    CandidateProcessingTime:
+      type: object
+      required: [duration_type, citations]
+      properties:
+        duration_type: { type: string, enum: [exact, range, variable, unknown] }
+        value: { type: [integer, "null"], minimum: 0 }
+        minimum_value: { type: [integer, "null"], minimum: 0 }
+        maximum_value: { type: [integer, "null"], minimum: 0 }
+        unit:
+          type: [string, "null"]
+          enum: [hours, calendar_days, business_days, weeks, months, null]
+        starts_when: { type: [string, "null"], minLength: 1 }
+        conditions: { type: [string, "null"], minLength: 1 }
+        citations:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/CandidateCitation" }
+      additionalProperties: false
     CandidateSection:
       type: object
       required: [id, heading, body, citations]
@@ -1862,11 +2234,47 @@ components:
           items: { type: string }
           uniqueItems: true
           default: []
+        nationalities:
+          type: array
+          items: { type: string, pattern: "^[A-Z]{2}$" }
+          uniqueItems: true
+          default: []
+        residency_statuses:
+          type: array
+          items: { type: string, minLength: 1 }
+          uniqueItems: true
+          default: []
+        locations:
+          type: array
+          items: { type: string, minLength: 1 }
+          uniqueItems: true
+          default: []
+        applicability_conditions:
+          type: array
+          items: { type: string, minLength: 1 }
+          uniqueItems: true
+          default: []
         keywords:
           type: array
           items: { type: string }
           uniqueItems: true
           default: []
+        requirements:
+          type: array
+          items: { $ref: "#/components/schemas/CandidateRequirement" }
+          default: []
+        steps:
+          type: array
+          items: { $ref: "#/components/schemas/CandidateStep" }
+          default: []
+        fees:
+          type: array
+          items: { $ref: "#/components/schemas/CandidateFee" }
+          default: []
+        processing_time:
+          oneOf:
+            - { $ref: "#/components/schemas/CandidateProcessingTime" }
+            - { type: "null" }
         sections:
           type: array
           minItems: 1

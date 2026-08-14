@@ -93,3 +93,53 @@ def test_checked_in_admin_contract_matches_runtime_paths_and_security() -> None:
     assert contract["paths"]["/admin/publications"]["post"]["x-idempotency"]["replay"] == (
         "candidate-checksum"
     )
+
+
+def test_publication_contract_exposes_structured_authoring_fields() -> None:
+    with CONTRACT_PATH.open(encoding="utf-8") as stream:
+        contract = yaml.safe_load(stream)
+    runtime = create_app().openapi()
+
+    expected_fields = {
+        "nationalities",
+        "residency_statuses",
+        "locations",
+        "applicability_conditions",
+        "requirements",
+        "steps",
+        "fees",
+        "processing_time",
+    }
+    assert expected_fields <= set(
+        contract["components"]["schemas"]["PublicationCandidate"]["properties"]
+    )
+    assert expected_fields <= set(
+        runtime["components"]["schemas"]["PublicationCandidate"]["properties"]
+    )
+
+
+def test_planned_conversation_contract_exposes_contextual_flow_metadata() -> None:
+    with CONTRACT_PATH.open(encoding="utf-8") as stream:
+        contract = yaml.safe_load(stream)
+    schemas = contract["components"]["schemas"]
+
+    assert {
+        "ConversationState",
+        "ConversationFact",
+        "ClarificationRequest",
+        "GroundedAnswer",
+        "EvidenceFeedback",
+        "NextAction",
+        "StreamContextEvent",
+    } <= set(schemas)
+    answer_properties = schemas["GroundedAnswer"]["properties"]
+    assert {"clarification", "context_used", "limitations", "next_actions"} <= set(
+        answer_properties
+    )
+    stream_refs = {
+        item["$ref"]
+        for item in contract["paths"]["/conversations/{conversationId}/messages"]["post"][
+            "x-sse-events"
+        ]
+    }
+    assert "#/components/schemas/StreamContextEvent" in stream_refs

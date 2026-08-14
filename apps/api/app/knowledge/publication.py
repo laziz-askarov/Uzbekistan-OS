@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from hashlib import sha256
 from json import dumps
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -71,6 +71,93 @@ class CandidateSection(BaseModel):
         return value
 
 
+class CandidateRequirement(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    title: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    mandatory: bool
+    applies_when: list[str] = Field(default_factory=list)
+    citations: list[CandidateCitation] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_requirement(self) -> "CandidateRequirement":
+        if len(self.applies_when) != len(set(self.applies_when)):
+            raise ValueError("requirement applicability conditions must be unique")
+        return self
+
+
+class CandidateStep(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    ordinal: int = Field(ge=1)
+    title: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    requirement_ids: list[str] = Field(default_factory=list)
+    citations: list[CandidateCitation] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_step(self) -> "CandidateStep":
+        if len(self.requirement_ids) != len(set(self.requirement_ids)):
+            raise ValueError("step requirement IDs must be unique")
+        return self
+
+
+class CandidateFee(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    label: str = Field(min_length=1)
+    amount_type: Literal["exact", "range", "variable", "unknown"]
+    amount: float | None = Field(default=None, ge=0)
+    minimum_amount: float | None = Field(default=None, ge=0)
+    maximum_amount: float | None = Field(default=None, ge=0)
+    currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    unit: str | None = Field(default=None, min_length=1)
+    payer: str | None = Field(default=None, min_length=1)
+    payment_method: str | None = Field(default=None, min_length=1)
+    refundable: bool | None = None
+    conditions: str | None = Field(default=None, min_length=1)
+    citations: list[CandidateCitation] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_amount(self) -> "CandidateFee":
+        if self.amount_type == "exact" and (self.amount is None or self.currency is None):
+            raise ValueError("exact fees require amount and currency")
+        if self.amount_type == "range":
+            if self.minimum_amount is None or self.maximum_amount is None or self.currency is None:
+                raise ValueError("range fees require minimum, maximum, and currency")
+            if self.maximum_amount < self.minimum_amount:
+                raise ValueError("fee maximum cannot be lower than minimum")
+        return self
+
+
+class CandidateProcessingTime(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    duration_type: Literal["exact", "range", "variable", "unknown"]
+    value: int | None = Field(default=None, ge=0)
+    minimum_value: int | None = Field(default=None, ge=0)
+    maximum_value: int | None = Field(default=None, ge=0)
+    unit: Literal["hours", "calendar_days", "business_days", "weeks", "months"] | None = None
+    starts_when: str | None = Field(default=None, min_length=1)
+    conditions: str | None = Field(default=None, min_length=1)
+    citations: list[CandidateCitation] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_duration(self) -> "CandidateProcessingTime":
+        if self.duration_type == "exact" and (self.value is None or self.unit is None):
+            raise ValueError("exact processing time requires value and unit")
+        if self.duration_type == "range":
+            if self.minimum_value is None or self.maximum_value is None or self.unit is None:
+                raise ValueError("processing-time range requires minimum, maximum, and unit")
+            if self.maximum_value < self.minimum_value:
+                raise ValueError("processing-time maximum cannot be lower than minimum")
+        return self
+
+
 class PublicationCandidate(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -82,7 +169,15 @@ class PublicationCandidate(BaseModel):
     title: str = Field(min_length=1, max_length=500)
     summary: str = Field(min_length=1)
     audiences: list[str] = Field(default_factory=list)
+    nationalities: list[str] = Field(default_factory=list)
+    residency_statuses: list[str] = Field(default_factory=list)
+    locations: list[str] = Field(default_factory=list)
+    applicability_conditions: list[str] = Field(default_factory=list)
     keywords: list[str] = Field(default_factory=list)
+    requirements: list[CandidateRequirement] = Field(default_factory=list)
+    steps: list[CandidateStep] = Field(default_factory=list)
+    fees: list[CandidateFee] = Field(default_factory=list)
+    processing_time: CandidateProcessingTime | None = None
     sections: list[CandidateSection] = Field(min_length=1)
     effective_from: date
     effective_until: date | None = None
@@ -96,6 +191,13 @@ class PublicationCandidate(BaseModel):
             raise ValueError("publication text cannot be blank")
         return value
 
+    @field_validator("nationalities")
+    @classmethod
+    def nationalities_must_be_iso_country_codes(cls, value: list[str]) -> list[str]:
+        if any(len(item) != 2 or not item.isascii() or not item.isupper() for item in value):
+            raise ValueError("candidate nationalities must use uppercase ISO alpha-2 codes")
+        return value
+
     @model_validator(mode="after")
     def validate_candidate(self) -> "PublicationCandidate":
         if self.effective_until is not None and self.effective_until < self.effective_from:
@@ -103,10 +205,33 @@ class PublicationCandidate(BaseModel):
         section_ids = [section.id for section in self.sections]
         if len(section_ids) != len(set(section_ids)):
             raise ValueError("candidate section IDs must be unique")
-        if len(self.audiences) != len(set(self.audiences)):
-            raise ValueError("candidate audiences must be unique")
-        if len(self.keywords) != len(set(self.keywords)):
-            raise ValueError("candidate keywords must be unique")
+        for field_name in (
+            "audiences",
+            "nationalities",
+            "residency_statuses",
+            "locations",
+            "applicability_conditions",
+            "keywords",
+        ):
+            values = getattr(self, field_name)
+            if len(values) != len(set(values)):
+                raise ValueError(f"candidate {field_name} must be unique")
+        for field_name in ("requirements", "steps", "fees"):
+            identifiers = [item.id for item in getattr(self, field_name)]
+            if len(identifiers) != len(set(identifiers)):
+                raise ValueError(f"candidate {field_name} IDs must be unique")
+        ordinals = [step.ordinal for step in self.steps]
+        if len(ordinals) != len(set(ordinals)):
+            raise ValueError("candidate step ordinals must be unique")
+        requirement_ids = {requirement.id for requirement in self.requirements}
+        unknown_requirements = {
+            requirement_id
+            for step in self.steps
+            for requirement_id in step.requirement_ids
+            if requirement_id not in requirement_ids
+        }
+        if unknown_requirements:
+            raise ValueError("candidate steps reference unknown requirements")
         return self
 
     def canonical_bytes(self) -> bytes:
@@ -231,6 +356,7 @@ class PublicationService:
             )
         artifact_sections = {section.id: section for section in artifact.sections}
         candidate_sections = {section.id: section for section in candidate.sections}
+        approved_bodies = [section.body for section in artifact.sections]
         for section_id, section in candidate_sections.items():
             approved = artifact_sections[section_id]
             if section.heading != approved.heading or section.body != approved.body:
@@ -249,3 +375,26 @@ class PublicationService:
                         "citation_quote_mismatch",
                         f"citation quote is not present in section: {section_id}",
                     )
+        structured_citations = [
+            citation
+            for item in [*candidate.requirements, *candidate.steps, *candidate.fees]
+            for citation in item.citations
+        ]
+        if candidate.processing_time is not None:
+            structured_citations.extend(candidate.processing_time.citations)
+        for citation in structured_citations:
+            if citation.source_id != source_id:
+                raise PublicationError(
+                    "citation_lineage_mismatch",
+                    "all citations must reference the reviewed source",
+                )
+            if citation.quote is None:
+                raise PublicationError(
+                    "structured_evidence_quote_required",
+                    "requirements, steps, fees, and processing time require evidence quotes",
+                )
+            if not any(citation.quote in body for body in approved_bodies):
+                raise PublicationError(
+                    "citation_quote_mismatch",
+                    "structured citation quote is not present in the reviewed artifact",
+                )

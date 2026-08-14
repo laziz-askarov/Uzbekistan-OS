@@ -28,7 +28,7 @@ DOMAIN_SCHEMA_PATHS = {
 HTTP_METHODS = {"get", "post", "put", "patch", "delete"}
 MUTATING_METHODS = {"post", "put", "patch", "delete"}
 AUTHORIZATION_MODES = {"public", "optional-principal", "authenticated", "role-gated"}
-REQUIRED_SSE_EVENTS = {"start", "chunk", "citation", "workflow", "done", "error"}
+REQUIRED_SSE_EVENTS = {"start", "context", "chunk", "citation", "workflow", "done", "error"}
 PHASE_TWO_PATHS = {
     "/health",
     "/ready",

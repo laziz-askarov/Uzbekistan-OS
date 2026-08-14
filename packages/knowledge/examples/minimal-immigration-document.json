@@ -64,6 +64,21 @@
       ]
     }
   ],
+  "processing_time": {
+    "duration_type": "unknown",
+    "value": null,
+    "minimum_value": null,
+    "maximum_value": null,
+    "unit": null,
+    "starts_when": null,
+    "conditions": "Non-production fixture only",
+    "citations": [
+      {
+        "source_id": "8343aacf-3c9a-45a1-878e-d31cf4d10c5e",
+        "locator": "Fixture section"
+      }
+    ]
+  },
   "sections": [
     {
       "id": "overview",
@@ -90,6 +105,9 @@
   "effective_from": "2026-07-31",
   "effective_until": null,
   "reviewed_at": "2026-07-31T00:00:00Z",
+  "published_at": null,
+  "chunks": [],
+  "embeddings": [],
   "translation_of": null,
   "translation": {
     "status": "original",

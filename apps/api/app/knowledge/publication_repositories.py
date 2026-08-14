@@ -149,6 +149,7 @@ class SqlAlchemyPublicationRepository:
             organization,
             source,
             snapshot,
+            published_at,
         )
         checksum = sha256(
             dumps(content, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
@@ -255,6 +256,7 @@ class SqlAlchemyPublicationRepository:
         organization,
         source,
         snapshot,
+        published_at,
     ):
         return {
             "id": str(document_id),
@@ -267,6 +269,23 @@ class SqlAlchemyPublicationRepository:
             "summary": candidate.summary,
             "audiences": candidate.audiences,
             "keywords": candidate.keywords,
+            "applicability": {
+                "audiences": candidate.audiences,
+                "nationalities": candidate.nationalities,
+                "residency_statuses": candidate.residency_statuses,
+                "locations": candidate.locations,
+                "conditions": candidate.applicability_conditions,
+            },
+            "requirements": [
+                requirement.model_dump(mode="json") for requirement in candidate.requirements
+            ],
+            "steps": [step.model_dump(mode="json") for step in candidate.steps],
+            "fees": [fee.model_dump(mode="json") for fee in candidate.fees],
+            "processing_time": (
+                candidate.processing_time.model_dump(mode="json")
+                if candidate.processing_time
+                else None
+            ),
             "sections": [section.model_dump(mode="json") for section in candidate.sections],
             "sources": [
                 {
@@ -283,6 +302,7 @@ class SqlAlchemyPublicationRepository:
                 candidate.effective_until.isoformat() if candidate.effective_until else None
             ),
             "reviewed_at": lineage.reviewed_at.isoformat(),
+            "published_at": published_at.isoformat(),
             "translation_of": (
                 str(candidate.translation_of_id) if candidate.translation_of_id else None
             ),

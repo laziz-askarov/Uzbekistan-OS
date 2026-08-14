@@ -1,0 +1,236 @@
+{
+  "id": "33333333-3333-4333-8333-333333333333",
+  "slug": "non-production-registration-example",
+  "domain": "immigration",
+  "language": "en",
+  "status": "published",
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "revision": 0
+  },
+  "title": "Non-production Visitor Registration Example",
+  "summary": "A fictional, non-production document demonstrating a complete canonical knowledge document after publication and indexing.",
+  "audiences": [
+    "foreign-visitor"
+  ],
+  "keywords": [
+    "registration example",
+    "visitor registration fixture",
+    "non-production guidance"
+  ],
+  "entities": [
+    {
+      "id": "fixture-authority",
+      "type": "organization",
+      "name": "Uzbekistan OS Development Fixtures",
+      "aliases": [
+        "Development fixture authority"
+      ]
+    }
+  ],
+  "applicability": {
+    "audiences": [
+      "foreign-visitor"
+    ],
+    "nationalities": [
+      "US"
+    ],
+    "residency_statuses": [
+      "non-resident"
+    ],
+    "locations": [
+      "Uzbekistan"
+    ],
+    "conditions": [
+      "Non-production contract demonstration only"
+    ]
+  },
+  "requirements": [
+    {
+      "id": "valid-identity-document",
+      "title": "Valid identity document",
+      "description": "Applicants must provide a valid identity document for the fictional registration example.",
+      "mandatory": true,
+      "applies_when": [
+        "The applicant uses this non-production example"
+      ],
+      "citations": [
+        {
+          "source_id": "22222222-2222-4222-8222-222222222222",
+          "locator": "Fixture procedure > Requirements, sentence 1",
+          "quote": "Applicants must provide a valid identity document for the fictional registration example."
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "submit-example-application",
+      "ordinal": 1,
+      "title": "Submit the example application",
+      "description": "Submit the example application through the fictional official portal.",
+      "requirement_ids": [
+        "valid-identity-document"
+      ],
+      "citations": [
+        {
+          "source_id": "22222222-2222-4222-8222-222222222222",
+          "locator": "Fixture procedure > Submission, sentence 2",
+          "quote": "Submit the example application through the fictional official portal."
+        }
+      ]
+    }
+  ],
+  "fees": [
+    {
+      "id": "fictional-registration-fee",
+      "label": "Fictional demonstration fee",
+      "amount_type": "exact",
+      "amount": 50000,
+      "minimum_amount": null,
+      "maximum_amount": null,
+      "currency": "UZS",
+      "unit": "application",
+      "payer": "applicant",
+      "payment_method": "fictional official portal",
+      "refundable": false,
+      "conditions": "Applies only to this non-production example.",
+      "citations": [
+        {
+          "source_id": "22222222-2222-4222-8222-222222222222",
+          "locator": "Fixture procedure > Fees, sentence 3",
+          "quote": "The fictional demonstration fee is 50000 UZS per application."
+        }
+      ]
+    }
+  ],
+  "processing_time": {
+    "duration_type": "exact",
+    "value": 3,
+    "minimum_value": null,
+    "maximum_value": null,
+    "unit": "business_days",
+    "starts_when": "After a complete submission",
+    "conditions": "Applies only to this non-production example.",
+    "citations": [
+      {
+        "source_id": "22222222-2222-4222-8222-222222222222",
+        "locator": "Fixture procedure > Processing time, sentence 4",
+        "quote": "The fictional processing time is 3 business days after a complete submission."
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "overview",
+      "heading": "Overview",
+      "body": "This non-production example describes a fictional visitor registration procedure used only to demonstrate the JSON contract. It must not be treated as official guidance.",
+      "citations": [
+        {
+          "source_id": "22222222-2222-4222-8222-222222222222",
+          "locator": "Fixture procedure > Overview",
+          "quote": "It must not be treated as official guidance."
+        }
+      ]
+    },
+    {
+      "id": "example-procedure",
+      "heading": "Example procedure",
+      "body": "Applicants must provide a valid identity document for the fictional registration example. Submit the example application through the fictional official portal. The fictional demonstration fee is 50000 UZS per application. The fictional processing time is 3 business days after a complete submission.",
+      "citations": [
+        {
+          "source_id": "22222222-2222-4222-8222-222222222222",
+          "locator": "Fixture procedure > Requirements, submission, fees, and processing time",
+          "quote": "Applicants must provide a valid identity document for the fictional registration example."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "organization": "Uzbekistan OS Development Fixtures",
+      "title": "Non-production Registration Procedure Fixture",
+      "url": "https://example.invalid/non-production-registration-fixture",
+      "retrieved_at": "2026-08-14T04:00:00Z",
+      "snapshot_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "effective_from": "2026-08-14",
+  "effective_until": null,
+  "reviewed_at": "2026-08-14T05:00:00Z",
+  "published_at": "2026-08-14T06:00:00Z",
+  "translation_of": null,
+  "translation": {
+    "status": "original",
+    "canonical_language": "en",
+    "source_document_id": null,
+    "reviewed_at": null
+  },
+  "domain_data": {
+    "topic": "Non-production registration contract example",
+    "applicant_categories": [
+      "fixture-applicant"
+    ],
+    "permit_types": [
+      "fixture-registration"
+    ]
+  },
+  "chunks": [
+    {
+      "id": "44444444-4444-4444-8444-444444444441",
+      "section_id": "overview",
+      "ordinal": 0,
+      "content": "This non-production example describes a fictional visitor registration procedure used only to demonstrate the JSON contract. It must not be treated as official guidance.",
+      "content_hash": "7794d092903c621cfa7c529d99a2bd2036b93c28d85ed825514deec86b017ca3",
+      "token_count": 24,
+      "attributes": {
+        "heading": "Overview",
+        "fragment_index": 0,
+        "fragment_count": 1
+      }
+    },
+    {
+      "id": "44444444-4444-4444-8444-444444444442",
+      "section_id": "example-procedure",
+      "ordinal": 1,
+      "content": "Applicants must provide a valid identity document for the fictional registration example. Submit the example application through the fictional official portal. The fictional demonstration fee is 50000 UZS per application. The fictional processing time is 3 business days after a complete submission.",
+      "content_hash": "286c99cb2016926562124baced9d86a0fc3d6c223b7742e10e2e9005fccdcb8f",
+      "token_count": 42,
+      "attributes": {
+        "heading": "Example procedure",
+        "fragment_index": 0,
+        "fragment_count": 1
+      }
+    }
+  ],
+  "embeddings": [
+    {
+      "id": "55555555-5555-4555-8555-555555555551",
+      "chunk_id": "44444444-4444-4444-8444-444444444441",
+      "model_key": "fixture-embedding-v1",
+      "dimensions": 3,
+      "vector": [
+        0.125,
+        -0.25,
+        0.5
+      ],
+      "token_count": 24,
+      "created_at": "2026-08-14T06:01:00Z"
+    },
+    {
+      "id": "55555555-5555-4555-8555-555555555552",
+      "chunk_id": "44444444-4444-4444-8444-444444444442",
+      "model_key": "fixture-embedding-v1",
+      "dimensions": 3,
+      "vector": [
+        -0.375,
+        0.625,
+        0.75
+      ],
+      "token_count": 42,
+      "created_at": "2026-08-14T06:01:00Z"
+    }
+  ]
+}

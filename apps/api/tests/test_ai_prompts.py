@@ -17,7 +17,7 @@ def test_checked_in_prompt_registry_resolves_immutable_active_prompt() -> None:
 
     prompt = registry.resolve("grounded-answer")
 
-    assert prompt.version == "1.1.0"
+    assert prompt.version == "1.2.0"
     assert prompt.layers[0].role == "system"
     assert len(prompt.fingerprint) == 64
     assert prompt.fingerprint == registry.resolve("grounded-answer").fingerprint
@@ -36,7 +36,7 @@ def test_prompt_fingerprint_does_not_change_when_only_status_changes() -> None:
         (lambda payload: payload["prompts"].append(payload["prompts"][0]), "must be unique"),
         (
             lambda payload: payload["prompts"].append(
-                {**payload["prompts"][-1], "version": "1.2.0"}
+                {**payload["prompts"][-1], "version": "1.3.0"}
             ),
             "only one active",
         ),

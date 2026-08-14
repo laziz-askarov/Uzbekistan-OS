@@ -1,0 +1,124 @@
+{
+  "review_item_id": "00000000-0000-4000-8000-000000000001",
+  "slug": "replace-with-topic-en",
+  "domain": "immigration",
+  "language": "en",
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "revision": 0
+  },
+  "title": "Replace with the reviewed document title",
+  "summary": "Replace with a concise description of the questions this document answers.",
+  "audiences": [
+    "foreign-visitor"
+  ],
+  "nationalities": [
+    "US"
+  ],
+  "residency_statuses": [
+    "non-resident"
+  ],
+  "locations": [
+    "Uzbekistan"
+  ],
+  "applicability_conditions": [
+    "Replace with an evidence-backed condition that limits when this guidance applies."
+  ],
+  "keywords": [
+    "official term",
+    "common user term"
+  ],
+  "requirements": [
+    {
+      "id": "identity-document",
+      "title": "Identity document",
+      "description": "Applicants must provide the identity document specified by the reviewed source.",
+      "mandatory": true,
+      "applies_when": [
+        "The applicant is covered by this procedure."
+      ],
+      "citations": [
+        {
+          "source_id": "00000000-0000-4000-8000-000000000002",
+          "locator": "Replace with the exact heading, page, clause, table, or paragraph",
+          "quote": "Applicants must provide the identity document specified by the reviewed source."
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "submit-application",
+      "ordinal": 1,
+      "title": "Submit the application",
+      "description": "The application is submitted through the official channel identified by the reviewed source.",
+      "requirement_ids": [
+        "identity-document"
+      ],
+      "citations": [
+        {
+          "source_id": "00000000-0000-4000-8000-000000000002",
+          "locator": "Replace with the exact heading, page, clause, table, or paragraph",
+          "quote": "The application is submitted through the official channel identified by the reviewed source."
+        }
+      ]
+    }
+  ],
+  "fees": [
+    {
+      "id": "application-fee",
+      "label": "Application fee",
+      "amount_type": "unknown",
+      "amount": null,
+      "minimum_amount": null,
+      "maximum_amount": null,
+      "currency": null,
+      "unit": "application",
+      "payer": "applicant",
+      "payment_method": null,
+      "refundable": null,
+      "conditions": "The reviewed source does not establish an exact amount.",
+      "citations": [
+        {
+          "source_id": "00000000-0000-4000-8000-000000000002",
+          "locator": "Replace with the exact heading, page, clause, table, or paragraph",
+          "quote": "The reviewed source does not establish an exact amount."
+        }
+      ]
+    }
+  ],
+  "processing_time": {
+    "duration_type": "unknown",
+    "value": null,
+    "minimum_value": null,
+    "maximum_value": null,
+    "unit": null,
+    "starts_when": null,
+    "conditions": "The reviewed source does not establish a processing time.",
+    "citations": [
+      {
+        "source_id": "00000000-0000-4000-8000-000000000002",
+        "locator": "Replace with the exact heading, page, clause, table, or paragraph",
+        "quote": "The reviewed source does not establish a processing time."
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "overview",
+      "heading": "Overview",
+      "body": "Applicants must provide the identity document specified by the reviewed source. The application is submitted through the official channel identified by the reviewed source. The reviewed source does not establish an exact amount. The reviewed source does not establish a processing time.",
+      "citations": [
+        {
+          "source_id": "00000000-0000-4000-8000-000000000002",
+          "locator": "Replace with the exact heading, page, clause, table, or paragraph",
+          "quote": "Applicants must provide the identity document specified by the reviewed source."
+        }
+      ]
+    }
+  ],
+  "effective_from": "2026-08-14",
+  "effective_until": null,
+  "translation_of_id": null
+}

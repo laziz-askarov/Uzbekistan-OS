@@ -13,7 +13,8 @@ The request path is:
 2. Return a localized insufficiency response immediately if it has no safe evidence.
 3. Resolve the active prompt fingerprint and an approved provider-neutral route.
 4. Invoke the configured adapter with response storage disabled and bounded budgets.
-5. Parse `grounded-answer.v1` and validate every claim citation against evidence.
+5. Parse `grounded-answer.v2`, validate every claim citation against evidence, and
+   validate any `context_used` entries against confirmed conversation state.
 6. Return the answer only if every validation check passes; otherwise abstain.
 
 ## Fail-closed behavior

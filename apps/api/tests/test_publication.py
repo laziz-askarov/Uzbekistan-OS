@@ -13,7 +13,11 @@ from app.identity.service import AuthenticatedPrincipal
 from app.ingestion.artifacts import ExtractedSection, ExtractionArtifact
 from app.knowledge.publication import (
     CandidateCitation,
+    CandidateFee,
+    CandidateProcessingTime,
+    CandidateRequirement,
     CandidateSection,
+    CandidateStep,
     CandidateVersion,
     PublicationCandidate,
     PublicationError,
@@ -25,6 +29,13 @@ from app.knowledge.publication_repositories import SqlAlchemyPublicationReposito
 
 ROOT = Path(__file__).resolve().parents[3]
 KNOWLEDGE_SCHEMA = ROOT / "packages/knowledge/schemas/knowledge-document.schema.json"
+PUBLICATION_TEMPLATE = ROOT / "packages/knowledge/examples/publication-candidate-template.json"
+FILLED_PUBLICATION_EXAMPLE = (
+    ROOT / "packages/knowledge/examples/filled-publication-candidate.example.json"
+)
+FILLED_DOCUMENT_EXAMPLE = (
+    ROOT / "packages/knowledge/examples/filled-knowledge-document.example.json"
+)
 SOURCE_ID = UUID("00000000-0000-0000-0000-000000002001")
 
 
@@ -160,6 +171,37 @@ def test_approved_evidence_can_be_published_by_publisher_role() -> None:
 
     assert result.candidate_sha256 == publication_candidate.sha256
     assert repository.published == [publication_candidate]
+
+
+def test_checked_in_publication_candidate_template_matches_runtime_model() -> None:
+    with PUBLICATION_TEMPLATE.open(encoding="utf-8") as stream:
+        template = load(stream)
+
+    parsed = PublicationCandidate.model_validate(template)
+
+    assert parsed.nationalities == ["US"]
+    assert parsed.requirements[0].id == "identity-document"
+    assert parsed.steps[0].requirement_ids == ["identity-document"]
+    assert parsed.fees[0].amount_type == "unknown"
+    assert parsed.processing_time is not None
+
+
+def test_filled_publication_and_document_examples_match_contracts() -> None:
+    with FILLED_PUBLICATION_EXAMPLE.open(encoding="utf-8") as stream:
+        candidate_example = load(stream)
+    with FILLED_DOCUMENT_EXAMPLE.open(encoding="utf-8") as stream:
+        document_example = load(stream)
+    with KNOWLEDGE_SCHEMA.open(encoding="utf-8") as stream:
+        schema = load(stream)
+
+    candidate = PublicationCandidate.model_validate(candidate_example)
+    Draft202012Validator(schema, format_checker=FormatChecker()).validate(document_example)
+
+    assert candidate.slug == document_example["slug"]
+    assert candidate.version.model_dump() == document_example["version"]
+    assert [section.model_dump(mode="json") for section in candidate.sections] == document_example[
+        "sections"
+    ]
 
 
 def test_reviewer_role_alone_cannot_publish() -> None:
@@ -309,6 +351,55 @@ def test_same_publication_replays_but_changed_candidate_conflicts() -> None:
 
 def test_generated_knowledge_content_matches_canonical_schema() -> None:
     _, repository, _, publication_candidate = setup_publication()
+    citation = CandidateCitation(
+        source_id=SOURCE_ID,
+        locator="Overview section",
+        quote="Entry guidance",
+    )
+    publication_candidate = publication_candidate.model_copy(
+        update={
+            "nationalities": ["US"],
+            "residency_statuses": ["non-resident"],
+            "locations": ["Tashkent"],
+            "applicability_conditions": ["Fixture only"],
+            "requirements": [
+                CandidateRequirement(
+                    id="passport",
+                    title="Passport",
+                    description="Entry guidance requires a passport.",
+                    mandatory=True,
+                    citations=[citation],
+                )
+            ],
+            "steps": [
+                CandidateStep(
+                    id="submit-passport",
+                    ordinal=1,
+                    title="Submit passport",
+                    description="Present the passport.",
+                    requirement_ids=["passport"],
+                    citations=[citation],
+                )
+            ],
+            "fees": [
+                CandidateFee(
+                    id="application-fee",
+                    label="Application fee",
+                    amount_type="exact",
+                    amount=0,
+                    currency="UZS",
+                    unit="application",
+                    payer="applicant",
+                    citations=[citation],
+                )
+            ],
+            "processing_time": CandidateProcessingTime(
+                duration_type="unknown",
+                conditions="Fixture only",
+                citations=[citation],
+            ),
+        }
+    )
     lineage = repository.lineage
     document_id = uuid4()
     snapshot = SimpleNamespace(
@@ -326,8 +417,42 @@ def test_generated_knowledge_content_matches_canonical_schema() -> None:
             url="https://government.example/source",
         ),
         snapshot,
+        datetime(2026, 7, 31, 13, tzinfo=UTC),
     )
     with KNOWLEDGE_SCHEMA.open(encoding="utf-8") as stream:
         schema = load(stream)
 
     Draft202012Validator(schema, format_checker=FormatChecker()).validate(content)
+    assert content["applicability"]["nationalities"] == ["US"]
+    assert content["requirements"][0]["id"] == "passport"
+    assert content["fees"][0]["currency"] == "UZS"
+    assert content["published_at"] == "2026-07-31T13:00:00+00:00"
+
+
+def test_candidate_rejects_invalid_structured_content() -> None:
+    with pytest.raises(ValueError, match="ISO alpha-2"):
+        PublicationCandidate.model_validate(
+            candidate(uuid4()).model_dump(mode="json") | {"nationalities": ["USA"]}
+        )
+
+    with pytest.raises(ValueError, match="unknown requirements"):
+        PublicationCandidate.model_validate(
+            candidate(uuid4()).model_dump(mode="json")
+            | {
+                "steps": [
+                    {
+                        "id": "submit",
+                        "ordinal": 1,
+                        "title": "Submit",
+                        "description": "Submit evidence.",
+                        "requirement_ids": ["missing"],
+                        "citations": [
+                            {
+                                "source_id": str(SOURCE_ID),
+                                "locator": "Overview section",
+                            }
+                        ],
+                    }
+                ]
+            }
+        )

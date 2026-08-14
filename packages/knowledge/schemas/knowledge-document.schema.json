@@ -15,7 +15,8 @@
     "sections",
     "sources",
     "effective_from",
-    "reviewed_at"
+    "reviewed_at",
+    "published_at"
   ],
   "properties": {
     "id": { "type": "string", "format": "uuid" },
@@ -75,6 +76,13 @@
       "type": "array",
       "items": { "$ref": "#/$defs/fee" }
     },
+    "processing_time": {
+      "type": ["object", "null"],
+      "oneOf": [
+        { "$ref": "#/$defs/processingTime" },
+        { "type": "null" }
+      ]
+    },
     "sections": {
       "type": "array",
       "minItems": 1,
@@ -88,6 +96,17 @@
     "effective_from": { "type": "string", "format": "date" },
     "effective_until": { "type": ["string", "null"], "format": "date" },
     "reviewed_at": { "type": "string", "format": "date-time" },
+    "published_at": { "type": ["string", "null"], "format": "date-time", "readOnly": true },
+    "chunks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/chunk" },
+      "readOnly": true
+    },
+    "embeddings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/embedding" },
+      "readOnly": true
+    },
     "translation_of": {
       "type": ["string", "null"],
       "format": "uuid",
@@ -202,6 +221,10 @@
         "minimum_amount": { "type": ["number", "null"], "minimum": 0 },
         "maximum_amount": { "type": ["number", "null"], "minimum": 0 },
         "currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+        "unit": { "type": ["string", "null"], "minLength": 1 },
+        "payer": { "type": ["string", "null"], "minLength": 1 },
+        "payment_method": { "type": ["string", "null"], "minLength": 1 },
+        "refundable": { "type": ["boolean", "null"] },
         "conditions": { "type": ["string", "null"] },
         "citations": {
           "type": "array",
@@ -227,6 +250,63 @@
           }
         }
       ],
+      "additionalProperties": false
+    },
+    "processingTime": {
+      "type": "object",
+      "required": ["duration_type", "citations"],
+      "properties": {
+        "duration_type": {
+          "type": "string",
+          "enum": ["exact", "range", "variable", "unknown"]
+        },
+        "value": { "type": ["integer", "null"], "minimum": 0 },
+        "minimum_value": { "type": ["integer", "null"], "minimum": 0 },
+        "maximum_value": { "type": ["integer", "null"], "minimum": 0 },
+        "unit": {
+          "type": ["string", "null"],
+          "enum": ["hours", "calendar_days", "business_days", "weeks", "months", null]
+        },
+        "starts_when": { "type": ["string", "null"], "minLength": 1 },
+        "conditions": { "type": ["string", "null"], "minLength": 1 },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/citation" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "chunk": {
+      "type": "object",
+      "required": ["id", "section_id", "ordinal", "content", "content_hash", "token_count", "attributes"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "section_id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "ordinal": { "type": "integer", "minimum": 0 },
+        "content": { "type": "string", "minLength": 1 },
+        "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "token_count": { "type": "integer", "minimum": 1 },
+        "attributes": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "embedding": {
+      "type": "object",
+      "required": ["id", "chunk_id", "model_key", "dimensions", "vector", "token_count", "created_at"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "chunk_id": { "type": "string", "format": "uuid" },
+        "model_key": { "type": "string", "minLength": 1 },
+        "dimensions": { "type": "integer", "minimum": 1 },
+        "vector": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "token_count": { "type": "integer", "minimum": 1 },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
       "additionalProperties": false
     },
     "translation": {

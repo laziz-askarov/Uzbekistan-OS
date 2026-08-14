@@ -3,8 +3,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.ai.state import ConversationField, ConversationState
 from app.retrieval.evidence import EvidenceItem, EvidencePack
-from app.retrieval.planning import QueryLanguage, RetrievalRisk
+from app.retrieval.planning import QueryLanguage, RetrievalIntent, RetrievalRisk
 
 _TOKEN_PATTERN = re.compile(r"[^\W_]+", flags=re.UNICODE)
 _STOPWORDS = {
@@ -55,21 +56,98 @@ class AnswerSection(BaseModel):
     claims: list[GeneratedClaim] = Field(min_length=1, max_length=24)
 
 
+class ContextUsedItem(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    field: ConversationField
+    value: str = Field(min_length=1, max_length=240)
+    source_message_id: str = Field(pattern=r"^message-[a-z0-9-]{1,80}$")
+
+
+class ClarificationOption(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    value: str = Field(min_length=1, max_length=120)
+    label: str = Field(min_length=1, max_length=160)
+
+
+class ClarificationRequest(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    field: ConversationField
+    question: str = Field(min_length=3, max_length=500)
+    reason: str = Field(min_length=3, max_length=500)
+    response_type: Literal["single_choice", "text"]
+    options: list[ClarificationOption] = Field(default_factory=list, max_length=8)
+
+    @model_validator(mode="after")
+    def validate_options(self) -> "ClarificationRequest":
+        if self.response_type == "single_choice" and len(self.options) < 2:
+            raise ValueError("single-choice clarification requires at least two options")
+        if self.response_type == "text" and self.options:
+            raise ValueError("text clarification cannot include fixed options")
+        values = [option.value for option in self.options]
+        if len(values) != len(set(values)):
+            raise ValueError("clarification option values must be unique")
+        return self
+
+
+class AnswerLimitation(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    code: Literal[
+        "source_missing_detail",
+        "applicability_uncertain",
+        "source_conflict",
+        "context_missing",
+    ]
+    message: str = Field(min_length=3, max_length=500)
+    evidence_ids: list[str] = Field(default_factory=list, max_length=8)
+
+
+class NextAction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    type: Literal["continue_flow", "change_context", "view_evidence"]
+    label: str = Field(min_length=1, max_length=160)
+    workflow: RetrievalIntent | None = None
+    field: ConversationField | None = None
+
+    @model_validator(mode="after")
+    def validate_target(self) -> "NextAction":
+        if self.type == "continue_flow" and self.workflow is None:
+            raise ValueError("continue-flow actions require a workflow")
+        if self.type == "change_context" and self.field is None:
+            raise ValueError("change-context actions require a field")
+        if self.type == "view_evidence" and (self.workflow is not None or self.field is not None):
+            raise ValueError("view-evidence actions cannot carry workflow or field targets")
+        return self
+
+
 class GroundedAnswer(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    status: Literal["answered", "insufficient"]
+    status: Literal["answered", "needs_clarification", "insufficient"]
     language: QueryLanguage
     summary: str = Field(min_length=1, max_length=2_000)
     sections: list[AnswerSection] = Field(default_factory=list, max_length=12)
-    next_recommended_flow: str | None = Field(default=None, max_length=120)
+    clarification: ClarificationRequest | None = None
+    context_used: list[ContextUsedItem] = Field(default_factory=list, max_length=16)
+    limitations: list[AnswerLimitation] = Field(default_factory=list, max_length=12)
+    next_actions: list[NextAction] = Field(default_factory=list, max_length=8)
 
     @model_validator(mode="after")
     def validate_status_shape(self) -> "GroundedAnswer":
         if self.status == "answered" and not self.sections:
             raise ValueError("answered responses require at least one section")
-        if self.status == "insufficient" and self.sections:
-            raise ValueError("insufficient responses cannot include factual sections")
+        if self.status != "answered" and self.sections:
+            raise ValueError("non-answer responses cannot include factual sections")
+        if self.status == "needs_clarification" and self.clarification is None:
+            raise ValueError("clarification responses require a clarification request")
+        if self.status != "needs_clarification" and self.clarification is not None:
+            raise ValueError("only clarification responses can include a clarification request")
         claim_ids = [claim.id for section in self.sections for claim in section.claims]
         if len(claim_ids) != len(set(claim_ids)):
             raise ValueError("claim identifiers must be unique")
@@ -86,6 +164,34 @@ class GroundedAnswer(BaseModel):
             ),
         }
         return cls(status="insufficient", language=language, summary=messages[language])
+
+    @classmethod
+    def clarification_needed(
+        cls,
+        language: QueryLanguage,
+        clarification: ClarificationRequest,
+    ) -> "GroundedAnswer":
+        messages = {
+            QueryLanguage.EN: "I need one detail to determine which guidance applies.",
+            QueryLanguage.UZ: (
+                "Qaysi yoʻriqnoma mos kelishini aniqlash uchun bir maʼlumot kerak."  # noqa: RUF001
+            ),
+            QueryLanguage.RU: "Нужна одна деталь, чтобы определить применимые правила.",
+        }
+        return cls(
+            status="needs_clarification",
+            language=language,
+            summary=messages[language],
+            clarification=clarification,
+            next_actions=[
+                NextAction(
+                    id="change-requested-context",
+                    type="change_context",
+                    label=clarification.question,
+                    field=clarification.field,
+                )
+            ],
+        )
 
 
 class AnswerValidationIssue(BaseModel):
@@ -111,6 +217,7 @@ class GroundedAnswerValidator:
         evidence: EvidencePack,
         expected_language: QueryLanguage,
         risk: RetrievalRisk,
+        state: ConversationState | None = None,
     ) -> ValidatedAnswer:
         issues: list[AnswerValidationIssue] = []
         if answer.language != expected_language:
@@ -122,6 +229,11 @@ class GroundedAnswerValidator:
         for section in answer.sections:
             for claim in section.claims:
                 issues.extend(self._validate_claim(claim, evidence_by_id, risk))
+        issues.extend(self._validate_context(answer, state))
+        for limitation in answer.limitations:
+            for evidence_id in limitation.evidence_ids:
+                if evidence_id not in evidence_by_id:
+                    issues.append(AnswerValidationIssue(code="limitation_evidence_unknown"))
 
         if issues:
             return ValidatedAnswer(
@@ -130,6 +242,27 @@ class GroundedAnswerValidator:
                 issues=issues,
             )
         return ValidatedAnswer(answer=answer, accepted=True, issues=[])
+
+    @staticmethod
+    def _validate_context(
+        answer: GroundedAnswer,
+        state: ConversationState | None,
+    ) -> list[AnswerValidationIssue]:
+        if not answer.context_used:
+            return []
+        if state is None:
+            return [AnswerValidationIssue(code="answer_context_without_state")]
+        confirmed = {fact.field: fact for fact in state.facts if fact.status.value == "confirmed"}
+        issues: list[AnswerValidationIssue] = []
+        for item in answer.context_used:
+            fact = confirmed.get(item.field)
+            if (
+                fact is None
+                or fact.value != item.value
+                or fact.source_message_id != item.source_message_id
+            ):
+                issues.append(AnswerValidationIssue(code="answer_context_mismatch"))
+        return issues
 
     def _validate_claim(
         self,
