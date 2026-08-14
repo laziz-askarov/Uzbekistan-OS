@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { ThemeToggle } from "../design-system/theme-toggle";
 import styles from "./operations-dashboard.module.css";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const API_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_API_BASE_URL);
 const MAX_UPLOAD_BYTES = 10_000_000;
 
 type Principal = { id: string; roles: string[] };
@@ -68,6 +69,32 @@ type UploadResult = {
 type Envelope<T> = { data: T; meta: { request_id: string } };
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
 
+type WebHealth = {
+  commit: string;
+  service: string;
+  status: "ok";
+  version: string;
+};
+
+type ApiHealth = {
+  environment: string;
+  service: string;
+  status: "ok";
+  version: string;
+};
+
+type ApiReadiness = {
+  checks: Record<string, string>;
+  service: string;
+  status: "ready";
+};
+
+type SystemCheck = {
+  detail: string;
+  label: string;
+  status: "healthy" | "degraded" | "unavailable";
+};
+
 function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
@@ -84,6 +111,18 @@ function formatDate(value: string | null) {
 
 function compactId(value: string) {
   return `${value.slice(0, 8)}…${value.slice(-4)}`;
+}
+
+function durationSeconds(job: IngestionJob) {
+  if (!job.started_at || !job.completed_at) return null;
+  return Math.max(
+    0,
+    Math.round(
+      (new Date(job.completed_at).getTime() -
+        new Date(job.started_at).getTime()) /
+        1000,
+    ),
+  );
 }
 
 function sourceTypeLabel(value: AdminSource["source_type"]) {
@@ -129,6 +168,8 @@ export default function OperationsDashboard() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [systemChecks, setSystemChecks] = useState<SystemCheck[]>([]);
+  const [healthCheckedAt, setHealthCheckedAt] = useState<string | null>(null);
 
   async function request<T>(
     path: string,
@@ -154,10 +195,95 @@ export default function OperationsDashboard() {
     return payload.data;
   }
 
+  async function publicRequest<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: { "x-request-id": crypto.randomUUID() },
+    });
+    const payload = (await response.json()) as Envelope<T> & ErrorEnvelope;
+    if (!response.ok) {
+      throw new Error(
+        payload.error?.message ??
+          `Health request failed with status ${response.status}.`,
+      );
+    }
+    return payload.data;
+  }
+
+  async function loadSystemHealth() {
+    const [web] = await Promise.allSettled([
+      publicRequest<WebHealth>("/api/health"),
+    ]);
+    const checks: SystemCheck[] = [];
+    checks.push(
+      web.status === "fulfilled"
+        ? {
+            label: "Web application",
+            status: "healthy",
+            detail: `Version ${web.value.version} · commit ${web.value.commit}`,
+          }
+        : {
+            label: "Web application",
+            status: "unavailable",
+            detail: "The web health endpoint did not respond.",
+          },
+    );
+
+    if (!API_CONFIGURED) {
+      checks.push({
+        label: "Guidance API",
+        status: "degraded",
+        detail:
+          "NEXT_PUBLIC_API_BASE_URL is not configured for this deployment.",
+      });
+    } else {
+      const [api, readiness] = await Promise.allSettled([
+        publicRequest<ApiHealth>(`${API_BASE}/health`),
+        publicRequest<ApiReadiness>(`${API_BASE}/ready`),
+      ]);
+      checks.push(
+        api.status === "fulfilled"
+          ? {
+              label: "Guidance API",
+              status: "healthy",
+              detail: `${api.value.environment} · version ${api.value.version}`,
+            }
+          : {
+              label: "Guidance API",
+              status: "unavailable",
+              detail: "The API health endpoint could not be reached.",
+            },
+      );
+      if (readiness.status === "fulfilled") {
+        for (const [dependency, status] of Object.entries(
+          readiness.value.checks,
+        )) {
+          checks.push({
+            label: dependency.replaceAll("_", " "),
+            status: status === "ok" ? "healthy" : "degraded",
+            detail:
+              status === "ok"
+                ? "Dependency check passed."
+                : `Dependency reported ${status}.`,
+          });
+        }
+      } else {
+        checks.push({
+          label: "API dependencies",
+          status: "unavailable",
+          detail: "Readiness checks are unavailable.",
+        });
+      }
+    }
+    setSystemChecks(checks);
+    setHealthCheckedAt(new Date().toISOString());
+  }
+
   async function loadOperations(bearerToken: string = token) {
     if (!bearerToken) return;
     setBusy(true);
     setError("");
+    const healthRequest = loadSystemHealth();
     try {
       const [identity, nextSources, nextJobs] = await Promise.all([
         request<Principal>("/auth/me", undefined, bearerToken),
@@ -181,6 +307,7 @@ export default function OperationsDashboard() {
       setJobs([]);
       setError(errorMessage(caught));
     } finally {
+      await healthRequest;
       setBusy(false);
     }
   }
@@ -199,6 +326,8 @@ export default function OperationsDashboard() {
     setPrincipal(null);
     setSources([]);
     setJobs([]);
+    setSystemChecks([]);
+    setHealthCheckedAt(null);
     setUploadSource(null);
     setUploadFile(null);
     setMessage("Administrator session disconnected.");
@@ -293,19 +422,63 @@ export default function OperationsDashboard() {
     );
   }, [query, sources]);
 
-  const stats = useMemo(
-    () => ({
+  const analytics = useMemo(() => {
+    const terminalJobs = jobs.filter((job) =>
+      ["succeeded", "dead_lettered", "cancelled"].includes(job.status),
+    );
+    const successfulJobs = jobs.filter(
+      (job) => job.status === "succeeded",
+    ).length;
+    const durations = jobs
+      .map(durationSeconds)
+      .filter((value): value is number => value !== null);
+    const incidents = jobs.filter(
+      (job) =>
+        Boolean(job.error_code || job.error_message) ||
+        ["retry_scheduled", "dead_lettered", "cancelled"].includes(job.status),
+    );
+    const statusCounts = (
+      [
+        "succeeded",
+        "running",
+        "queued",
+        "retry_scheduled",
+        "dead_lettered",
+        "cancelled",
+      ] as JobStatus[]
+    ).map((status) => ({
+      count: jobs.filter((job) => job.status === status).length,
+      status,
+    }));
+    return {
       active: sources.filter((source) => source.active).length,
       scheduled: sources.filter(
         (source) => source.schedule_interval_minutes !== null,
       ).length,
-      review: jobs.filter((job) => job.status === "succeeded").length,
-      attention: jobs.filter((job) =>
-        ["retry_scheduled", "dead_lettered"].includes(job.status),
+      successfulJobs,
+      successRate: terminalJobs.length
+        ? Math.round((successfulJobs / terminalJobs.length) * 100)
+        : null,
+      averageDuration: durations.length
+        ? Math.round(
+            durations.reduce((total, value) => total + value, 0) /
+              durations.length,
+          )
+        : null,
+      inFlight: jobs.filter((job) =>
+        ["queued", "running", "retry_scheduled"].includes(job.status),
       ).length,
-    }),
-    [jobs, sources],
-  );
+      incidents,
+      statusCounts,
+      sourceWarnings: sources.filter(
+        (source) =>
+          !source.active ||
+          !source.last_verified_at ||
+          source.latest_job_status === "dead_lettered" ||
+          source.latest_job_status === "retry_scheduled",
+      ),
+    };
+  }, [jobs, sources]);
 
   if (!principal) {
     return (
@@ -364,7 +537,9 @@ export default function OperationsDashboard() {
       <header className={styles.topbar}>
         <Brand />
         <nav className={styles.topActions} aria-label="Admin utilities">
+          <a href="#analytics">Analytics</a>
           <Link href="/admin/reviews">Review queue</Link>
+          <Link href="/admin/feedback">Feedback</Link>
           <ThemeToggle className={styles.themeButton} />
           <button
             className={styles.quietButton}
@@ -399,25 +574,155 @@ export default function OperationsDashboard() {
         <section className={styles.stats} aria-label="Ingestion summary">
           <Stat
             label="Active sources"
-            value={stats.active}
+            value={analytics.active}
             detail={`${sources.length} configured`}
           />
           <Stat
-            label="Scheduled"
-            value={stats.scheduled}
-            detail="Registry controlled"
+            label="Success rate"
+            value={
+              analytics.successRate === null ? "—" : `${analytics.successRate}%`
+            }
+            detail={`${analytics.successfulJobs} successful jobs`}
           />
           <Stat
-            label="Processed"
-            value={stats.review}
-            detail="Recent successful jobs"
+            label="In progress"
+            value={analytics.inFlight}
+            detail="Queued, running, or retrying"
           />
           <Stat
-            label="Needs attention"
-            value={stats.attention}
-            detail="Retry or failed"
-            attention={stats.attention > 0}
+            label="Open incidents"
+            value={analytics.incidents.length}
+            detail="Recent operational errors"
+            attention={analytics.incidents.length > 0}
           />
+        </section>
+
+        <section
+          className={styles.section}
+          id="analytics"
+          aria-labelledby="analytics-heading"
+        >
+          <div className={styles.sectionHeading}>
+            <div>
+              <p className={styles.eyebrow}>System analytics</p>
+              <h2 id="analytics-heading">Operational health</h2>
+            </div>
+            <span className={styles.jobCount}>
+              {healthCheckedAt
+                ? `Checked ${formatDate(healthCheckedAt)}`
+                : "Not checked"}
+            </span>
+          </div>
+
+          <div className={styles.healthGrid} aria-label="Service health">
+            {systemChecks.map((check) => (
+              <article
+                className={styles.healthCard}
+                data-status={check.status}
+                key={check.label}
+              >
+                <span className={styles.healthIndicator} aria-hidden="true" />
+                <div>
+                  <strong>{check.label}</strong>
+                  <p>{check.detail}</p>
+                </div>
+                <span className={styles.healthStatus}>{check.status}</span>
+              </article>
+            ))}
+          </div>
+
+          <div className={styles.analyticsGrid}>
+            <article className={styles.analyticsPanel}>
+              <div className={styles.panelHeading}>
+                <div>
+                  <h3>Job outcomes</h3>
+                  <p>Distribution across the latest {jobs.length} jobs.</p>
+                </div>
+                <strong>
+                  {analytics.averageDuration === null
+                    ? "—"
+                    : `${analytics.averageDuration}s`}
+                  <small>average duration</small>
+                </strong>
+              </div>
+              <div
+                className={styles.outcomeChart}
+                role="img"
+                aria-label={analytics.statusCounts
+                  .map((item) => `${item.status}: ${item.count}`)
+                  .join(", ")}
+              >
+                {analytics.statusCounts.map((item) => (
+                  <div className={styles.outcomeRow} key={item.status}>
+                    <span>{item.status.replace("_", " ")}</span>
+                    <div className={styles.outcomeTrack}>
+                      <span
+                        data-status={item.status}
+                        style={{
+                          width: `${jobs.length ? Math.max(4, (item.count / jobs.length) * 100) : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <strong>{item.count}</strong>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className={styles.analyticsPanel}>
+              <div className={styles.panelHeading}>
+                <div>
+                  <h3>Recent incidents</h3>
+                  <p>Retries, failed jobs, and reported crawler errors.</p>
+                </div>
+                <span
+                  className={styles.incidentCount}
+                  data-clear={analytics.incidents.length === 0}
+                >
+                  {analytics.incidents.length}
+                </span>
+              </div>
+              {analytics.incidents.length ? (
+                <ul className={styles.incidentList}>
+                  {analytics.incidents.slice(0, 5).map((incident) => (
+                    <li key={incident.id}>
+                      <div>
+                        <strong>{incident.source_title}</strong>
+                        <span>
+                          {formatDate(
+                            incident.completed_at ?? incident.scheduled_at,
+                          )}
+                        </span>
+                      </div>
+                      <p>
+                        {incident.error_message ??
+                          `Job entered ${incident.status.replace("_", " ")} state.`}
+                      </p>
+                      {incident.error_code ? (
+                        <code>{incident.error_code}</code>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className={styles.clearState}>
+                  <strong>No recent ingestion errors</strong>
+                  <span>The latest operational window is clear.</span>
+                </div>
+              )}
+            </article>
+          </div>
+
+          {analytics.sourceWarnings.length ? (
+            <div className={styles.sourceWarning} role="status">
+              <strong>
+                {analytics.sourceWarnings.length} source records need review.
+              </strong>
+              <span>
+                Inactive, unverified, retrying, or failed sources are included.
+              </span>
+            </div>
+          ) : null}
         </section>
 
         <div className={styles.feedback} aria-live="polite">
@@ -706,7 +1011,7 @@ function Stat({
   attention = false,
 }: {
   label: string;
-  value: number;
+  value: ReactNode;
   detail: string;
   attention?: boolean;
 }) {
