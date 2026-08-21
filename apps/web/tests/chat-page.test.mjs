@@ -12,8 +12,23 @@ const knowledgeUrl = new URL("../lib/visa-knowledge.json", import.meta.url);
 
 test("chat route renders the internal visa workspace", async () => {
   const page = await readFile(pageUrl, "utf8");
-  assert.match(page, /<ChatWorkspace \/>/);
+  assert.match(page, /getStaffIdentity\(\)/);
+  assert.match(
+    page,
+    /<ChatWorkspace staffRole=\{staffIdentity\?\.role \?\? null\} \/>/,
+  );
   assert.match(page, /Visa Assistant \| Uzbekistan OS/);
+});
+
+test("chat navigation exposes ingestion and review tools only to staff", async () => {
+  const workspace = await readFile(workspaceUrl, "utf8");
+
+  assert.match(workspace, /staffRole: "admin" \| "reviewer" \| null/);
+  assert.match(workspace, /staffRole === "admin"/);
+  assert.match(workspace, /href="\/admin"/);
+  assert.match(workspace, /href="\/admin\/reviews"/);
+  assert.match(workspace, /href="\/admin\/feedback"/);
+  assert.match(workspace, /aria-label="Staff tools"/);
 });
 
 test("chat workspace identifies grounded GPT guidance and cites official sources", async () => {
