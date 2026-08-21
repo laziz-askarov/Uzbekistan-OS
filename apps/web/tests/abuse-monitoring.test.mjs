@@ -14,6 +14,13 @@ test("chat enforces durable account quotas before model generation", async () =>
     new URL("supabase/migrations/202608110006_chat_abuse_limits.sql", repoRoot),
     "utf8",
   );
+  const timestampFix = await readFile(
+    new URL(
+      "supabase/migrations/202608210010_fix_chat_quota_timestamp.sql",
+      repoRoot,
+    ),
+    "utf8",
+  );
 
   assert.match(route, /rpc\("consume_chat_quota"\)/);
   assert.match(route, /chatQuotaSchema\.safeParse\(quota\)/);
@@ -35,6 +42,17 @@ test("chat enforces durable account quotas before model generation", async () =>
   assert.match(migration, /short_limit constant integer := 20/);
   assert.match(migration, /daily_limit constant integer := 100/);
   assert.match(migration, /grant execute[\s\S]*to authenticated/);
+  assert.match(
+    timestampFix,
+    /create or replace function public\.consume_chat_quota\(\)/,
+  );
+  assert.match(
+    timestampFix,
+    /request_time timestamptz := statement_timestamp\(\)/,
+  );
+  assert.match(timestampFix, /date_trunc\('day', request_time\)/);
+  assert.doesNotMatch(timestampFix, /\bcurrent_time\b/i);
+  assert.match(timestampFix, /grant execute[\s\S]*to authenticated/);
 });
 
 test("feedback and account exports enforce durable hourly quotas", async () => {
