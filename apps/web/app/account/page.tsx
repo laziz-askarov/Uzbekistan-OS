@@ -68,10 +68,20 @@ export default async function AccountPage() {
         />
 
         <footer className="account-actions">
-          {staffIdentity ? (
-            <Link className="pill pill-light" href="/admin/feedback">
-              Review feedback
+          {staffIdentity?.role === "admin" ? (
+            <Link className="pill pill-light" href="/admin">
+              Ingestion operations
             </Link>
+          ) : null}
+          {staffIdentity ? (
+            <>
+              <Link className="pill pill-light" href="/admin/reviews">
+                Review queue
+              </Link>
+              <Link className="pill pill-light" href="/admin/feedback">
+                Review feedback
+              </Link>
+            </>
           ) : null}
           <Link className="pill pill-dark" href="/chat">
             Open assistant

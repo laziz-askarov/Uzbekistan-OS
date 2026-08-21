@@ -576,7 +576,11 @@ function GeneratedAnswerCard({ message }: { message: Message }) {
   );
 }
 
-export default function ChatWorkspace() {
+export default function ChatWorkspace({
+  staffRole,
+}: {
+  staffRole: "admin" | "reviewer" | null;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const [chats, setChats] = useState<Chat[]>(() => [newLocalChat()]);
   const [activeId, setActiveId] = useState(() => chats[0].id);
@@ -909,6 +913,16 @@ export default function ChatWorkspace() {
               </>
             ) : null}
           </nav>
+          {staffRole ? (
+            <nav className={styles.staffNavigation} aria-label="Staff tools">
+              <strong>Staff tools</strong>
+              {staffRole === "admin" ? (
+                <Link href="/admin">Ingestion operations</Link>
+              ) : null}
+              <Link href="/admin/reviews">Review queue</Link>
+              <Link href="/admin/feedback">Feedback</Link>
+            </nav>
+          ) : null}
           <div className={styles.account}>
             <div className={styles.avatar}>{account?.initials ?? "U"}</div>
             <div className={styles.accountIdentity}>

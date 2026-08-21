@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getStaffIdentity } from "@/lib/admin-auth";
 import OperationsDashboard from "./operations-dashboard";
 
 export const metadata: Metadata = {
@@ -8,6 +10,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminOperationsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminOperationsPage() {
+  const identity = await getStaffIdentity();
+  if (identity?.role !== "admin") redirect("/account");
+
   return <OperationsDashboard />;
 }

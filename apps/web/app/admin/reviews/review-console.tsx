@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAdminApiSession } from "@/lib/admin-api-session";
 import styles from "./review-console.module.css";
 
 const API_BASE =
@@ -101,8 +102,8 @@ function reviewError(error: unknown) {
 }
 
 export default function ReviewConsole() {
-  const [token, setToken] = useState("");
-  const [tokenInput, setTokenInput] = useState("");
+  const adminSession = useAdminApiSession();
+  const token = adminSession.accessToken ?? "";
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [status, setStatus] = useState<ReviewStatus>("pending");
   const [items, setItems] = useState<QueueItem[]>([]);
@@ -243,25 +244,19 @@ export default function ReviewConsole() {
     [comparison],
   );
 
-  function connect(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const cleaned = tokenInput.trim();
-    if (!cleaned) return;
-    setToken(cleaned);
-    setMessage("Access token connected for this page session.");
-    void loadQueue(cleaned, status);
-  }
+  useEffect(() => {
+    const accessToken = adminSession.accessToken;
+    if (adminSession.loading || !accessToken) return;
+    void Promise.resolve().then(() => loadQueue(accessToken, status));
+    // This bootstrap should rerun only when the authenticated session changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession.accessToken, adminSession.error, adminSession.loading]);
 
-  function disconnect() {
-    setToken("");
-    setTokenInput("");
-    setPrincipal(null);
-    setItems([]);
-    setSelected(null);
-    setArtifact(null);
-    setComparison(null);
-    setMessage("Reviewer session disconnected.");
-  }
+  const connectionError =
+    error ||
+    (!adminSession.loading && !adminSession.accessToken
+      ? (adminSession.error ?? "Staff authentication is required.")
+      : "");
 
   async function claim() {
     if (!selected) return;
@@ -429,49 +424,34 @@ export default function ReviewConsole() {
           ) : (
             <span className={styles.identity}>Not connected</span>
           )}
-          {token && (
-            <button
-              className={styles.quietButton}
-              type="button"
-              onClick={disconnect}
-            >
-              Disconnect
-            </button>
-          )}
+          <Link className={styles.quietButton} href="/account">
+            Account
+          </Link>
         </div>
       </header>
 
-      {!token ? (
+      {!principal ? (
         <section
           className={styles.connectPanel}
           aria-labelledby="connect-title"
         >
           <p className={styles.eyebrow}>Restricted workspace</p>
-          <h1 id="connect-title">Connect a reviewer session</h1>
+          <h1 id="connect-title">Opening the review workspace</h1>
           <p>
-            Enter a verified bearer token with the content reviewer or
-            administrator role. The token stays in memory for this page session
-            and is never added to the URL.
+            {adminSession.loading || loading
+              ? "Connecting your signed-in staff session…"
+              : "Your signed-in account could not open the review queue."}
           </p>
-          <form onSubmit={connect} className={styles.connectForm}>
-            <label htmlFor="review-token">Bearer access token</label>
-            <div>
-              <input
-                id="review-token"
-                name="review-token"
-                type="password"
-                value={tokenInput}
-                onChange={(event) => setTokenInput(event.target.value)}
-                autoComplete="off"
-                required
-              />
-              <button type="submit">Connect securely</button>
-            </div>
-          </form>
           <p className={styles.securityNote}>
-            Production access remains disabled until an approved token-verifier
-            adapter is configured.
+            Access uses your short-lived Supabase session in memory and is
+            verified again by the guidance API.
           </p>
+          {connectionError ? <p role="alert">{connectionError}</p> : null}
+          {!adminSession.loading && !loading ? (
+            <Link className={styles.quietButton} href="/account">
+              Return to account
+            </Link>
+          ) : null}
         </section>
       ) : (
         <div className={styles.workspace}>

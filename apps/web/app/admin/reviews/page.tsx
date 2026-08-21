@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getStaffIdentity } from "@/lib/admin-auth";
 import ReviewConsole from "./review-console";
 
 export const metadata: Metadata = {
@@ -6,6 +8,11 @@ export const metadata: Metadata = {
   description: "Internal evidence review operations for Uzbekistan OS.",
 };
 
-export default function ReviewQueuePage() {
+export const dynamic = "force-dynamic";
+
+export default async function ReviewQueuePage() {
+  const identity = await getStaffIdentity();
+  if (!identity) redirect("/account");
+
   return <ReviewConsole />;
 }

@@ -177,5 +177,8 @@ test("the protected dashboard supports all requested filters and workflow action
   assert.match(dashboard, /updateReport\("reviewing"\)[\s\S]*Reopen report/);
   assert.match(dashboard, /aria-live="polite"/);
   assert.match(account, /getStaffIdentity\(\)/);
-  assert.match(account, /staffIdentity[\s\S]*href="\/admin\/feedback"/);
+  assert.match(account, /staffIdentity\?\.role === "admin"/);
+  assert.match(account, /href="\/admin"/);
+  assert.match(account, /href="\/admin\/reviews"/);
+  assert.match(account, /href="\/admin\/feedback"/);
 });

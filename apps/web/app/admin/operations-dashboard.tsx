@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { useAdminApiSession } from "@/lib/admin-api-session";
 import { ThemeToggle } from "../design-system/theme-toggle";
 import styles from "./operations-dashboard.module.css";
 
@@ -156,8 +157,8 @@ function fileAsBase64(file: File): Promise<string> {
 }
 
 export default function OperationsDashboard() {
-  const [token, setToken] = useState("");
-  const [tokenInput, setTokenInput] = useState("");
+  const adminSession = useAdminApiSession();
+  const token = adminSession.accessToken ?? "";
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [sources, setSources] = useState<AdminSource[]>([]);
   const [jobs, setJobs] = useState<IngestionJob[]>([]);
@@ -297,7 +298,6 @@ export default function OperationsDashboard() {
       if (!identity.roles.includes("admin")) {
         throw new Error("This dashboard requires the administrator role.");
       }
-      setToken(bearerToken);
       setPrincipal(identity);
       setSources(nextSources);
       setJobs(nextJobs);
@@ -312,26 +312,22 @@ export default function OperationsDashboard() {
     }
   }
 
-  function connect(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const cleaned = tokenInput.trim();
-    if (!cleaned) return;
-    setMessage("");
-    void loadOperations(cleaned);
-  }
+  useEffect(() => {
+    const accessToken = adminSession.accessToken;
+    if (adminSession.loading || !accessToken) return;
+    void Promise.resolve().then(() => {
+      setMessage("");
+      return loadOperations(accessToken);
+    });
+    // This bootstrap should rerun only when the authenticated session changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession.accessToken, adminSession.error, adminSession.loading]);
 
-  function disconnect() {
-    setToken("");
-    setTokenInput("");
-    setPrincipal(null);
-    setSources([]);
-    setJobs([]);
-    setSystemChecks([]);
-    setHealthCheckedAt(null);
-    setUploadSource(null);
-    setUploadFile(null);
-    setMessage("Administrator session disconnected.");
-  }
+  const connectionError =
+    error ||
+    (!adminSession.loading && !adminSession.accessToken
+      ? (adminSession.error ?? "Administrator authentication is required.")
+      : "");
 
   async function runCrawler(source: AdminSource) {
     setActiveAction(`crawl:${source.id}`);
@@ -494,38 +490,28 @@ export default function OperationsDashboard() {
           <p className={styles.eyebrow}>Restricted operations</p>
           <h1 id="connect-title">Manage trusted knowledge sources.</h1>
           <p>
-            Connect an administrator access token to upload official documents,
-            run approved crawlers, and monitor ingestion health.
+            {adminSession.loading || busy
+              ? "Connecting your signed-in administrator session…"
+              : "Your signed-in account could not open the ingestion workspace."}
           </p>
-          <form className={styles.connectForm} onSubmit={connect}>
-            <label htmlFor="admin-token">Administrator access token</label>
-            <div>
-              <input
-                autoComplete="off"
-                id="admin-token"
-                onChange={(event) => setTokenInput(event.target.value)}
-                placeholder="Paste a short-lived Bearer token"
-                type="password"
-                value={tokenInput}
-              />
-              <button disabled={busy || !tokenInput.trim()} type="submit">
-                {busy ? "Connecting…" : "Connect"}
-              </button>
-            </div>
-          </form>
           <p className={styles.securityNote}>
-            The token stays in page memory and is cleared when you disconnect or
-            close this tab. Source approval is managed in the reviewed registry.
+            Access uses your short-lived Supabase session in memory and is
+            verified again by the guidance API.
           </p>
-          {error ? (
+          {connectionError ? (
             <p className={styles.error} role="alert">
-              {error}
+              {connectionError}
             </p>
           ) : null}
           {message ? (
             <p className={styles.notice} role="status">
               {message}
             </p>
+          ) : null}
+          {!adminSession.loading && !busy ? (
+            <Link className={styles.secondaryButton} href="/account">
+              Return to account
+            </Link>
           ) : null}
         </section>
       </main>
@@ -541,13 +527,9 @@ export default function OperationsDashboard() {
           <Link href="/admin/reviews">Review queue</Link>
           <Link href="/admin/feedback">Feedback</Link>
           <ThemeToggle className={styles.themeButton} />
-          <button
-            className={styles.quietButton}
-            onClick={disconnect}
-            type="button"
-          >
-            Disconnect
-          </button>
+          <Link className={styles.quietButton} href="/account">
+            Account
+          </Link>
         </nav>
       </header>
 

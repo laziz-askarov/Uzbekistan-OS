@@ -8,17 +8,40 @@ async function webFile(path) {
   return readFile(new URL(path, webRoot), "utf8");
 }
 
-test("admin operations keeps credentials in memory and requires the API admin role", async () => {
-  const dashboard = await webFile("app/admin/operations-dashboard.tsx");
+test("admin operations uses the signed-in session in memory and requires both admin guards", async () => {
+  const [page, dashboard, sessionHook] = await Promise.all([
+    webFile("app/admin/page.tsx"),
+    webFile("app/admin/operations-dashboard.tsx"),
+    webFile("lib/admin-api-session.ts"),
+  ]);
 
-  assert.match(dashboard, /type="password"/);
+  assert.match(page, /getStaffIdentity\(\)/);
+  assert.match(page, /identity\?\.role !== "admin"/);
+  assert.match(page, /redirect\("\/account"\)/);
+  assert.match(dashboard, /useAdminApiSession\(\)/);
   assert.match(dashboard, /authorization: `Bearer \$\{bearerToken\}`/);
   assert.match(dashboard, /identity\.roles\.includes\("admin"\)/);
-  assert.match(dashboard, /setToken\(""\)/);
+  assert.doesNotMatch(dashboard, /type="password"|tokenInput/);
+  assert.match(sessionHook, /supabase\.auth\.getSession\(\)/);
+  assert.match(sessionHook, /supabase\.auth\.onAuthStateChange/);
+  assert.match(sessionHook, /nextSession\.user\.is_anonymous/);
   assert.doesNotMatch(
-    dashboard,
+    `${dashboard}\n${sessionHook}`,
     /localStorage|sessionStorage|document\.cookie/,
   );
+});
+
+test("review operations require a staff session and reuse its short-lived API token", async () => {
+  const [page, reviewConsole] = await Promise.all([
+    webFile("app/admin/reviews/page.tsx"),
+    webFile("app/admin/reviews/review-console.tsx"),
+  ]);
+
+  assert.match(page, /getStaffIdentity\(\)/);
+  assert.match(page, /if \(!identity\) redirect\("\/account"\)/);
+  assert.match(reviewConsole, /useAdminApiSession\(\)/);
+  assert.match(reviewConsole, /authorization: `Bearer \$\{bearerToken\}`/);
+  assert.doesNotMatch(reviewConsole, /type="password"|tokenInput/);
 });
 
 test("admin analytics reports service health, readiness, outcomes, and recent errors", async () => {
