@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     readiness_timeout_seconds: int = Field(default=2, ge=1, le=10)
     api_cors_origins: str = "http://localhost:3000"
+    api_allowed_hosts: str = "localhost,127.0.0.1,testserver,*.vercel.app"
     database_url: str = (
         "postgresql+psycopg://uzbekistan_os:local-development-only@localhost:5432/uzbekistan_os"
     )
@@ -57,7 +58,7 @@ class Settings(BaseSettings):
     s3_auto_create_bucket: bool = False
     openai_api_key: SecretStr | None = None
     openai_generation_model: str = Field(
-        default="gpt-5.6-terra",
+        default="gpt-5.4-mini",
         min_length=1,
         validation_alias=AliasChoices(
             "OPENAI_GENERATION_MODEL", "OPENAI_MODEL", "openai_generation_model"
@@ -67,8 +68,23 @@ class Settings(BaseSettings):
         default=False,
         validation_alias=AliasChoices("OPENAI_STORE_RESPONSES", "openai_store_responses"),
     )
+    supabase_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "supabase_url"
+        ),
+    )
+    supabase_anon_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SUPABASE_ANON_KEY",
+            "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+            "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+            "supabase_anon_key",
+        ),
+    )
 
-    @field_validator("openai_api_key", mode="before")
+    @field_validator("openai_api_key", "supabase_anon_key", mode="before")
     @classmethod
     def normalize_optional_provider_key(cls, value: object) -> object:
         if value is None:
@@ -78,6 +94,15 @@ class Settings(BaseSettings):
         if isinstance(value, str) and not value.strip():
             return None
         return value
+
+    @field_validator("openai_store_responses", mode="before")
+    @classmethod
+    def enforce_disabled_provider_storage(cls, value: object) -> object:
+        if value is False:
+            return False
+        if isinstance(value, str) and value.strip().lower() in {"0", "false", "no", "off"}:
+            return False
+        raise ValueError("provider response storage must remain disabled")
 
     @field_validator("openai_generation_model")
     @classmethod
@@ -90,6 +115,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.api_cors_origins.split(",") if origin.strip()]
+
+    @property
+    def allowed_hosts(self) -> list[str]:
+        return [host.strip() for host in self.api_allowed_hosts.split(",") if host.strip()]
 
 
 @lru_cache

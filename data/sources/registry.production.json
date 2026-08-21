@@ -1,6 +1,6 @@
 {
   "registry_version": "1.1",
-  "environment": "staging",
+  "environment": "production",
   "sources": [
     {
       "id": "00000000-0000-0000-0000-000000002102",

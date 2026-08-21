@@ -3,7 +3,7 @@
   "routes": [
     {
       "key": "grounded-answer-default",
-      "status": "proposed",
+      "status": "approved",
       "provider_key": "openai",
       "model_role": "grounded-answer-balanced",
       "reasoning_effort": "low",

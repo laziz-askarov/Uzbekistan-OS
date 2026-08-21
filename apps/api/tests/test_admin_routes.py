@@ -325,7 +325,7 @@ def publication_payload(review_item_id: UUID) -> dict[str, object]:
             }
         ],
         "effective_from": "2026-08-01",
-        "effective_until": None,
+        "effective_until": "2026-08-31",
         "translation_of_id": None,
     }
 

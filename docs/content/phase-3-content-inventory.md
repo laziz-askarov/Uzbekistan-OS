@@ -1,6 +1,6 @@
 # Phase 3 production content inventory
 
-Status: **approval and human review required**  
+Status: **initial Uzbek sources approved; document publication review required**
 Prepared: 2026-08-01
 
 This inventory defines the first 21 language-specific document candidates for the
@@ -42,15 +42,16 @@ approve a low-risk domain classification or revise the acceptance wording.
 
 ## Proposed official sources
 
-The fail-closed proposal is stored in
-`data/sources/registry.production.proposed.json`. Every entry remains `draft`,
-`pending_review`, and `production_eligible: false`.
+The historical proposal is stored in
+`data/sources/registry.production.proposed.json`. The approved runtime set is in
+`registry.staging.json` and `registry.production.json`.
 
-- Ministry of Foreign Affairs visa guidance in English, Uzbek, and Russian.
-- Ministry of Foreign Affairs official e-Visa portal, which exposes all three
-  supported languages but requires a client-rendered source adapter assessment.
-- Tourism Committee travel guidance in English, pending authority and freshness
-  review against MFA, Customs Committee, and Central Bank sources.
+- Ministry of Foreign Affairs visa guidance in Uzbek, using the
+  `govuz-activity-html` adapter.
+- Ministry of Foreign Affairs official e-Visa Uzbek localization payload, using
+  the `evisa-uz-localization-json` adapter.
+- English, Russian, and Tourism Committee candidates remain non-production until
+  separately approved under ADR 0025.
 
 ## Approval checklist
 

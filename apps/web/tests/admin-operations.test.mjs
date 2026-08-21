@@ -55,3 +55,18 @@ test("admin error views do not expose tokens or ingestion idempotency keys", asy
   assert.match(dashboard, /incident\.error_message/);
   assert.match(dashboard, /incident\.error_code/);
 });
+
+test("review publishers can load a bounded JSON candidate for server-side publication", async () => {
+  const consoleSource = await webFile("app/admin/reviews/review-console.tsx");
+
+  assert.match(consoleSource, /type="file"/);
+  assert.match(consoleSource, /accept="\.json,application\/json"/);
+  assert.match(consoleSource, /file\.size > 1024 \* 1024/);
+  assert.match(
+    consoleSource,
+    /parsed\.review_item_id !== selected\?\.review\.id/,
+  );
+  assert.match(consoleSource, /Validate and publish JSON/);
+  assert.match(consoleSource, /request<Publication>\("\/admin\/publications"/);
+  assert.match(consoleSource, /freshnessDeadline\(publicationDomain\)/);
+});

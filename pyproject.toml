@@ -1,0 +1,19 @@
+[project]
+name = "uzbekistan-os-vercel-api"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic==1.18.5",
+  "boto3==1.43.62",
+  "fastapi==0.141.1",
+  "pgvector==0.5.0",
+  "psycopg[binary]==3.3.4",
+  "pydantic-settings==2.14.2",
+  "pypdf==6.15.0",
+  "redis==8.1.0",
+  "sqlalchemy==2.0.51",
+  "uvicorn[standard]==0.52.0",
+]
+
+[tool.vercel]
+entrypoint = "api.index:app"

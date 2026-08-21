@@ -1,8 +1,8 @@
 {
   "review_item_id": "00000000-0000-4000-8000-000000000001",
-  "slug": "replace-with-topic-en",
+  "slug": "replace-with-topic-uz",
   "domain": "immigration",
-  "language": "en",
+  "language": "uz",
   "version": {
     "major": 1,
     "minor": 0,
@@ -13,9 +13,7 @@
   "audiences": [
     "foreign-visitor"
   ],
-  "nationalities": [
-    "US"
-  ],
+  "nationalities": [],
   "residency_statuses": [
     "non-resident"
   ],
@@ -119,6 +117,6 @@
     }
   ],
   "effective_from": "2026-08-14",
-  "effective_until": null,
+  "effective_until": "2026-09-13",
   "translation_of_id": null
 }

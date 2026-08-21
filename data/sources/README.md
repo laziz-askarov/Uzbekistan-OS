@@ -2,7 +2,7 @@
 
 `registry.development.json` is deliberately non-production. It proves the registry contract without implying that an external source has been approved, that crawling is legally permitted, or that a launch workflow has been selected.
 
-`registry.production.proposed.json` is an inert approval packet. It is never selected by the default application configuration, and every entry is draft, pending review, and ineligible. Do not rename or deploy it as an environment registry until the checks in `docs/content/phase-3-content-inventory.md` are complete.
+`registry.production.proposed.json` is the historical approval packet and is never selected by default. `registry.staging.json` and `registry.production.json` contain the approved Uzbek-only, manual-ingestion source set. Set `WORKER_REGISTRY_PATH` explicitly for the deployed environment; the development registry remains the local default.
 
 A source may be fetched automatically only when all of the following are true:
 
@@ -19,4 +19,4 @@ Registry version 1.1 also requires an ISO 3166-1 alpha-2 `country_iso2` for each
 apps/api/.venv/bin/python -m app.worker sync-registry
 ```
 
-Adding a production source requires source ownership, crawl permission, workflow, precedence, and freshness decisions. Validate registry changes with `apps/api/.venv/bin/python scripts/validate_contracts.py` from the repository root.
+Adding a production source requires source ownership, crawl permission, workflow, precedence, and freshness decisions. ADR 0025 defines the initial language and freshness policy. Validate registry changes with `apps/api/.venv/bin/python scripts/validate_contracts.py` from the repository root.

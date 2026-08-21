@@ -64,6 +64,12 @@ type Publication = {
   published_at: string;
 };
 type IndexJob = { index_job_id: string; status: string };
+type PublicationCandidateJson = Record<string, unknown> & {
+  review_item_id: string;
+  title: string;
+  language: string;
+  sections: unknown[];
+};
 type Envelope<T> = { data: T; meta: { request_id: string } };
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
 
@@ -100,6 +106,27 @@ function reviewError(error: unknown) {
     : "The review service could not complete the request.";
 }
 
+function freshnessDeadline(domain: string) {
+  const days =
+    domain === "tourism" ? 180 : domain === "everyday-living" ? 60 : 30;
+  const deadline = new Date();
+  deadline.setUTCDate(deadline.getUTCDate() + days);
+  return deadline.toISOString().slice(0, 10);
+}
+
+function isPublicationCandidateJson(
+  value: unknown,
+): value is PublicationCandidateJson {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.review_item_id === "string" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.language === "string" &&
+    Array.isArray(candidate.sections)
+  );
+}
+
 export default function ReviewConsole() {
   const [token, setToken] = useState("");
   const [tokenInput, setTokenInput] = useState("");
@@ -119,9 +146,12 @@ export default function ReviewConsole() {
   const [publicationSlug, setPublicationSlug] = useState("");
   const [publicationTitle, setPublicationTitle] = useState("");
   const [publicationSummary, setPublicationSummary] = useState("");
-  const [publicationDomain, setPublicationDomain] = useState("tourism");
-  const [publicationLanguage, setPublicationLanguage] = useState("en");
+  const [publicationDomain, setPublicationDomain] = useState("immigration");
+  const [publicationLanguage, setPublicationLanguage] = useState("uz");
   const [versionMajor, setVersionMajor] = useState(1);
+  const [publicationJson, setPublicationJson] =
+    useState<PublicationCandidateJson | null>(null);
+  const [publicationJsonName, setPublicationJsonName] = useState("");
   const [lifecycleReason, setLifecycleReason] = useState("");
   const [publisherAction, setPublisherAction] = useState<
     "publish" | "expire" | "reindex" | null
@@ -226,6 +256,8 @@ export default function ReviewConsole() {
     setPublicationSlug(slugify(item.source_title));
     setPublicationTitle(item.source_title);
     setPublicationSummary("");
+    setPublicationJson(null);
+    setPublicationJsonName("");
     setLifecycleReason("");
     await loadDetails(item);
   }
@@ -326,34 +358,67 @@ export default function ReviewConsole() {
       !publicationSummary.trim()
     )
       return;
+    await publishCandidate({
+      review_item_id: selected.review.id,
+      slug: publicationSlug,
+      domain: publicationDomain,
+      language: publicationLanguage,
+      version: { major: versionMajor, minor: 0, revision: 0 },
+      title: publicationTitle.trim(),
+      summary: publicationSummary.trim(),
+      audiences: [],
+      keywords: [],
+      sections: artifact.sections.map((section) => ({
+        ...section,
+        citations: [
+          {
+            source_id: artifact.source_id,
+            locator: section.heading,
+          },
+        ],
+      })),
+      effective_from: new Date().toISOString().slice(0, 10),
+      effective_until: freshnessDeadline(publicationDomain),
+      translation_of_id: null,
+    });
+  }
+
+  async function loadPublicationJson(file: File | undefined) {
+    setPublicationJson(null);
+    setPublicationJsonName("");
+    setError("");
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      setError("Publication JSON must be 1 MB or smaller.");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      if (!isPublicationCandidateJson(parsed)) {
+        throw new Error("The file is not a publication candidate JSON object.");
+      }
+      if (parsed.review_item_id !== selected?.review.id) {
+        throw new Error(
+          "The JSON review_item_id does not match the selected approved review.",
+        );
+      }
+      setPublicationJson(parsed);
+      setPublicationJsonName(file.name);
+      setMessage(
+        "Publication JSON loaded. Server validation runs when you publish.",
+      );
+    } catch (caught) {
+      setError(reviewError(caught));
+    }
+  }
+
+  async function publishCandidate(candidate: Record<string, unknown>) {
     setPublisherAction("publish");
     setError("");
     try {
       const result = await request<Publication>("/admin/publications", {
         method: "POST",
-        body: JSON.stringify({
-          review_item_id: selected.review.id,
-          slug: publicationSlug,
-          domain: publicationDomain,
-          language: publicationLanguage,
-          version: { major: versionMajor, minor: 0, revision: 0 },
-          title: publicationTitle.trim(),
-          summary: publicationSummary.trim(),
-          audiences: [],
-          keywords: [],
-          sections: artifact.sections.map((section) => ({
-            ...section,
-            citations: [
-              {
-                source_id: artifact.source_id,
-                locator: section.heading,
-              },
-            ],
-          })),
-          effective_from: new Date().toISOString().slice(0, 10),
-          effective_until: null,
-          translation_of_id: null,
-        }),
+        body: JSON.stringify(candidate),
       });
       setPublication(result);
       setMessage("Approved evidence published with immutable lineage.");
@@ -722,6 +787,61 @@ export default function ReviewConsole() {
                           <h3>Publication controls</h3>
                           {!publication ? (
                             <>
+                              <section
+                                className={styles.jsonPublisher}
+                                aria-labelledby="json-publication-heading"
+                              >
+                                <h4 id="json-publication-heading">
+                                  Publish reviewed JSON
+                                </h4>
+                                <p>
+                                  Upload a complete publication candidate. Its
+                                  review ID, evidence lineage, citations,
+                                  sections, and freshness deadline are validated
+                                  by the API before publication.
+                                </p>
+                                <label htmlFor="publication-json">
+                                  Publication candidate JSON
+                                </label>
+                                <input
+                                  id="publication-json"
+                                  type="file"
+                                  accept=".json,application/json"
+                                  onChange={(event) =>
+                                    void loadPublicationJson(
+                                      event.currentTarget.files?.[0],
+                                    )
+                                  }
+                                />
+                                {publicationJson && (
+                                  <div className={styles.jsonPreview}>
+                                    <strong>{publicationJsonName}</strong>
+                                    <span>
+                                      {publicationJson.title} ·{" "}
+                                      {publicationJson.language.toUpperCase()} ·{" "}
+                                      {publicationJson.sections.length} sections
+                                    </span>
+                                  </div>
+                                )}
+                                <button
+                                  className={styles.primaryButton}
+                                  type="button"
+                                  disabled={
+                                    publisherAction !== null || !publicationJson
+                                  }
+                                  onClick={() =>
+                                    publicationJson &&
+                                    void publishCandidate(publicationJson)
+                                  }
+                                >
+                                  {publisherAction === "publish"
+                                    ? "Publishing…"
+                                    : "Validate and publish JSON"}
+                                </button>
+                              </section>
+                              <div className={styles.publicationDivider}>
+                                Or create a minimal candidate
+                              </div>
                               <label htmlFor="publication-slug">Slug</label>
                               <input
                                 id="publication-slug"

@@ -103,6 +103,7 @@ class ManualUploadRequest(BaseModel):
             "application/pdf",
             "text/html",
             "application/xhtml+xml",
+            "application/json",
             "text/plain",
         }:
             raise ValueError("upload content type is not supported")

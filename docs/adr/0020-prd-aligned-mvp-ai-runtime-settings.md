@@ -1,6 +1,6 @@
 # ADR 0020: PRD-aligned MVP AI runtime settings
 
-**Status:** accepted for the Phase 4 configuration baseline
+**Status:** accepted; model route approved 2026-08-21
 
 **Date:** 2026-08-02
 
@@ -10,14 +10,12 @@ The MVP PRD requires grounded conversational guidance across Immigration,
 Tourism, Business Registration, Healthcare, and Everyday Living in English,
 Uzbek, and Russian. It calls for official citations, conversational memory,
 streaming, first content under three seconds, average completion under eight
-seconds, and at least 95% cited answers in benchmarks. D-006 still requires a
-measured production model-routing decision.
+seconds, and at least 95% cited answers in benchmarks. D-006 was approved on
+2026-08-21 with the runtime validation and rollback controls below.
 
-Current OpenAI guidance describes `gpt-5.6-terra` as the balanced intelligence
-and cost tier and recommends low reasoning for latency-sensitive workloads. It
-also recommends the Responses API for multi-turn workflows and explicit
-reasoning settings. See the [GPT-5.6 model guide](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.6)
-and [Responses migration guidance](https://developers.openai.com/api/docs/guides/migrate-to-responses).
+The production adapter uses the Responses API with structured JSON output,
+explicit low reasoning, and `store: false`. The provider model remains a
+configuration-bound implementation detail rather than domain logic.
 
 ## Decision
 
@@ -35,12 +33,12 @@ and [Responses migration guidance](https://developers.openai.com/api/docs/guides
 - Set the frozen benchmark citation-coverage target to at least 95%. Runtime
   answer validation remains stricter: every factual claim must carry validated
   evidence.
-- Propose `gpt-5.6-terra` at low reasoning for the balanced grounded-answer role,
+- Use `gpt-5.4-mini` at low reasoning for the balanced grounded-answer role,
   with a 7-second provider timeout, one attempt, 12,000 input tokens, 2,000
   output tokens, and a $0.05 request ceiling.
-- Keep the route status `proposed` and `AI_GENERATION_ENABLED=false`. D-006 may
-  approve it only after representative English, Uzbek, and Russian evaluations
-  meet groundedness, citation, latency, and cost thresholds.
+- Keep `AI_GENERATION_ENABLED=false` as the safe environment default while the
+  checked-in route is approved. Deployment enablement still requires credentials,
+  published eligible evidence, and staging evaluation gates.
 - Validate all cross-setting invariants and registry linkage when the API is
   constructed. Enabling generation without an approved route or provider
   credential fails closed.

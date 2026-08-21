@@ -130,3 +130,11 @@ def extract_artifact(
         extracted_at=snapshot.fetched_at,
         sections=sections,
     )
+
+
+def structured_html_sections(body: bytes) -> tuple[tuple[str, str], ...]:
+    """Extract heading-scoped sections for adapters that need source-specific filtering."""
+    parser = _StructuredHTMLParser()
+    parser.feed(body.decode("utf-8", errors="replace"))
+    parser.close()
+    return tuple(parser.sections)

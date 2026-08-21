@@ -6,6 +6,7 @@ const workspaceUrl = new URL("../app/chat/chat-workspace.tsx", import.meta.url);
 const pageUrl = new URL("../app/chat/page.tsx", import.meta.url);
 const apiUrl = new URL("../app/api/chat/route.ts", import.meta.url);
 const aiUrl = new URL("../lib/visa-ai.ts", import.meta.url);
+const chatContractUrl = new URL("../lib/chat-contract.ts", import.meta.url);
 const workflowsUrl = new URL("../lib/visa-workflows.ts", import.meta.url);
 const knowledgeUrl = new URL("../lib/visa-knowledge.json", import.meta.url);
 
@@ -34,7 +35,7 @@ test("chat workspace does not expose out-of-scope agent or appointment actions",
 test("chat sends bounded message history to the grounded server endpoint", async () => {
   const workspace = await readFile(workspaceUrl, "utf8");
   const api = await readFile(apiUrl, "utf8");
-  const ai = await readFile(aiUrl, "utf8");
+  const chatContract = await readFile(chatContractUrl, "utf8");
   const monitoring = await readFile(
     new URL("../lib/monitoring.ts", import.meta.url),
     "utf8",
@@ -43,9 +44,15 @@ test("chat sends bounded message history to the grounded server endpoint", async
   assert.match(workspace, /active\.messages[\s\S]*?\.slice\(-23\)/);
   assert.match(workspace, /MessageResponse/);
   assert.match(api, /chatRequestSchema\.safeParse/);
+  assert.match(api, /GROUNDED_API_BASE_URL/);
+  assert.match(api, /`Bearer \$\{accessToken\}`/);
+  assert.match(api, /`\$\{groundedApiBase\}\/assistant\/answer`/);
+  assert.match(api, /groundedResponseSchema\.safeParse/);
+  assert.match(api, /cache: "no-store"/);
   assert.match(api, /requestHeaders\(context/);
   assert.match(monitoring, /"x-request-id"/);
-  assert.match(ai, /\.max\(24\)/);
+  assert.match(chatContract, /\.max\(24\)/);
+  assert.doesNotMatch(api, /visa-ai|generateVisaChatResult/);
 });
 
 test("chat starts with a clean conversation instead of a seeded visa workflow", async () => {

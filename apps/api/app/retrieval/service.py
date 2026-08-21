@@ -1,8 +1,9 @@
+from datetime import datetime
 from math import isfinite
 from typing import Protocol
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
 from app.retrieval.planning import RetrievalPlan
 
@@ -19,6 +20,9 @@ class CitationReference(BaseModel):
     source_id: UUID
     locator: str = Field(min_length=1)
     quote: str | None = None
+    source_url: AnyHttpUrl | None = None
+    source_title: str | None = None
+    reviewed_at: datetime | None = None
 
 
 class RetrievalCandidate(BaseModel):
