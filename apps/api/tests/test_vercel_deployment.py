@@ -18,7 +18,7 @@ def test_vercel_entrypoint_exports_fastapi_application() -> None:
 
 
 def test_vercel_configuration_routes_requests_to_python_entrypoint() -> None:
-    config = json.loads((REPOSITORY_ROOT / "vercel.json").read_text(encoding="utf-8"))
+    config = json.loads((REPOSITORY_ROOT / "vercel.api.json").read_text(encoding="utf-8"))
 
     assert config["buildCommand"] == ""
     assert config["framework"] is None
