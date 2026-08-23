@@ -10,6 +10,43 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 const API_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_API_BASE_URL);
 const MAX_UPLOAD_BYTES = 10_000_000;
+const DOMAIN_OPTIONS = [
+  { label: "Immigration", value: "immigration" },
+  { label: "Tourism", value: "tourism" },
+  { label: "Business registration", value: "business-registration" },
+  { label: "Healthcare", value: "healthcare" },
+  { label: "Everyday living", value: "everyday-living" },
+] as const;
+const LANGUAGE_OPTIONS = [
+  { label: "Uzbek", value: "uz" },
+  { label: "English", value: "en" },
+  { label: "Russian", value: "ru" },
+] as const;
+
+type DomainSlug = (typeof DOMAIN_OPTIONS)[number]["value"];
+type LanguageCode = (typeof LANGUAGE_OPTIONS)[number]["value"];
+
+type NewSourceDraft = {
+  confirmedOfficial: boolean;
+  domains: DomainSlug[];
+  languages: LanguageCode[];
+  organizationName: string;
+  organizationWebsiteUrl: string;
+  title: string;
+  url: string;
+};
+
+function newSourceDraft(): NewSourceDraft {
+  return {
+    confirmedOfficial: false,
+    domains: [],
+    languages: ["uz"],
+    organizationName: "",
+    organizationWebsiteUrl: "",
+    title: "",
+    url: "",
+  };
+}
 
 type Principal = { id: string; roles: string[] };
 
@@ -171,6 +208,8 @@ export default function OperationsDashboard() {
   const [uploadSource, setUploadSource] = useState<AdminSource | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadTopic, setUploadTopic] = useState("");
+  const [showCreateSource, setShowCreateSource] = useState(false);
+  const [sourceDraft, setSourceDraft] = useState<NewSourceDraft>(newSourceDraft);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [systemChecks, setSystemChecks] = useState<SystemCheck[]>([]);
@@ -380,6 +419,85 @@ export default function OperationsDashboard() {
         .getElementById("manual-upload")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
+  }
+
+  function openCreateSource() {
+    setShowCreateSource(true);
+    setError("");
+    setMessage("");
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("create-source")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  function toggleSourceDomain(domain: DomainSlug) {
+    setSourceDraft((current) => ({
+      ...current,
+      domains: current.domains.includes(domain)
+        ? current.domains.filter((item) => item !== domain)
+        : [...current.domains, domain],
+    }));
+  }
+
+  function toggleSourceLanguage(language: LanguageCode) {
+    setSourceDraft((current) => ({
+      ...current,
+      languages: current.languages.includes(language)
+        ? current.languages.filter((item) => item !== language)
+        : [...current.languages, language],
+    }));
+  }
+
+  async function createSource(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !sourceDraft.confirmedOfficial ||
+      !sourceDraft.domains.length ||
+      !sourceDraft.languages.length
+    ) {
+      return;
+    }
+    setActiveAction("create-source");
+    setError("");
+    setMessage("");
+    try {
+      const created = await request<AdminSource>("/admin/sources", {
+        method: "POST",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({
+          title: sourceDraft.title.trim(),
+          url: sourceDraft.url.trim(),
+          organization_name: sourceDraft.organizationName.trim(),
+          organization_website_url:
+            sourceDraft.organizationWebsiteUrl.trim(),
+          domains: sourceDraft.domains,
+          languages: sourceDraft.languages,
+          confirmed_official: sourceDraft.confirmedOfficial,
+        }),
+      });
+      setSources((current) =>
+        [...current.filter((source) => source.id !== created.id), created].toSorted(
+          (left, right) => left.title.localeCompare(right.title),
+        ),
+      );
+      setUploadSource(created);
+      setSourceDraft(newSourceDraft());
+      setShowCreateSource(false);
+      setMessage(
+        `${created.title} was added as an audited manual source. You can attach evidence now.`,
+      );
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById("manual-upload")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setActiveAction(null);
+    }
   }
 
   async function uploadEvidence(event: FormEvent<HTMLFormElement>) {
@@ -752,6 +870,175 @@ export default function OperationsDashboard() {
           ) : null}
         </div>
 
+        {showCreateSource ? (
+          <section
+            className={styles.createSourcePanel}
+            id="create-source"
+            aria-labelledby="create-source-heading"
+          >
+            <div className={styles.createSourceIntro}>
+              <p className={styles.eyebrow}>Official source</p>
+              <h2 id="create-source-heading">Add a new manual source</h2>
+              <p>
+                Register an official Uzbekistan source for manual evidence. New
+                sources cannot run crawlers, and uploaded content still requires
+                review and publication before the assistant can retrieve it.
+              </p>
+            </div>
+            <form className={styles.createSourceForm} onSubmit={createSource}>
+              <label className={styles.sourceSelect} htmlFor="source-title">
+                Source title
+                <input
+                  id="source-title"
+                  maxLength={500}
+                  onChange={(event) =>
+                    setSourceDraft((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  placeholder="Official tourism handbook"
+                  required
+                  value={sourceDraft.title}
+                />
+              </label>
+              <label className={styles.sourceSelect} htmlFor="source-url">
+                Official source URL
+                <input
+                  autoComplete="url"
+                  id="source-url"
+                  onChange={(event) =>
+                    setSourceDraft((current) => ({
+                      ...current,
+                      url: event.target.value,
+                    }))
+                  }
+                  placeholder="https://agency.gov.uz/document"
+                  required
+                  type="url"
+                  value={sourceDraft.url}
+                />
+              </label>
+              <label
+                className={styles.sourceSelect}
+                htmlFor="source-organization"
+              >
+                Organization name
+                <input
+                  autoComplete="organization"
+                  id="source-organization"
+                  maxLength={240}
+                  onChange={(event) =>
+                    setSourceDraft((current) => ({
+                      ...current,
+                      organizationName: event.target.value,
+                    }))
+                  }
+                  placeholder="Government agency"
+                  required
+                  value={sourceDraft.organizationName}
+                />
+              </label>
+              <label
+                className={styles.sourceSelect}
+                htmlFor="source-organization-url"
+              >
+                Organization website
+                <input
+                  autoComplete="url"
+                  id="source-organization-url"
+                  onChange={(event) =>
+                    setSourceDraft((current) => ({
+                      ...current,
+                      organizationWebsiteUrl: event.target.value,
+                    }))
+                  }
+                  placeholder="https://agency.gov.uz"
+                  required
+                  type="url"
+                  value={sourceDraft.organizationWebsiteUrl}
+                />
+                <small>
+                  The source must use this domain or one of its subdomains.
+                </small>
+              </label>
+              <fieldset className={styles.optionGroup}>
+                <legend>Knowledge domains</legend>
+                <div>
+                  {DOMAIN_OPTIONS.map((option) => (
+                    <label key={option.value}>
+                      <input
+                        checked={sourceDraft.domains.includes(option.value)}
+                        onChange={() => toggleSourceDomain(option.value)}
+                        type="checkbox"
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset className={styles.optionGroup}>
+                <legend>Document languages</legend>
+                <div>
+                  {LANGUAGE_OPTIONS.map((option) => (
+                    <label key={option.value}>
+                      <input
+                        checked={sourceDraft.languages.includes(option.value)}
+                        onChange={() => toggleSourceLanguage(option.value)}
+                        type="checkbox"
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <label className={styles.officialConfirmation}>
+                <input
+                  checked={sourceDraft.confirmedOfficial}
+                  onChange={(event) =>
+                    setSourceDraft((current) => ({
+                      ...current,
+                      confirmedOfficial: event.target.checked,
+                    }))
+                  }
+                  required
+                  type="checkbox"
+                />
+                <span>
+                  I confirm this URL is controlled by the named official
+                  organization.
+                </span>
+              </label>
+              <div className={styles.formActions}>
+                <button
+                  className={styles.quietButton}
+                  onClick={() => {
+                    setShowCreateSource(false);
+                    setSourceDraft(newSourceDraft());
+                  }}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.primaryButton}
+                  disabled={
+                    activeAction !== null ||
+                    !sourceDraft.confirmedOfficial ||
+                    !sourceDraft.domains.length ||
+                    !sourceDraft.languages.length
+                  }
+                  type="submit"
+                >
+                  {activeAction === "create-source"
+                    ? "Adding source…"
+                    : "Add source"}
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : null}
+
         <section
           className={styles.uploadPanel}
           id="manual-upload"
@@ -768,6 +1055,13 @@ export default function OperationsDashboard() {
                 and publishes it. Encrypted or image-only PDFs are rejected
                 because OCR is not enabled.
               </p>
+              <button
+                className={styles.secondaryButton}
+                onClick={openCreateSource}
+                type="button"
+              >
+                + Add new source
+              </button>
             </div>
             <form onSubmit={uploadEvidence}>
               <label className={styles.sourceSelect} htmlFor="upload-source">
@@ -983,9 +1277,8 @@ export default function OperationsDashboard() {
             </div>
           ) : null}
           <p className={styles.registryNote}>
-            Approval, crawl policy, adapter, and schedule remain
-            version-controlled in the source registry so the dashboard cannot
-            silently expand crawler scope.
+            Crawler approval, adapter, and schedules remain version-controlled.
+            Admin-added sources are manual-only, audit logged, and review-gated.
           </p>
         </section>
 

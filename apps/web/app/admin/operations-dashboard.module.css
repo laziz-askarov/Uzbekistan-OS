@@ -531,6 +531,99 @@ button:disabled {
   background: var(--color-success-surface);
 }
 
+.createSourcePanel {
+  margin: var(--space-5) 0 var(--space-8);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.7fr) minmax(0, 1.3fr);
+  gap: var(--space-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-2);
+}
+
+.createSourceIntro h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  letter-spacing: -0.045em;
+}
+
+.createSourceIntro p:last-child {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.createSourceForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: var(--space-4);
+}
+
+.optionGroup {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.optionGroup legend {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.optionGroup > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.optionGroup label {
+  min-height: 2.4rem;
+  padding: 0 var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+
+.optionGroup input,
+.officialConfirmation input {
+  accent-color: var(--color-primary);
+}
+
+.officialConfirmation {
+  grid-column: 1 / -1;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-control);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.officialConfirmation input {
+  margin-top: 0.2rem;
+  flex: 0 0 auto;
+}
+
+.createSourceForm .formActions {
+  grid-column: 1 / -1;
+}
+
 .uploadPanel {
   margin: var(--space-5) 0 var(--space-8);
   padding: clamp(1.5rem, 4vw, 2.5rem);
@@ -549,6 +642,9 @@ button:disabled {
 .uploadPanel p:last-child {
   margin: var(--space-3) 0 0;
   color: var(--color-text-secondary);
+}
+.uploadPanel > div > button {
+  margin-top: var(--space-5);
 }
 .uploadPanel form {
   display: grid;
@@ -869,7 +965,9 @@ button:disabled {
   .healthGrid,
   .analyticsGrid,
   .sourceGrid,
-  .uploadPanel {
+  .uploadPanel,
+  .createSourcePanel,
+  .createSourceForm {
     grid-template-columns: 1fr;
   }
   .uploadPanel {

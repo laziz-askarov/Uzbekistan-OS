@@ -10,7 +10,7 @@ CONTRACT_PATH = ROOT / "packages/contracts/openapi.yaml"
 IMPLEMENTED_OPERATIONS = {
     "/auth/me": "get",
     "/assistant/answer": "post",
-    "/admin/sources": "get",
+    "/admin/sources": ("get", "post"),
     "/admin/sources/{source_id}/uploads": "post",
     "/admin/ingestion/jobs": ("get", "post"),
     "/admin/ingestion/topics": "get",
@@ -120,12 +120,10 @@ def test_publication_contract_exposes_structured_authoring_fields() -> None:
     assert expected_fields <= set(
         runtime["components"]["schemas"]["PublicationCandidate"]["properties"]
     )
-    assert "effective_until" in contract["components"]["schemas"]["PublicationCandidate"][
-        "required"
-    ]
-    assert "effective_until" in runtime["components"]["schemas"]["PublicationCandidate"][
-        "required"
-    ]
+    assert (
+        "effective_until" in contract["components"]["schemas"]["PublicationCandidate"]["required"]
+    )
+    assert "effective_until" in runtime["components"]["schemas"]["PublicationCandidate"]["required"]
 
 
 def test_grounded_assistant_contract_exposes_evidence_and_fail_closed_metadata() -> None:

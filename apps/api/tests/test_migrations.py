@@ -14,7 +14,7 @@ def test_migration_history_has_one_linear_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert script.get_bases() == ["20260731_0001"]
-    assert script.get_heads() == ["20260823_0007"]
+    assert script.get_heads() == ["20260823_0008"]
 
 
 def test_foundation_migration_compiles_to_postgresql_sql() -> None:
@@ -56,6 +56,7 @@ def test_foundation_migration_compiles_to_postgresql_sql() -> None:
     assert "CREATE TABLE knowledge.document_lifecycle_events" in sql
     assert "CREATE TABLE knowledge.index_jobs" in sql
     assert "CREATE TABLE ingestion.snapshot_objects" in sql
+    assert "CREATE TABLE ingestion.managed_source_configs" in sql
     assert "cost_microusd INTEGER" in sql
 
 
@@ -68,7 +69,7 @@ def test_foundation_downgrade_compiles_to_postgresql_sql() -> None:
             "-c",
             str(ALEMBIC_CONFIG),
             "downgrade",
-            "20260823_0007:base",
+            "20260823_0008:base",
             "--sql",
         ],
         cwd=ROOT,
@@ -83,3 +84,4 @@ def test_foundation_downgrade_compiles_to_postgresql_sql() -> None:
     assert "DROP TABLE knowledge.index_jobs" in sql
     assert "DROP TABLE knowledge.document_lifecycle_events" in sql
     assert "DROP TABLE ingestion.snapshot_objects" in sql
+    assert "DROP TABLE ingestion.managed_source_configs" in sql

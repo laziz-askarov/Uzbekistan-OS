@@ -210,9 +210,7 @@ class PublicationCandidate(BaseModel):
     def validate_candidate(self) -> "PublicationCandidate":
         if self.effective_until < self.effective_from:
             raise ValueError("effective_until cannot precede effective_from")
-        maximum_until = self.effective_from + timedelta(
-            days=FRESHNESS_DAYS_BY_DOMAIN[self.domain]
-        )
+        maximum_until = self.effective_from + timedelta(days=FRESHNESS_DAYS_BY_DOMAIN[self.domain])
         if self.effective_until > maximum_until:
             raise ValueError(
                 "effective_until exceeds the approved freshness window for this domain"

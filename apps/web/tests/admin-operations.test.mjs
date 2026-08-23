@@ -115,3 +115,16 @@ test("admin evidence uploads accept PDF and JSON and keep publication review gat
   assert.match(reviewStyles, /background: var\(--color-background\)/);
   assert.doesNotMatch(reviewStyles, /\.documentPanel[^}]*background:\s*white/s);
 });
+
+test("admins can add bounded manual sources without expanding crawler scope", async () => {
+  const dashboard = await webFile("app/admin/operations-dashboard.tsx");
+
+  assert.match(dashboard, /\+ Add new source/);
+  assert.match(dashboard, /request<AdminSource>\("\/admin\/sources"/);
+  assert.match(dashboard, /confirmed_official: sourceDraft\.confirmedOfficial/);
+  assert.match(dashboard, /Knowledge domains/);
+  assert.match(dashboard, /Document languages/);
+  assert.match(dashboard, /controlled by the named official/);
+  assert.match(dashboard, /New\s+sources cannot run crawlers/);
+  assert.match(dashboard, /setUploadSource\(created\)/);
+});

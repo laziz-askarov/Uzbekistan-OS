@@ -6,6 +6,7 @@ All paths are relative to `/api/v1` and require `Authorization: Bearer <token>`.
 
 - `GET /auth/me` resolves the verified subject to its internal principal and roles.
 - `GET /admin/sources` merges the configured registry with source and latest-job state.
+- `POST /admin/sources` creates an audited, idempotent, manual-only official source with a required `Idempotency-Key`.
 - `POST /admin/sources/{source_id}/uploads` ingests bounded official evidence with a required `Idempotency-Key`.
 - `GET /admin/ingestion/jobs` returns recent crawler and upload jobs.
 - `POST /admin/ingestion/jobs` queues an approved automatic source with a required `Idempotency-Key`.
@@ -22,9 +23,11 @@ Every response carries `x-request-id` and the standard response metadata. Supply
 
 ## Admin consoles
 
-The responsive ingestion dashboard is served at `/admin`. It supports source eligibility inspection, bounded PDF/HTML/XHTML/text upload, existing or newly named topic assignment, approved crawler enqueue, job status/error monitoring, search, and dark mode. It cannot create, approve, or broaden a source: organization, URL, adapter, policy, schedule, and production eligibility remain reviewable registry-as-code changes. Uploads are limited to 10 MB; readable PDFs are normalized to private page-preserving Markdown, and every upload feeds the same checksum, immutable evidence, extraction, and human-review pipeline as crawls.
+The responsive ingestion dashboard is served at `/admin`. It supports source eligibility inspection, audited manual-source creation, bounded PDF/HTML/XHTML/text upload, existing or newly named topic assignment, approved crawler enqueue, job status/error monitoring, search, and dark mode. Admin-created sources require an HTTPS URL on the declared official organization's domain, are fixed to `manual_only`, and cannot expand crawler scope or schedules. Uploads are limited to 10 MB; readable PDFs are normalized to private page-preserving Markdown, and every upload feeds the same checksum, immutable evidence, extraction, and human-review pipeline as crawls.
 
 Read-only source, topic, and job queries require PostgreSQL and the environment-bound registry only. They remain available when Redis or evidence storage is degraded so administrators can inspect state and errors. Manual document upload is processed synchronously and requires PostgreSQL plus evidence storage, while crawler enqueue continues to fail closed until Redis is configured.
+
+Apply migration `20260823_0008` before enabling source creation. Admin-created source metadata lives in `ingestion.managed_source_configs`; the source and official organization remain in the canonical `knowledge` tables. Creation uses request hashing for deterministic idempotency replay and writes `ingestion.source_created` to the immutable audit stream in the same transaction. Registry synchronization excludes managed source and organization rows from deactivation.
 
 The reviewer console is served at `/admin/reviews`. It supports queue filtering, source and lineage inspection, section comparison, claiming, reasoned approval or rejection, evidence-bound publication, expiration, and re-index queueing. Publisher controls appear only for a principal with `knowledge_publisher` or `admin`. Both consoles reuse the signed-in Supabase session and keep its short-lived Bearer token in page memory only; they do not put credentials in URLs or persistent browser storage. The web route verifies the current `public.user_roles` assignment before rendering, and the API independently resolves the token subject through `identity.principals` and `identity.principal_roles`.
 

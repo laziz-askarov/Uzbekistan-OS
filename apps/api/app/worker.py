@@ -88,9 +88,7 @@ def build_worker(
     registry = registry or load_runtime_registry(settings)
     queue = build_queue(settings)
     s3_snapshot_store = (
-        S3SnapshotStore.from_settings(settings)
-        if settings.snapshot_store_backend == "s3"
-        else None
+        S3SnapshotStore.from_settings(settings) if settings.snapshot_store_backend == "s3" else None
     )
     fetcher = HttpSourceFetcher()
 

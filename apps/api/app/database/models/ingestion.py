@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -14,12 +15,54 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 from app.database.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+
+
+class ManagedSourceConfig(TimestampMixin, Base):
+    """Admin-created manual source configuration kept outside the static registry."""
+
+    __tablename__ = "managed_source_configs"
+    __table_args__ = (
+        CheckConstraint("registry_status = 'approved'", name="registry_status_approved"),
+        CheckConstraint("production_eligible", name="production_eligible_required"),
+        CheckConstraint("jsonb_typeof(domains) = 'array'", name="domains_array"),
+        CheckConstraint("jsonb_array_length(domains) > 0", name="domains_not_empty"),
+        CheckConstraint("jsonb_typeof(languages) = 'array'", name="languages_array"),
+        CheckConstraint("jsonb_array_length(languages) > 0", name="languages_not_empty"),
+        CheckConstraint("length(request_sha256) = 64", name="request_sha256_length"),
+        {"schema": "ingestion"},
+    )
+
+    source_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("knowledge.sources.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    slug: Mapped[str] = mapped_column(CITEXT(), nullable=False, unique=True)
+    domains: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    languages: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    adapter_key: Mapped[str] = mapped_column(
+        String(160), nullable=False, server_default="generic-manual"
+    )
+    registry_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="approved"
+    )
+    production_eligible: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
+    created_by_principal_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("identity.principals.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    request_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
 
 
 class SnapshotObject(Base):

@@ -18,6 +18,7 @@ from app.identity.service import AuthenticatedPrincipal
 from app.ingestion.admin import (
     AdminIngestionService,
     AdminSourceRecord,
+    CreateAdminSourceRequest,
     IngestionJobRecord,
     ManualUploadRequest,
     ManualUploadResult,
@@ -58,6 +59,39 @@ def list_admin_sources(
 ) -> SuccessResponse[list[AdminSourceRecord]]:
     return SuccessResponse(
         data=list(service.list_sources(principal)),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.post(
+    "/sources",
+    response_model=SuccessResponse[AdminSourceRecord],
+    status_code=201,
+    operation_id="createAdminSource",
+    summary="Register an official manual evidence source",
+)
+def create_admin_source(
+    payload: CreateAdminSourceRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(
+            alias="Idempotency-Key",
+            min_length=8,
+            max_length=128,
+            pattern=r"^[A-Za-z0-9._:-]+$",
+        ),
+    ],
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_query_service)],
+) -> SuccessResponse[AdminSourceRecord]:
+    return SuccessResponse(
+        data=service.create_source(
+            principal,
+            payload,
+            idempotency_key=idempotency_key,
+            created_at=datetime.now(UTC),
+        ),
         meta=ResponseMeta(request_id=request.state.request_id),
     )
 

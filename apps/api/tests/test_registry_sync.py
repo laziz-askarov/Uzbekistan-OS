@@ -3,9 +3,11 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy.dialects import postgresql
 
 from app.ingestion.models import CrawlPolicy, RegistryStatus, SourceRegistryEntry
 from app.ingestion.registry import load_source_registry
+from app.ingestion.registry_repositories import SqlAlchemySourceRegistryRepository
 from app.ingestion.registry_sync import RegistrySyncError, RegistrySyncService
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -40,6 +42,15 @@ class RecordingRegistryRepository:
         return 1
 
 
+class StatementRecordingSession:
+    def __init__(self) -> None:
+        self.statements = []
+
+    def execute(self, statement):
+        self.statements.append(statement)
+        return type("Result", (), {"rowcount": 0})()
+
+
 def test_registry_sync_materializes_entries_and_deactivates_absent_rows() -> None:
     registry = load_source_registry(REGISTRY_PATH)
     repository = RecordingRegistryRepository()
@@ -56,6 +67,25 @@ def test_registry_sync_materializes_entries_and_deactivates_absent_rows() -> Non
     assert repository.retained_source_ids == {registry.sources[0].id}
     assert repository.retained_organization_ids == {registry.sources[0].organization.id}
     assert repository.locks == 1
+
+
+def test_registry_deactivation_preserves_admin_managed_sources_and_organizations() -> None:
+    session = StatementRecordingSession()
+    repository = SqlAlchemySourceRegistryRepository(session)
+
+    repository.deactivate_sources_except(set())
+    repository.deactivate_organizations_except(set())
+
+    statements = [
+        str(
+            statement.compile(
+                dialect=postgresql.dialect(),
+                compile_kwargs={"literal_binds": True},
+            )
+        )
+        for statement in session.statements
+    ]
+    assert all("managed_source_configs" in statement for statement in statements)
 
 
 def test_registry_sync_fails_before_writes_for_environment_mismatch() -> None:

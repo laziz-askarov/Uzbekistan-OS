@@ -212,9 +212,7 @@ class IngestionService:
         )
         artifact_id = uuid4()
         artifact_bytes = artifact.canonical_bytes()
-        artifact_storage_key = (
-            f"sources/{source.id}/{raw_sha256}.{adapter_key}.extraction.json"
-        )
+        artifact_storage_key = f"sources/{source.id}/{raw_sha256}.{adapter_key}.extraction.json"
         normalized_storage_key = None
         if normalized.media_type == "text/markdown":
             normalized_storage_key = f"sources/{source.id}/{raw_sha256}.normalized.md"

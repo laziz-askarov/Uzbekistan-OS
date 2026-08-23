@@ -24,7 +24,7 @@ Run an explicit synchronization during deployment:
 apps/api/.venv/bin/python -m app.worker sync-registry
 ```
 
-The command fails closed unless `APP_ENV` exactly matches the registry environment. It upserts stable registry organization/source UUIDs and deactivates database rows absent from the configured registry without deleting lineage. Docker Compose runs migrations and then the one-shot `registry-sync` service before the worker and scheduler.
+The command fails closed unless `APP_ENV` exactly matches the registry environment. It upserts stable registry organization/source UUIDs and deactivates database rows absent from the configured registry without deleting lineage. Audited manual sources recorded in `ingestion.managed_source_configs`, and their official organizations, are excluded from registry deactivation; they remain ineligible for crawler scheduling. Docker Compose runs migrations and then the one-shot `registry-sync` service before the worker and scheduler.
 
 Start the scheduler directly with:
 

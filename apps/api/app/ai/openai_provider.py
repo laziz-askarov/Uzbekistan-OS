@@ -44,8 +44,7 @@ class OpenAIResponsesProvider:
                 "the requested structured output schema is not registered",
             )
         input_messages = [
-            {"role": layer["role"], "content": layer["content"]}
-            for layer in request.prompt_layers
+            {"role": layer["role"], "content": layer["content"]} for layer in request.prompt_layers
         ]
         input_messages.append(
             {

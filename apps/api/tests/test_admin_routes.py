@@ -229,6 +229,7 @@ class StubAdminIngestionService:
         )
         self.queued_keys: list[str] = []
         self.uploaded_files: list[str] = []
+        self.created_sources: list[str] = []
 
     def list_sources(self, principal):
         del principal
@@ -264,6 +265,36 @@ class StubAdminIngestionService:
     def list_topics(self, principal):
         del principal
         return ("Entry requirements",)
+
+    def create_source(
+        self,
+        principal,
+        payload,
+        *,
+        idempotency_key,
+        created_at,
+    ):
+        del principal, created_at
+        self.created_sources.append(idempotency_key)
+        base = self.list_sources(None)[0].model_dump(mode="json")
+        return AdminSourceRecord.model_validate(
+            {
+                **base,
+                "id": uuid4(),
+                "slug": "official-tourism-handbook",
+                "organization": payload.organization_name,
+                "title": payload.title,
+                "url": str(payload.url),
+                "source_type": "manual",
+                "domains": list(payload.domains),
+                "languages": list(payload.languages),
+                "crawl_policy": "manual_only",
+                "adapter_key": "generic-manual",
+                "trust_tier": 2,
+                "automatic_fetch_eligible": False,
+                "schedule_interval_minutes": None,
+            }
+        )
 
     def queue_crawl(self, principal, payload, *, idempotency_key, enqueued_at):
         del principal, enqueued_at
@@ -566,7 +597,7 @@ def test_publisher_can_expire_and_reindex_through_http() -> None:
     )
 
 
-def test_admin_can_list_sources_queue_crawl_and_upload_through_http() -> None:
+def test_admin_can_create_list_sources_queue_crawl_and_upload_through_http() -> None:
     application = create_app()
     identity_service = StubIdentityService(
         AuthenticatedPrincipal(id=uuid4(), roles=frozenset({"admin"}))
@@ -575,13 +606,24 @@ def test_admin_can_list_sources_queue_crawl_and_upload_through_http() -> None:
     application.dependency_overrides[get_identity_verifier] = StubIdentityVerifier
     application.dependency_overrides[get_identity_service] = lambda: identity_service
     application.dependency_overrides[get_admin_ingestion_service] = lambda: admin_service
-    application.dependency_overrides[get_admin_ingestion_upload_service] = (
-        lambda: admin_service
-    )
+    application.dependency_overrides[get_admin_ingestion_upload_service] = lambda: admin_service
     application.dependency_overrides[get_admin_ingestion_query_service] = lambda: admin_service
     client = TestClient(application)
 
     sources = client.get("/api/v1/admin/sources", headers=auth_headers())
+    created_source = client.post(
+        "/api/v1/admin/sources",
+        headers={**auth_headers(), "Idempotency-Key": "create-source-http-test"},
+        json={
+            "title": "Official tourism handbook",
+            "url": "https://tourism.gov.uz/handbook",
+            "organization_name": "Tourism Committee",
+            "organization_website_url": "https://gov.uz",
+            "domains": ["tourism"],
+            "languages": ["uz"],
+            "confirmed_official": True,
+        },
+    )
     jobs = client.get("/api/v1/admin/ingestion/jobs?limit=25", headers=auth_headers())
     topics = client.get("/api/v1/admin/ingestion/topics", headers=auth_headers())
     crawl = client.post(
@@ -610,5 +652,9 @@ def test_admin_can_list_sources_queue_crawl_and_upload_through_http() -> None:
     assert upload.status_code == 200
     assert upload.json()["data"]["review_item_id"]
     assert upload.json()["data"]["topic"] == "Entry requirements"
+    assert created_source.status_code == 201
+    assert created_source.json()["data"]["crawl_policy"] == "manual_only"
+    assert created_source.json()["data"]["automatic_fetch_eligible"] is False
+    assert admin_service.created_sources == ["create-source-http-test"]
     assert admin_service.queued_keys == ["crawler-http-test"]
     assert admin_service.uploaded_files == ["official.html"]

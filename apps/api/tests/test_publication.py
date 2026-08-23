@@ -140,9 +140,7 @@ def test_candidate_requires_bounded_domain_freshness() -> None:
     payload = candidate(review_item_id).model_dump(mode="json")
 
     with pytest.raises(ValueError, match="freshness window"):
-        PublicationCandidate.model_validate(
-            {**payload, "effective_until": "2026-09-01"}
-        )
+        PublicationCandidate.model_validate({**payload, "effective_until": "2026-09-01"})
 
     with pytest.raises(ValueError, match="valid date"):
         PublicationCandidate.model_validate({**payload, "effective_until": None})

@@ -7,6 +7,7 @@ from app.database.models.identity import Principal, PrincipalRole, Role
 from app.database.models.ingestion import (
     CrawlJob,
     ExtractionArtifact,
+    ManagedSourceConfig,
     ReviewItem,
     SnapshotObject,
     SourceSnapshot,
@@ -40,6 +41,7 @@ __all__ = [
     "ExtractionArtifact",
     "IndexJob",
     "Language",
+    "ManagedSourceConfig",
     "Principal",
     "PrincipalRole",
     "PublicationRecord",

@@ -607,8 +607,7 @@ paths:
     post:
       tags: [ingestion]
       operationId: createAdminSource
-      summary: Register an approved ingestion source
-      x-implementation-status: planned
+      summary: Register an official manual evidence source
       x-authorization:
         mode: role-gated
         roles: [admin]
@@ -1969,11 +1968,11 @@ components:
         source_type: { $ref: "#/components/schemas/SourceType" }
         domains:
           type: array
-          items: { type: string }
+          items: { $ref: "#/components/schemas/DomainSlug" }
           uniqueItems: true
         languages:
           type: array
-          items: { type: string }
+          items: { $ref: "#/components/schemas/LanguageCode" }
           uniqueItems: true
         crawl_policy: { $ref: "#/components/schemas/CrawlPolicy" }
         adapter_key: { type: string }
@@ -1995,14 +1994,30 @@ components:
     CreateAdminSourceRequest:
       type: object
       required:
-        [organization_id, url, title, source_type, crawl_policy, trust_tier]
+        - title
+        - url
+        - organization_name
+        - organization_website_url
+        - domains
+        - confirmed_official
       properties:
-        organization_id: { type: string, format: uuid }
-        url: { type: string, format: uri }
-        title: { type: string, minLength: 1, maxLength: 500 }
-        source_type: { $ref: "#/components/schemas/SourceType" }
-        crawl_policy: { $ref: "#/components/schemas/CrawlPolicy" }
-        trust_tier: { type: integer, minimum: 1, maximum: 3 }
+        title: { type: string, minLength: 2, maxLength: 500 }
+        url: { type: string, format: uri, pattern: "^https://" }
+        organization_name: { type: string, minLength: 2, maxLength: 240 }
+        organization_website_url:
+          { type: string, format: uri, pattern: "^https://" }
+        domains:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/DomainSlug" }
+        languages:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          default: [uz]
+          items: { $ref: "#/components/schemas/LanguageCode" }
+        confirmed_official: { type: boolean, const: true }
       additionalProperties: false
     AdminSourceResponse:
       type: object

@@ -8,6 +8,7 @@ from app.identity.service import AuthenticatedPrincipal
 from app.ingestion.admin import (
     AdminIngestionError,
     AdminIngestionService,
+    CreateAdminSourceRequest,
     IngestionJobRecord,
     ManualUploadRequest,
     PreparedCrawlJob,
@@ -55,9 +56,59 @@ def principal(*roles: str) -> AuthenticatedPrincipal:
 class MemoryAdminRepository:
     def __init__(self) -> None:
         self.jobs: dict[tuple[UUID, str], IngestionJobRecord] = {}
+        self.managed: list[SourceRegistryEntry] = []
+        self.created: dict[str, tuple[str, SourceRegistryEntry]] = {}
 
     def source_states(self):
         return ()
+
+    def managed_sources(self):
+        return tuple(self.managed)
+
+    def create_managed_source(
+        self,
+        request,
+        principal,
+        *,
+        idempotency_key,
+        created_at,
+    ):
+        del principal
+        replay = self.created.get(idempotency_key)
+        if replay is not None:
+            request_hash, source = replay
+            if request_hash != request.sha256:
+                raise AdminIngestionError("source_idempotency_conflict", "different details")
+            return source
+        source = SourceRegistryEntry.model_validate(
+            {
+                "id": str(uuid4()),
+                "slug": "new-official-source",
+                "organization": {
+                    "id": str(uuid4()),
+                    "slug": "new-official-organization",
+                    "name": request.organization_name,
+                    "website_url": str(request.organization_website_url),
+                    "country_iso2": "UZ",
+                    "is_official": True,
+                },
+                "title": request.title,
+                "url": str(request.url),
+                "source_type": "manual",
+                "domains": request.domains,
+                "languages": request.languages,
+                "crawl_policy": "manual_only",
+                "adapter_key": "generic-manual",
+                "trust_tier": 2,
+                "status": "approved",
+                "owner": "admin",
+                "reviewed_at": created_at,
+                "production_eligible": True,
+            }
+        )
+        self.managed.append(source)
+        self.created[idempotency_key] = (request.sha256, source)
+        return source
 
     def list_jobs(self, *, limit: int):
         return tuple(list(self.jobs.values())[:limit])
@@ -170,6 +221,62 @@ def test_admin_lists_source_eligibility_and_queues_crawl_idempotently() -> None:
     assert replay.id == first.id
     assert len(queue.tasks) == 1
     assert queue.tasks[0].source_id == source.id
+
+
+def test_admin_creates_manual_only_source_idempotently_without_expanding_crawler_scope() -> None:
+    service, _, repository, _, _ = admin_service()
+    actor = principal("admin")
+    request = CreateAdminSourceRequest(
+        title="Official tourism handbook",
+        url="https://tourism.gov.uz/handbook",
+        organization_name="Tourism Committee",
+        organization_website_url="https://gov.uz",
+        domains=["tourism"],
+        languages=["uz"],
+        confirmed_official=True,
+    )
+
+    created = service.create_source(
+        actor,
+        request,
+        idempotency_key="create-source-1",
+        created_at=NOW,
+    )
+    replay = service.create_source(
+        actor,
+        request,
+        idempotency_key="create-source-1",
+        created_at=NOW,
+    )
+
+    assert created.id == replay.id
+    assert created.manual_upload_eligible is True
+    assert created.automatic_fetch_eligible is False
+    assert created.crawl_policy == "manual_only"
+    assert len(repository.managed) == 1
+    assert any(source.id == created.id for source in service.list_sources(actor))
+
+
+def test_source_creation_requires_matching_public_https_organization_domain() -> None:
+    with pytest.raises(ValueError, match="official organization website domain"):
+        CreateAdminSourceRequest(
+            title="Unrelated source",
+            url="https://example.com/rules",
+            organization_name="Tourism Committee",
+            organization_website_url="https://gov.uz",
+            domains=["tourism"],
+            confirmed_official=True,
+        )
+
+    with pytest.raises(ValueError, match="HTTPS"):
+        CreateAdminSourceRequest(
+            title="Insecure source",
+            url="http://gov.uz/rules",
+            organization_name="Tourism Committee",
+            organization_website_url="https://gov.uz",
+            domains=["tourism"],
+            confirmed_official=True,
+        )
 
 
 def test_non_admin_cannot_read_or_mutate_ingestion_operations() -> None:

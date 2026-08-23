@@ -1,14 +1,26 @@
 from base64 import b64decode
 from binascii import Error as Base64Error
 from datetime import datetime
+from hashlib import sha256
+from ipaddress import ip_address
+from json import dumps
 from pathlib import PurePath
 from typing import Literal, Protocol
+from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    field_validator,
+    model_validator,
+)
 
 from app.identity.service import AuthenticatedPrincipal
-from app.ingestion.models import SourceRegistry
+from app.ingestion.models import DomainSlug, LanguageCode, SourceRegistry, SourceRegistryEntry
 from app.ingestion.queue import IngestionQueue, IngestionTask
 from app.ingestion.service import IngestionService
 from app.ingestion.types import FetchResponse, IngestionOutcome
@@ -40,8 +52,8 @@ class AdminSourceRecord(BaseModel):
     title: str
     url: AnyHttpUrl
     source_type: str
-    domains: list[str]
-    languages: list[str]
+    domains: list[DomainSlug]
+    languages: list[LanguageCode]
     crawl_policy: str
     adapter_key: str
     trust_tier: int
@@ -77,6 +89,73 @@ class QueueCrawlRequest(BaseModel):
 
     source_id: UUID
     max_attempts: int = Field(default=3, ge=1, le=20)
+
+
+class CreateAdminSourceRequest(BaseModel):
+    """Register a manual-only official source without expanding crawler scope."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    title: str = Field(min_length=2, max_length=500)
+    url: HttpUrl
+    organization_name: str = Field(min_length=2, max_length=240)
+    organization_website_url: HttpUrl
+    domains: list[DomainSlug] = Field(min_length=1)
+    languages: list[LanguageCode] = Field(default_factory=lambda: ["uz"], min_length=1)
+    confirmed_official: Literal[True]
+
+    @field_validator("title", "organization_name")
+    @classmethod
+    def text_must_be_safe(cls, value: str) -> str:
+        cleaned = " ".join(value.split())
+        if len(cleaned) < 2 or not cleaned.isprintable():
+            raise ValueError("source text must contain printable characters")
+        return cleaned
+
+    @field_validator("url", "organization_website_url")
+    @classmethod
+    def url_must_be_public_https(cls, value: HttpUrl) -> HttpUrl:
+        parsed = urlsplit(str(value))
+        hostname = parsed.hostname or ""
+        if parsed.scheme != "https" or parsed.username or parsed.password or parsed.fragment:
+            raise ValueError("source URLs must use HTTPS without credentials or fragments")
+        if hostname.casefold() == "localhost" or "." not in hostname:
+            raise ValueError("source URLs must use a public hostname")
+        try:
+            address = ip_address(hostname)
+        except ValueError:
+            return value
+        if (
+            address.is_private
+            or address.is_loopback
+            or address.is_link_local
+            or address.is_reserved
+            or address.is_unspecified
+        ):
+            raise ValueError("source URLs must not use private or reserved addresses")
+        raise ValueError("source URLs must use a public domain name instead of an IP address")
+
+    @model_validator(mode="after")
+    def validate_scope_and_organization(self) -> "CreateAdminSourceRequest":
+        if len(self.domains) != len(set(self.domains)):
+            raise ValueError("source domains must be unique")
+        if len(self.languages) != len(set(self.languages)):
+            raise ValueError("source languages must be unique")
+        source_host = (urlsplit(str(self.url)).hostname or "").casefold()
+        organization_host = (urlsplit(str(self.organization_website_url)).hostname or "").casefold()
+        if source_host != organization_host and not source_host.endswith(f".{organization_host}"):
+            raise ValueError("source URL must use the official organization website domain")
+        return self
+
+    @property
+    def sha256(self) -> str:
+        canonical = dumps(
+            self.model_dump(mode="json"),
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode()
+        return sha256(canonical).hexdigest()
 
 
 class ManualUploadRequest(BaseModel):
@@ -197,6 +276,17 @@ class PreparedCrawlJob(BaseModel):
 class AdminIngestionRepository(Protocol):
     def source_states(self) -> tuple[SourceDatabaseState, ...]: ...
 
+    def managed_sources(self) -> tuple[SourceRegistryEntry, ...]: ...
+
+    def create_managed_source(
+        self,
+        request: CreateAdminSourceRequest,
+        principal: AuthenticatedPrincipal,
+        *,
+        idempotency_key: str,
+        created_at: datetime,
+    ) -> SourceRegistryEntry: ...
+
     def list_jobs(self, *, limit: int) -> tuple[IngestionJobRecord, ...]: ...
 
     def list_topics(self) -> tuple[str, ...]: ...
@@ -231,36 +321,29 @@ class AdminIngestionService:
     ) -> tuple[AdminSourceRecord, ...]:
         self._authorize(principal)
         states = {state.id: state for state in self.repository.source_states()}
-        return tuple(
-            AdminSourceRecord(
-                id=source.id,
-                slug=source.slug,
-                organization=source.organization.name,
-                title=source.title,
-                url=source.url,
-                source_type=source.source_type.value,
-                domains=list(source.domains),
-                languages=list(source.languages),
-                crawl_policy=source.crawl_policy.value,
-                adapter_key=source.adapter_key,
-                trust_tier=source.trust_tier,
-                registry_status=source.status.value,
-                active=states.get(source.id).active if source.id in states else False,
-                production_eligible=source.production_eligible,
-                automatic_fetch_eligible=source.automatic_fetch_eligible,
-                manual_upload_eligible=source.manual_ingestion_eligible,
-                schedule_interval_minutes=(
-                    source.schedule.interval_minutes if source.schedule else None
-                ),
-                last_verified_at=(
-                    states.get(source.id).last_verified_at if source.id in states else None
-                ),
-                latest_job_status=(
-                    states.get(source.id).latest_job_status if source.id in states else None
-                ),
-            )
-            for source in self.registry.sources
+        sources = self._configured_sources()
+        return tuple(self._source_record(source, states.get(source.id)) for source in sources)
+
+    def create_source(
+        self,
+        principal: AuthenticatedPrincipal,
+        request: CreateAdminSourceRequest,
+        *,
+        idempotency_key: str,
+        created_at: datetime,
+    ) -> AdminSourceRecord:
+        self._authorize(principal)
+        source = self.repository.create_managed_source(
+            request,
+            principal,
+            idempotency_key=idempotency_key,
+            created_at=created_at,
         )
+        state = next(
+            (item for item in self.repository.source_states() if item.id == source.id),
+            None,
+        )
+        return self._source_record(source, state)
 
     def list_jobs(
         self,
@@ -353,13 +436,52 @@ class AdminIngestionService:
         return ManualUploadResult.from_outcome(request.filename, request.topic, outcome)
 
     def _source(self, source_id: UUID):
-        source = next((item for item in self.registry.sources if item.id == source_id), None)
+        source = next((item for item in self._configured_sources() if item.id == source_id), None)
         if source is None:
             raise AdminIngestionError(
                 "source_not_found",
-                "source is not present in the configured environment registry",
+                "source is not present in the configured or admin-managed sources",
             )
         return source
+
+    def _configured_sources(self) -> tuple[SourceRegistryEntry, ...]:
+        registered = tuple(self.registry.sources)
+        registered_ids = {source.id for source in registered}
+        managed = tuple(
+            source
+            for source in self.repository.managed_sources()
+            if source.id not in registered_ids
+        )
+        return (*registered, *managed)
+
+    @staticmethod
+    def _source_record(
+        source: SourceRegistryEntry,
+        state: SourceDatabaseState | None,
+    ) -> AdminSourceRecord:
+        return AdminSourceRecord(
+            id=source.id,
+            slug=source.slug,
+            organization=source.organization.name,
+            title=source.title,
+            url=source.url,
+            source_type=source.source_type.value,
+            domains=list(source.domains),
+            languages=list(source.languages),
+            crawl_policy=source.crawl_policy.value,
+            adapter_key=source.adapter_key,
+            trust_tier=source.trust_tier,
+            registry_status=source.status.value,
+            active=state.active if state else False,
+            production_eligible=source.production_eligible,
+            automatic_fetch_eligible=source.automatic_fetch_eligible,
+            manual_upload_eligible=source.manual_ingestion_eligible,
+            schedule_interval_minutes=(
+                source.schedule.interval_minutes if source.schedule else None
+            ),
+            last_verified_at=state.last_verified_at if state else None,
+            latest_job_status=state.latest_job_status if state else None,
+        )
 
     @staticmethod
     def _authorize(principal: AuthenticatedPrincipal) -> None:

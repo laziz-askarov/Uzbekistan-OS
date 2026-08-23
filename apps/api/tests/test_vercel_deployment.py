@@ -31,9 +31,7 @@ def test_vercel_project_matches_api_runtime_dependencies() -> None:
     api_project = tomllib.loads(
         (REPOSITORY_ROOT / "apps" / "api" / "pyproject.toml").read_text(encoding="utf-8")
     )
-    vercel_project = tomllib.loads(
-        (REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    )
+    vercel_project = tomllib.loads((REPOSITORY_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     runtime_dependencies = api_project["project"]["dependencies"]
     vercel_dependencies = vercel_project["project"]["dependencies"]
 
@@ -54,13 +52,9 @@ def test_api_responses_include_security_headers(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.headers["cache-control"] == "no-store"
-    assert response.headers["permissions-policy"] == (
-        "camera=(), geolocation=(), microphone=()"
-    )
+    assert response.headers["permissions-policy"] == ("camera=(), geolocation=(), microphone=()")
     assert response.headers["referrer-policy"] == "no-referrer"
-    assert response.headers["strict-transport-security"] == (
-        "max-age=31536000; includeSubDomains"
-    )
+    assert response.headers["strict-transport-security"] == ("max-age=31536000; includeSubDomains")
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
 

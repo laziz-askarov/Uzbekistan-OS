@@ -188,9 +188,7 @@ def _extract_json_sections(
         sections = preferred_sections
     else:
         entries = (
-            list(payload.items())
-            if isinstance(payload, dict)
-            else list(enumerate(payload, 1))
+            list(payload.items()) if isinstance(payload, dict) else list(enumerate(payload, 1))
         )
         sections_list: list[tuple[str, str]] = []
         node_count = [0]

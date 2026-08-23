@@ -4,6 +4,7 @@ from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
 from app.database.models.geography import Country
+from app.database.models.ingestion import ManagedSourceConfig
 from app.database.models.knowledge import Source, SourceOrganization
 from app.ingestion.models import SourceOrganizationEntry, SourceRegistryEntry
 from app.ingestion.registry_sync import RegistrySyncError
@@ -80,14 +81,26 @@ class SqlAlchemySourceRegistryRepository:
         return created
 
     def deactivate_sources_except(self, source_ids: set[UUID]) -> int:
-        statement = update(Source).where(Source.is_active.is_(True))
+        managed_source_ids = select(ManagedSourceConfig.source_id)
+        statement = update(Source).where(
+            Source.is_active.is_(True),
+            Source.id.not_in(managed_source_ids),
+        )
         if source_ids:
             statement = statement.where(Source.id.not_in(source_ids))
         result = self.session.execute(statement.values(is_active=False))
         return int(result.rowcount or 0)
 
     def deactivate_organizations_except(self, organization_ids: set[UUID]) -> int:
-        statement = update(SourceOrganization).where(SourceOrganization.is_active.is_(True))
+        managed_organization_ids = (
+            select(Source.organization_id)
+            .join(ManagedSourceConfig, ManagedSourceConfig.source_id == Source.id)
+            .distinct()
+        )
+        statement = update(SourceOrganization).where(
+            SourceOrganization.is_active.is_(True),
+            SourceOrganization.id.not_in(managed_organization_ids),
+        )
         if organization_ids:
             statement = statement.where(SourceOrganization.id.not_in(organization_ids))
         result = self.session.execute(statement.values(is_active=False))

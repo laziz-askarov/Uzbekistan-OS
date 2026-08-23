@@ -546,9 +546,7 @@ def test_generic_json_rejects_duplicate_keys_and_non_container_roots() -> None:
     assert duplicate.value.code == "duplicate_json_key"
 
     with pytest.raises(IngestionError) as scalar:
-        normalize_response(
-            response(source, b'"not structured"', content_type="application/json")
-        )
+        normalize_response(response(source, b'"not structured"', content_type="application/json"))
     assert scalar.value.code == "invalid_json_root"
 
 

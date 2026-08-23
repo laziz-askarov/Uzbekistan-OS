@@ -22,6 +22,7 @@ EXPECTED_TABLES = {
     "knowledge.publication_records",
     "ingestion.source_snapshots",
     "ingestion.snapshot_objects",
+    "ingestion.managed_source_configs",
     "ingestion.crawl_jobs",
     "ingestion.extraction_artifacts",
     "ingestion.review_items",
@@ -114,6 +115,28 @@ def test_ingestion_jobs_encode_idempotency_retry_and_lineage() -> None:
     assert "ck_crawl_jobs_max_attempts_positive" in job_checks
     assert "uq_crawl_jobs_source_key" in job_uniques
     assert "uq_source_snapshots_source_sha256" in snapshot_uniques
+
+
+def test_admin_managed_sources_are_bounded_audited_and_idempotent() -> None:
+    sources = Base.metadata.tables["ingestion.managed_source_configs"]
+
+    assert {
+        "source_id",
+        "domains",
+        "languages",
+        "created_by_principal_id",
+        "idempotency_key",
+        "request_sha256",
+    } <= set(sources.c.keys())
+    assert sources.c.source_id.primary_key is True
+    assert sources.c.created_by_principal_id.foreign_keys
+    uniques = {
+        constraint.name
+        for constraint in sources.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+    assert "uq_managed_source_configs_idempotency_key" in uniques
+    assert "uq_managed_source_configs_slug" in uniques
 
 
 def test_extraction_artifacts_are_review_gated() -> None:

@@ -71,9 +71,7 @@ class Settings(BaseSettings):
     )
     supabase_url: str | None = Field(
         default=None,
-        validation_alias=AliasChoices(
-            "SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "supabase_url"
-        ),
+        validation_alias=AliasChoices("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "supabase_url"),
     )
     supabase_anon_key: SecretStr | None = Field(
         default=None,
