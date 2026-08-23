@@ -35,7 +35,7 @@ from app.ingestion.repositories import SqlAlchemyIngestionRepository
 from app.ingestion.review import ReviewService
 from app.ingestion.review_repositories import SqlAlchemyReviewRepository
 from app.ingestion.service import IngestionService
-from app.ingestion.stores import S3SnapshotStore
+from app.ingestion.stores import S3SnapshotStore, SqlAlchemySnapshotStore
 from app.knowledge.lifecycle import KnowledgeLifecycleService
 from app.knowledge.lifecycle_repositories import SqlAlchemyKnowledgeLifecycleRepository
 from app.knowledge.publication import PublicationService
@@ -66,11 +66,15 @@ def get_identity_service(
     return IdentityService(SqlAlchemyIdentityRepository(session))
 
 
-@lru_cache
-def get_snapshot_store() -> SnapshotStore:
+def get_snapshot_store(
+    session: Annotated[Session, Depends(get_database_session)],
+) -> SnapshotStore:
     from app.config import get_settings
 
-    return S3SnapshotStore.from_settings(get_settings())
+    settings = get_settings()
+    if settings.snapshot_store_backend == "database":
+        return SqlAlchemySnapshotStore(session)
+    return S3SnapshotStore.from_settings(settings)
 
 
 @lru_cache

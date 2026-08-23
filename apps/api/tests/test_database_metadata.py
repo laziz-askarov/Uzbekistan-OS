@@ -21,6 +21,7 @@ EXPECTED_TABLES = {
     "knowledge.index_jobs",
     "knowledge.publication_records",
     "ingestion.source_snapshots",
+    "ingestion.snapshot_objects",
     "ingestion.crawl_jobs",
     "ingestion.extraction_artifacts",
     "ingestion.review_items",

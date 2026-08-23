@@ -8,10 +8,13 @@ from typing import Protocol
 from app.ingestion.errors import IngestionError
 from app.ingestion.extractors import structured_html_sections
 from app.ingestion.models import SourceRegistryEntry
-from app.ingestion.normalizers import HTML_MEDIA_TYPES, normalize_response
+from app.ingestion.normalizers import (
+    HTML_MEDIA_TYPES,
+    JSON_MEDIA_TYPES,
+    PDF_MEDIA_TYPES,
+    normalize_response,
+)
 from app.ingestion.types import FetchResponse, NormalizedContent
-
-JSON_MEDIA_TYPES = {"application/json", "application/ld+json"}
 
 
 class SourceAdapter(Protocol):
@@ -184,6 +187,7 @@ class SourceAdapterRegistry:
         defaults: dict[str, SourceAdapter] = {
             "generic-html": GenericSourceAdapter(),
             "generic-pdf": GenericSourceAdapter(),
+            "generic-json": GenericSourceAdapter(),
             "generic-manual": GenericSourceAdapter(),
             "govuz-activity-html": GovUzActivityHtmlAdapter(),
             "evisa-uz-localization-json": EVisaUzbekLocalizationAdapter(),
@@ -201,6 +205,20 @@ class SourceAdapterRegistry:
                 retryable=False,
             )
         return adapter
+
+    def resolve_manual(
+        self,
+        source: SourceRegistryEntry,
+        response: FetchResponse,
+    ) -> tuple[str, SourceAdapter]:
+        media_type = _media_type(response)
+        if media_type in PDF_MEDIA_TYPES:
+            key = "generic-pdf"
+        elif media_type in JSON_MEDIA_TYPES and source.adapter_key != "evisa-uz-localization-json":
+            key = "generic-json"
+        else:
+            key = source.adapter_key
+        return key, self.resolve(key)
 
 
 def _media_type(response: FetchResponse) -> str:

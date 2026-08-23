@@ -1,7 +1,7 @@
 .shell {
   min-height: 100vh;
   color: var(--color-text-primary);
-  background: #f2f4f7;
+  background: var(--color-background);
 }
 
 .topbar {
@@ -58,17 +58,35 @@
 }
 
 .quietButton,
-.iconButton {
+.iconButton,
+.themeButton,
+.workspaceLink {
   min-height: 2.75rem;
   padding: 0 var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   color: var(--color-text-secondary);
-  background: transparent;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 650;
   cursor: pointer;
+}
+
+.workspaceLink {
+  text-decoration: none;
+}
+
+.quietButton:hover,
+.iconButton:hover,
+.themeButton:hover,
+.workspaceLink:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-muted);
 }
 
 .connectPanel {
@@ -132,8 +150,8 @@
   width: 100%;
   padding: var(--space-3) var(--space-4);
   color: var(--color-text-primary);
-  background: white;
-  border: 1px solid #cbd1d9;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-control);
   font: inherit;
 }
@@ -215,7 +233,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-1);
-  background: #f2f4f7;
+  background: var(--color-surface-muted);
   border-radius: 0.8rem;
 }
 
@@ -234,7 +252,7 @@
 
 .filters button[aria-pressed="true"] {
   color: var(--color-text-primary);
-  background: white;
+  background: var(--color-surface-raised);
   box-shadow: var(--shadow-1);
 }
 
@@ -249,8 +267,8 @@
   display: grid;
   gap: var(--space-2);
   color: inherit;
-  background: white;
-  border: 1px solid transparent;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   font: inherit;
   text-align: left;
@@ -258,12 +276,20 @@
 }
 
 .queueItem:hover {
-  background: #f7f9fb;
+  background: var(--color-surface-muted);
 }
 
 .queueItem[data-selected="true"] {
-  background: color-mix(in srgb, var(--color-primary) 7%, white);
-  border-color: color-mix(in srgb, var(--color-primary) 28%, white);
+  background: color-mix(
+    in srgb,
+    var(--color-primary) 10%,
+    var(--color-surface-raised)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 38%,
+    var(--color-border)
+  );
 }
 
 .queueItem strong {
@@ -321,6 +347,7 @@
   min-width: 0;
   padding: clamp(1.5rem, 4vw, 3.5rem);
   overflow: hidden;
+  background: var(--color-background);
 }
 
 .documentHeader {
@@ -347,6 +374,21 @@
   font-weight: 700;
 }
 
+.downloadButton {
+  min-height: 2.5rem;
+  margin-top: var(--space-2);
+  padding: 0 var(--space-3);
+  display: block;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .sections {
   display: grid;
   gap: var(--space-3);
@@ -357,7 +399,7 @@
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr);
   gap: var(--space-4);
-  background: white;
+  background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-1);
@@ -390,7 +432,7 @@
 
 .sectionCard p {
   margin: var(--space-3) 0 0;
-  color: #414954;
+  color: var(--color-text-secondary);
   line-height: 1.65;
   white-space: pre-wrap;
 }
@@ -436,7 +478,7 @@
 .changeSummary {
   margin-bottom: var(--space-5);
   padding: var(--space-4);
-  background: #f7f9fb;
+  background: var(--color-surface-muted);
   border: 1px solid var(--color-border);
   border-radius: 1rem;
 }
@@ -505,8 +547,8 @@
   min-height: 3rem;
   padding: 0 var(--space-4);
   color: var(--color-error);
-  background: white;
-  border: 1px solid color-mix(in srgb, var(--color-error) 40%, white);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-error) 45%, transparent);
   border-radius: var(--radius-control);
   font: inherit;
   font-weight: 750;
@@ -538,8 +580,12 @@
   padding: var(--space-4);
   display: grid;
   gap: var(--space-3);
-  background: color-mix(in srgb, var(--color-primary) 5%, white);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, white);
+  background: color-mix(
+    in srgb,
+    var(--color-primary) 8%,
+    var(--color-surface-muted)
+  );
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
   border-radius: var(--radius-control);
 }
 
@@ -630,7 +676,7 @@
   display: grid;
   place-items: center;
   color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  background: var(--color-primary-soft);
   border-radius: 1rem;
   font-size: 1.3rem;
 }
@@ -650,7 +696,8 @@
 .emptyState {
   min-height: 14rem;
   padding: var(--space-5);
-  background: #f7f9fb;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
 }
 
@@ -674,9 +721,9 @@
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--space-1) var(--space-4);
-  color: #6f1e1b;
-  background: #fff2f0;
-  border: 1px solid #f0b4ae;
+  color: var(--color-error);
+  background: var(--color-error-surface);
+  border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
   border-radius: 1rem;
   box-shadow: var(--shadow-2);
   z-index: 10;
@@ -706,7 +753,12 @@
 .skeletonList span,
 .documentSkeleton span {
   min-height: 7rem;
-  background: linear-gradient(90deg, #edf0f3 25%, #f7f8fa 50%, #edf0f3 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-muted) 25%,
+    var(--color-surface-raised) 50%,
+    var(--color-surface-muted) 75%
+  );
   background-size: 200% 100%;
   border-radius: 1rem;
   animation: shimmer 1.3s infinite linear;

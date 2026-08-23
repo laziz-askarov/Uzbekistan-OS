@@ -2,10 +2,10 @@ from base64 import b64decode
 from binascii import Error as Base64Error
 from datetime import datetime
 from pathlib import PurePath
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.identity.service import AuthenticatedPrincipal
 from app.ingestion.models import SourceRegistry
@@ -83,7 +83,13 @@ class ManualUploadRequest(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     filename: str = Field(min_length=1, max_length=255)
-    content_type: str = Field(min_length=1, max_length=255)
+    content_type: Literal[
+        "application/pdf",
+        "application/json",
+        "text/html",
+        "application/xhtml+xml",
+        "text/plain",
+    ]
     content_base64: str = Field(min_length=1, max_length=14_000_000)
     max_attempts: int = Field(default=1, ge=1, le=3)
 
@@ -95,9 +101,11 @@ class ManualUploadRequest(BaseModel):
             raise ValueError("filename must not contain a directory path")
         return cleaned
 
-    @field_validator("content_type")
+    @field_validator("content_type", mode="before")
     @classmethod
-    def content_type_must_be_supported(cls, value: str) -> str:
+    def content_type_must_be_supported(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise ValueError("upload content type is not supported")
         media_type = value.split(";", 1)[0].strip().casefold()
         if media_type not in {
             "application/pdf",
@@ -108,6 +116,20 @@ class ManualUploadRequest(BaseModel):
         }:
             raise ValueError("upload content type is not supported")
         return media_type
+
+    @model_validator(mode="after")
+    def filename_must_match_content_type(self) -> "ManualUploadRequest":
+        suffix = PurePath(self.filename).suffix.casefold()
+        allowed_suffixes = {
+            "application/pdf": {".pdf"},
+            "application/json": {".json"},
+            "text/html": {".htm", ".html"},
+            "application/xhtml+xml": {".html", ".xhtml"},
+            "text/plain": {".txt"},
+        }
+        if suffix not in allowed_suffixes[self.content_type]:
+            raise ValueError("filename extension does not match upload content type")
+        return self
 
     def decoded_content(self) -> bytes:
         try:

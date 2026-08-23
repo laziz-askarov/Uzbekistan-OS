@@ -5,7 +5,22 @@ import pytest
 from botocore.exceptions import ClientError
 
 from app.ingestion.errors import IngestionError
-from app.ingestion.stores import S3SnapshotStore
+from app.ingestion.stores import S3SnapshotStore, SqlAlchemySnapshotStore
+
+
+class FakeDatabaseSession:
+    def __init__(self) -> None:
+        self.objects: dict[str, object] = {}
+
+    def get(self, model: object, key: str) -> object | None:
+        del model
+        return self.objects.get(key)
+
+    def add(self, value: object) -> None:
+        self.objects[value.storage_key] = value
+
+    def flush(self) -> None:
+        return None
 
 
 def missing(code: str, operation: str) -> ClientError:
@@ -89,3 +104,22 @@ def test_s3_store_rejects_content_address_collisions() -> None:
 
     with pytest.raises(IngestionError, match="different bytes"):
         store.put("sources/source/snapshot.bin", b"different")
+
+
+def test_database_store_is_private_idempotent_and_checksum_verified() -> None:
+    session = FakeDatabaseSession()
+    store = SqlAlchemySnapshotStore(session)  # type: ignore[arg-type]
+    content = b"private official evidence"
+
+    store.put("sources/source/snapshot.bin", content, content_type="application/pdf")
+    store.put("sources/source/snapshot.bin", content, content_type="application/pdf")
+
+    assert store.get("sources/source/snapshot.bin") == content
+    stored = session.objects["sources/source/snapshot.bin"]
+    assert stored.content_type == "application/pdf"
+    assert stored.byte_size == len(content)
+
+    stored.content = b"tampered"
+    with pytest.raises(IngestionError) as integrity_error:
+        store.get("sources/source/snapshot.bin")
+    assert integrity_error.value.code == "object_integrity_failure"

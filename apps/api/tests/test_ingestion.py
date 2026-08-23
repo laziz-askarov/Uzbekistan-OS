@@ -500,6 +500,58 @@ def test_evisa_adapter_extracts_only_required_uzbek_guidance_fields() -> None:
     assert "UNRELATED_PROMOTION" not in str(artifact)
 
 
+def test_generic_json_upload_is_normalized_into_retrievable_sections() -> None:
+    source = approved_source()
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+    payload = {
+        "requirements": {
+            "passport": "Pasport amal qilish muddati yetarli bo'lishi kerak.",
+            "photo": "Raqamli fotosurat talab etiladi.",
+        },
+        "steps": ["Arizani to'ldiring.", "Ma'lumotlarni tekshiring."],
+    }
+
+    service(FakeFetcher([]), repository, store).run_manual(
+        source,
+        response(
+            source,
+            dumps(payload, ensure_ascii=False).encode(),
+            content_type="application/json",
+        ),
+        idempotency_key="upload:generic-json-v1",
+    )
+
+    artifact = loads(store.objects[repository.artifacts[0].storage_key])
+    assert repository.artifacts[0].adapter_key == "generic-json"
+    assert [section["heading"] for section in artifact["sections"]] == [
+        "requirements",
+        "steps",
+    ]
+    assert "passport: Pasport amal qilish muddati" in artifact["sections"][0]["body"]
+    assert "Item 1: Arizani to'ldiring." in artifact["sections"][1]["body"]
+
+
+def test_generic_json_rejects_duplicate_keys_and_non_container_roots() -> None:
+    source = approved_source()
+
+    with pytest.raises(IngestionError) as duplicate:
+        normalize_response(
+            response(
+                source,
+                b'{"rule":"first","rule":"second"}',
+                content_type="application/json",
+            )
+        )
+    assert duplicate.value.code == "duplicate_json_key"
+
+    with pytest.raises(IngestionError) as scalar:
+        normalize_response(
+            response(source, b'"not structured"', content_type="application/json")
+        )
+    assert scalar.value.code == "invalid_json_root"
+
+
 def test_unknown_source_adapter_fails_closed_before_storing_evidence() -> None:
     source = approved_source().model_copy(update={"adapter_key": "unknown-adapter"})
     repository = MemoryRepository()
@@ -553,6 +605,27 @@ def test_pdf_normalization_and_artifact_preserve_page_boundaries() -> None:
             "id": "page-2",
         },
     ]
+
+
+def test_manual_pdf_upload_uses_pdf_extraction_for_an_approved_html_source() -> None:
+    source = approved_source()
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+
+    service(FakeFetcher([]), repository, store).run_manual(
+        source,
+        response(
+            source,
+            pdf_bytes("Official PDF guidance"),
+            content_type="application/pdf",
+        ),
+        idempotency_key="upload:manual-pdf",
+    )
+
+    artifact = loads(store.objects[repository.artifacts[0].storage_key])
+    assert repository.artifacts[0].adapter_key == "generic-pdf"
+    assert artifact["sections"][0]["heading"] == "Page 1"
+    assert artifact["sections"][0]["body"] == "Official PDF guidance"
 
 
 def test_pdf_parser_rejects_encrypted_scanned_and_oversized_documents() -> None:

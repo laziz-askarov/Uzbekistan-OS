@@ -32,6 +32,14 @@ def _check_redis(settings: Settings) -> None:
 
 
 def _check_object_store(settings: Settings) -> None:
+    if settings.snapshot_store_backend == "database":
+        with get_engine().connect() as connection:
+            relation = connection.execute(
+                text("SELECT to_regclass('ingestion.snapshot_objects')")
+            ).scalar_one()
+            if relation is None:
+                raise RuntimeError("private snapshot object table is unavailable")
+        return
     client = boto3.client(
         "s3",
         endpoint_url=settings.s3_endpoint,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAdminApiSession } from "@/lib/admin-api-session";
+import { ThemeToggle } from "../../design-system/theme-toggle";
 import styles from "./review-console.module.css";
 
 const API_BASE =
@@ -465,6 +466,19 @@ export default function ReviewConsole() {
     }
   }
 
+  function downloadArtifactJson() {
+    if (!artifact || !selected) return;
+    const content = JSON.stringify(artifact, null, 2);
+    const url = URL.createObjectURL(
+      new Blob([content], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${slugify(selected.source_title) || "evidence"}.extraction.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   const canDecide =
     selected?.review.status === "in_review" &&
     selected.review.assigned_principal_id === principal?.id;
@@ -482,6 +496,9 @@ export default function ReviewConsole() {
           </span>
         </Link>
         <div className={styles.session}>
+          <Link className={styles.workspaceLink} href="/admin">
+            Ingestion
+          </Link>
           {principal ? (
             <span className={styles.identity} title={principal.id}>
               Reviewer {compactId(principal.id)}
@@ -489,6 +506,7 @@ export default function ReviewConsole() {
           ) : (
             <span className={styles.identity}>Not connected</span>
           )}
+          <ThemeToggle className={styles.themeButton} />
           <Link className={styles.quietButton} href="/account">
             Account
           </Link>
@@ -600,6 +618,15 @@ export default function ReviewConsole() {
                     >
                       Open official source <span aria-hidden="true">↗</span>
                     </a>
+                    {artifact ? (
+                      <button
+                        className={styles.downloadButton}
+                        onClick={downloadArtifactJson}
+                        type="button"
+                      >
+                        Download extracted JSON
+                      </button>
+                    ) : null}
                   </div>
                   <StatusPill status={selected.review.status} />
                 </div>

@@ -6,8 +6,10 @@ from typing import Protocol
 import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
+from sqlalchemy.orm import Session
 
 from app.config import Settings
+from app.database.models.ingestion import SnapshotObject
 from app.ingestion.errors import IngestionError
 
 
@@ -63,6 +65,71 @@ class LocalSnapshotStore:
                 retryable=False,
             )
         return target.read_bytes()
+
+
+class SqlAlchemySnapshotStore:
+    """Private database-backed evidence storage for serverless deployments."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def put(
+        self,
+        storage_key: str,
+        content: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+    ) -> None:
+        key = PurePosixPath(storage_key)
+        if key.is_absolute() or ".." in key.parts:
+            raise IngestionError(
+                "invalid_storage_key",
+                "snapshot storage key must stay inside the private evidence store",
+                retryable=False,
+            )
+        digest = sha256(content).hexdigest()
+        existing = self.session.get(SnapshotObject, storage_key)
+        if existing is not None:
+            if existing.sha256 != digest or existing.content != content:
+                raise IngestionError(
+                    "snapshot_collision",
+                    "content-addressed snapshot key contains different bytes",
+                    retryable=False,
+                )
+            return
+        self.session.add(
+            SnapshotObject(
+                storage_key=storage_key,
+                content=content,
+                content_type=content_type,
+                sha256=digest,
+                byte_size=len(content),
+            )
+        )
+        self.session.flush()
+
+    def get(self, storage_key: str) -> bytes:
+        key = PurePosixPath(storage_key)
+        if key.is_absolute() or ".." in key.parts:
+            raise IngestionError(
+                "invalid_storage_key",
+                "snapshot storage key must stay inside the private evidence store",
+                retryable=False,
+            )
+        stored = self.session.get(SnapshotObject, storage_key)
+        if stored is None:
+            raise IngestionError(
+                "object_missing",
+                "snapshot object does not exist",
+                retryable=False,
+            )
+        if stored.sha256 != sha256(stored.content).hexdigest():
+            raise IngestionError(
+                "object_integrity_failure",
+                "snapshot object checksum verification failed",
+                retryable=False,
+            )
+        return stored.content
 
 
 class S3Client(Protocol):

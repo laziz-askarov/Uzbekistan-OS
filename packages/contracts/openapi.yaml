@@ -2060,7 +2060,12 @@ components:
         filename: { type: string, minLength: 1, maxLength: 255 }
         content_type:
           type: string
-          enum: [application/pdf, text/html, application/xhtml+xml, text/plain]
+          enum:
+            - application/pdf
+            - application/json
+            - text/html
+            - application/xhtml+xml
+            - text/plain
         content_base64: { type: string, minLength: 1, maxLength: 14000000 }
         max_attempts: { type: integer, minimum: 1, maximum: 3, default: 1 }
       additionalProperties: false

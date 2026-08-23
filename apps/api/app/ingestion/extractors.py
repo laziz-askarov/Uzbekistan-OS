@@ -90,6 +90,8 @@ def extract_artifact(
     snapshot: SnapshotMetadata,
     response: FetchResponse,
     normalized_content: NormalizedContent,
+    *,
+    adapter_key: str | None = None,
 ) -> ExtractionArtifact:
     media_type = normalized_content.media_type
     if normalized_content.sections:
@@ -123,7 +125,7 @@ def extract_artifact(
     return ExtractionArtifact(
         source_id=source.id,
         snapshot_id=snapshot.id,
-        adapter_key=source.adapter_key,
+        adapter_key=adapter_key or source.adapter_key,
         media_type=media_type,
         raw_sha256=snapshot.sha256,
         normalized_sha256=normalized_content.sha256,

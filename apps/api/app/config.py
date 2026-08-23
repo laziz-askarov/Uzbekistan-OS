@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     ai_citation_coverage_target: float = Field(default=0.95, ge=0.95, le=1)
     ingestion_max_pdf_pages: int = Field(default=250, ge=1, le=2000)
     ingestion_max_normalized_characters: int = Field(default=2_000_000, ge=1000)
+    snapshot_store_backend: Literal["database", "s3"] = "database"
     s3_endpoint: str = "http://localhost:9000"
     s3_access_key: str = "uzbekistan-os"
     s3_secret_key: str = "local-development-only"

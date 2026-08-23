@@ -20,3 +20,9 @@ apps/api/.venv/bin/python -m app.worker sync-registry
 ```
 
 Adding a production source requires source ownership, crawl permission, workflow, precedence, and freshness decisions. ADR 0025 defines the initial language and freshness policy. Validate registry changes with `apps/api/.venv/bin/python scripts/validate_contracts.py` from the repository root.
+
+Staff may attach a bounded PDF or JSON file only to an approved, production-eligible
+source. PDF pages and JSON objects are deterministically converted to the extraction
+artifact schema, checksum verified, and placed in the review queue. Uploading does
+not make evidence retrievable: a reviewer must approve it and a publisher must create
+a citation-bound publication first.

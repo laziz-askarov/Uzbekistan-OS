@@ -256,3 +256,10 @@ def test_upload_rejects_invalid_base64_and_file_paths() -> None:
             content_type="text/plain",
             content_base64=b64encode(b"safe").decode("ascii"),
         )
+
+    with pytest.raises(ValueError, match="extension"):
+        ManualUploadRequest(
+            filename="official.pdf",
+            content_type="application/json",
+            content_base64=b64encode(b"{}").decode("ascii"),
+        )

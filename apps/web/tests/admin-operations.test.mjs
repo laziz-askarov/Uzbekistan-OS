@@ -93,3 +93,19 @@ test("review publishers can load a bounded JSON candidate for server-side public
   assert.match(consoleSource, /request<Publication>\("\/admin\/publications"/);
   assert.match(consoleSource, /freshnessDeadline\(publicationDomain\)/);
 });
+
+test("admin evidence uploads accept PDF and JSON and keep publication review gated", async () => {
+  const [dashboard, reviewConsole, reviewStyles] = await Promise.all([
+    webFile("app/admin/operations-dashboard.tsx"),
+    webFile("app/admin/reviews/review-console.tsx"),
+    webFile("app/admin/reviews/review-console.module.css"),
+  ]);
+
+  assert.match(dashboard, /accept="\.pdf,\.json,application\/pdf,application\/json"/);
+  assert.match(dashboard, /PDFs are parsed/);
+  assert.match(dashboard, /Nothing reaches the assistant until/);
+  assert.match(reviewConsole, /Download extracted JSON/);
+  assert.match(reviewConsole, /ThemeToggle/);
+  assert.match(reviewStyles, /background: var\(--color-background\)/);
+  assert.doesNotMatch(reviewStyles, /\.documentPanel[^}]*background:\s*white/s);
+});

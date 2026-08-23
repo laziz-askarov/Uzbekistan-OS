@@ -484,7 +484,7 @@ def test_object_store_initialization_retries_transient_startup_failures(
     delays: list[float] = []
 
     worker_module.ensure_object_store(
-        settings=Settings(),
+        settings=Settings(snapshot_store_backend="s3"),
         attempts=3,
         delay_seconds=0.25,
         sleeper=delays.append,
