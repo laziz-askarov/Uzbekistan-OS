@@ -101,13 +101,15 @@ LIMIT :limit
 
 LEXICAL_SEARCH_SQL = _COMMON_SELECT.format(
     score_expression=(
-        "ts_rank_cd(to_tsvector('simple', r.title || ' ' || r.content), "
+        "ts_rank_cd(to_tsvector('simple', r.title || ' ' || "
+        "COALESCE(version.content ->> 'topic', '') || ' ' || r.content), "
         "websearch_to_tsquery('simple', :query))"
     ),
     extra_join="",
     eligible_source_clause=_ELIGIBLE_SOURCE_CLAUSE,
     extra_where=(
-        "AND to_tsvector('simple', r.title || ' ' || r.content) "
+        "AND to_tsvector('simple', r.title || ' ' || "
+        "COALESCE(version.content ->> 'topic', '') || ' ' || r.content) "
         "@@ websearch_to_tsquery('simple', :query)"
     ),
 )

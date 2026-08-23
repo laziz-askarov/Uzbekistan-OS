@@ -171,6 +171,7 @@ class PublicationCandidate(BaseModel):
     review_item_id: UUID
     slug: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     domain: DomainSlug
+    topic: str | None = Field(default=None, min_length=2, max_length=120)
     language: LanguageCode
     version: CandidateVersion
     title: str = Field(min_length=1, max_length=500)
@@ -361,6 +362,11 @@ class PublicationService:
         artifact: ExtractionArtifact,
         source_id: UUID,
     ) -> None:
+        if artifact.topic != candidate.topic:
+            raise PublicationError(
+                "candidate_topic_mismatch",
+                "candidate topic must match the approved extraction topic",
+            )
         artifact_section_ids = [section.id for section in artifact.sections]
         candidate_section_ids = [section.id for section in candidate.sections]
         if artifact_section_ids != candidate_section_ids:

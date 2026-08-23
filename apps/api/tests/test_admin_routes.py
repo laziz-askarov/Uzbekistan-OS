@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from app.dependencies import (
     get_admin_ingestion_query_service,
     get_admin_ingestion_service,
+    get_admin_ingestion_upload_service,
     get_identity_service,
     get_identity_verifier,
     get_knowledge_lifecycle_service,
@@ -34,6 +35,7 @@ from app.ingestion.review import (
 from app.knowledge.lifecycle import ExpireDocumentResult, IndexJobResult
 from app.knowledge.publication import PublicationResult
 from app.main import create_app
+from app.routes.admin import router as admin_router
 
 SOURCE_ID = UUID("00000000-0000-0000-0000-000000002001")
 
@@ -259,6 +261,10 @@ class StubAdminIngestionService:
         assert limit == 25
         return (self.job,)
 
+    def list_topics(self, principal):
+        del principal
+        return ("Entry requirements",)
+
     def queue_crawl(self, principal, payload, *, idempotency_key, enqueued_at):
         del principal, enqueued_at
         assert payload.source_id == self.source_id
@@ -280,6 +286,7 @@ class StubAdminIngestionService:
         return ManualUploadResult(
             source_id=source_id,
             filename=payload.filename,
+            topic=payload.topic,
             status="changed",
             snapshot_id=uuid4(),
             extraction_artifact_id=uuid4(),
@@ -378,6 +385,18 @@ def test_admin_routes_require_a_bearer_token() -> None:
         },
         "meta": {"request_id": "missing-auth"},
     }
+
+
+def test_manual_upload_route_uses_synchronous_service_without_redis_queue() -> None:
+    route = next(
+        item
+        for item in admin_router.routes
+        if getattr(item, "path", None) == "/admin/sources/{source_id}/uploads"
+    )
+    dependency_calls = {dependency.call for dependency in route.dependant.dependencies}
+
+    assert get_admin_ingestion_upload_service in dependency_calls
+    assert get_admin_ingestion_service not in dependency_calls
 
 
 def test_default_token_verifier_fails_closed() -> None:
@@ -556,11 +575,15 @@ def test_admin_can_list_sources_queue_crawl_and_upload_through_http() -> None:
     application.dependency_overrides[get_identity_verifier] = StubIdentityVerifier
     application.dependency_overrides[get_identity_service] = lambda: identity_service
     application.dependency_overrides[get_admin_ingestion_service] = lambda: admin_service
+    application.dependency_overrides[get_admin_ingestion_upload_service] = (
+        lambda: admin_service
+    )
     application.dependency_overrides[get_admin_ingestion_query_service] = lambda: admin_service
     client = TestClient(application)
 
     sources = client.get("/api/v1/admin/sources", headers=auth_headers())
     jobs = client.get("/api/v1/admin/ingestion/jobs?limit=25", headers=auth_headers())
+    topics = client.get("/api/v1/admin/ingestion/topics", headers=auth_headers())
     crawl = client.post(
         "/api/v1/admin/ingestion/jobs",
         headers={**auth_headers(), "Idempotency-Key": "crawler-http-test"},
@@ -573,6 +596,7 @@ def test_admin_can_list_sources_queue_crawl_and_upload_through_http() -> None:
             "filename": "official.html",
             "content_type": "text/html",
             "content_base64": "PGgxPk9mZmljaWFsPC9oMT4=",
+            "topic": "Entry requirements",
         },
     )
 
@@ -580,9 +604,11 @@ def test_admin_can_list_sources_queue_crawl_and_upload_through_http() -> None:
     assert sources.json()["data"][0]["automatic_fetch_eligible"] is True
     assert jobs.status_code == 200
     assert jobs.json()["data"][0]["status"] == "queued"
+    assert topics.json()["data"] == ["Entry requirements"]
     assert crawl.status_code == 202
     assert crawl.json()["data"]["idempotency_key"] == "crawler-http-test"
     assert upload.status_code == 200
     assert upload.json()["data"]["review_item_id"]
+    assert upload.json()["data"]["topic"] == "Entry requirements"
     assert admin_service.queued_keys == ["crawler-http-test"]
     assert admin_service.uploaded_files == ["official.html"]

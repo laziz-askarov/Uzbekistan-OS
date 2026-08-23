@@ -8,6 +8,7 @@ from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 from app.dependencies import (
     get_admin_ingestion_query_service,
     get_admin_ingestion_service,
+    get_admin_ingestion_upload_service,
     get_authenticated_principal,
     get_knowledge_lifecycle_service,
     get_publication_service,
@@ -79,6 +80,23 @@ def list_ingestion_jobs(
     )
 
 
+@router.get(
+    "/ingestion/topics",
+    response_model=SuccessResponse[list[str]],
+    operation_id="listIngestionTopics",
+    summary="List topics used by manual evidence uploads",
+)
+def list_ingestion_topics(
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_query_service)],
+) -> SuccessResponse[list[str]]:
+    return SuccessResponse(
+        data=list(service.list_topics(principal)),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
 @router.post(
     "/ingestion/jobs",
     response_model=SuccessResponse[IngestionJobRecord],
@@ -132,7 +150,10 @@ def upload_admin_source_document(
         ),
     ],
     principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
-    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_service)],
+    service: Annotated[
+        AdminIngestionService,
+        Depends(get_admin_ingestion_upload_service),
+    ],
 ) -> SuccessResponse[ManualUploadResult]:
     return SuccessResponse(
         data=service.upload(
@@ -188,6 +209,7 @@ class ReviewQueueItemData(BaseModel):
     source_url: AnyHttpUrl
     fetched_at: datetime
     section_count: int = Field(ge=1)
+    topic: str | None = None
 
     @classmethod
     def from_record(cls, record: ReviewQueueRecord) -> "ReviewQueueItemData":
@@ -198,6 +220,7 @@ class ReviewQueueItemData(BaseModel):
             source_url=record.source_url,
             fetched_at=record.fetched_at,
             section_count=record.section_count,
+            topic=record.topic,
         )
 
 
@@ -217,6 +240,7 @@ class ArtifactDetailData(BaseModel):
     snapshot_id: UUID
     adapter_key: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     media_type: str
+    topic: str | None = None
     raw_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     normalized_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     extracted_at: datetime
@@ -346,6 +370,7 @@ def get_extraction_artifact(
             snapshot_id=artifact.snapshot_id,
             adapter_key=artifact.adapter_key,
             media_type=artifact.media_type,
+            topic=artifact.topic,
             raw_sha256=artifact.raw_sha256,
             normalized_sha256=artifact.normalized_sha256,
             extracted_at=artifact.extracted_at,

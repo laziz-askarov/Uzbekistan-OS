@@ -50,6 +50,11 @@ class SqlAlchemyReviewRepository:
                 source_url=source.url,
                 fetched_at=snapshot.fetched_at,
                 section_count=artifact.section_count,
+                topic=(
+                    str(artifact.details["topic"])
+                    if artifact.details.get("topic")
+                    else None
+                ),
             )
             for review_item, artifact, snapshot, source in rows
         )

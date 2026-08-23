@@ -186,6 +186,9 @@ class SqlAlchemyPublicationRepository:
             )
         )
         for semantic_chunk in chunk_sections(candidate.sections):
+            chunk_attributes = dict(semantic_chunk.attributes)
+            if candidate.topic:
+                chunk_attributes["topic"] = candidate.topic
             self.session.add(
                 Chunk(
                     id=uuid4(),
@@ -195,7 +198,7 @@ class SqlAlchemyPublicationRepository:
                     content=semantic_chunk.content,
                     content_hash=semantic_chunk.content_hash,
                     token_count=semantic_chunk.token_count,
-                    attributes=semantic_chunk.attributes,
+                    attributes=chunk_attributes,
                 )
             )
 
@@ -262,6 +265,7 @@ class SqlAlchemyPublicationRepository:
             "id": str(document_id),
             "slug": candidate.slug,
             "domain": candidate.domain,
+            "topic": candidate.topic,
             "language": candidate.language,
             "status": "published",
             "version": candidate.version.model_dump(mode="json"),

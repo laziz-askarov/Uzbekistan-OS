@@ -82,6 +82,7 @@ def normalize_response(
     max_normalized_characters: int = 2_000_000,
 ) -> NormalizedContent:
     content_type = (response.header("content-type") or "").split(";", 1)[0].strip().casefold()
+    normalized_media_type = content_type
     sections: tuple[tuple[str, str], ...] = ()
     if content_type in HTML_MEDIA_TYPES:
         parser = _VisibleTextParser()
@@ -101,7 +102,8 @@ def normalize_response(
             max_pages=max_pdf_pages,
             max_characters=max_normalized_characters,
         )
-        text = "\n\n".join(f"{heading}\n{body}" for heading, body in sections)
+        text = "\n\n".join(body for _, body in sections)
+        normalized_media_type = "text/markdown"
     else:
         raise IngestionError(
             "unsupported_content_type",
@@ -127,7 +129,7 @@ def normalize_response(
     return NormalizedContent(
         text=text,
         sha256=digest,
-        media_type=content_type,
+        media_type=normalized_media_type,
         sections=sections,
     )
 
@@ -336,14 +338,15 @@ def _extract_pdf_sections(
             text = _clean_text(page.extract_text() or "")
             if not text:
                 continue
-            character_count += len(text)
+            markdown = f"## Page {page_number}\n\n{text}"
+            character_count += len(markdown)
             if character_count > max_characters:
                 raise IngestionError(
                     "normalized_content_too_large",
                     f"normalized source exceeds {max_characters} characters",
                     retryable=False,
                 )
-            sections.append((f"Page {page_number}", text))
+            sections.append((f"Page {page_number}", markdown))
     except IngestionError:
         raise
     except (PdfReadError, KeyError, TypeError, ValueError) as error:

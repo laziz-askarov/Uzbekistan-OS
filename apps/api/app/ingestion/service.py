@@ -62,6 +62,7 @@ class IngestionService:
         *,
         idempotency_key: str,
         max_attempts: int = 1,
+        topic: str | None = None,
     ) -> IngestionOutcome:
         if not source.manual_ingestion_eligible:
             raise SourceNotEligibleError
@@ -74,6 +75,7 @@ class IngestionService:
                 response,
                 self.repository.latest_snapshot(source.id),
                 manual_upload=True,
+                topic=topic,
             ),
         )
 
@@ -136,6 +138,7 @@ class IngestionService:
         previous: SnapshotMetadata | None,
         *,
         manual_upload: bool = False,
+        topic: str | None = None,
     ) -> IngestionOutcome:
 
         if response.url != str(source.url):
@@ -205,12 +208,24 @@ class IngestionService:
             response,
             normalized,
             adapter_key=adapter_key,
+            topic=topic,
         )
         artifact_id = uuid4()
         artifact_bytes = artifact.canonical_bytes()
         artifact_storage_key = (
             f"sources/{source.id}/{raw_sha256}.{adapter_key}.extraction.json"
         )
+        normalized_storage_key = None
+        if normalized.media_type == "text/markdown":
+            normalized_storage_key = f"sources/{source.id}/{raw_sha256}.normalized.md"
+        artifact_details: dict[str, object] = {
+            "media_type": artifact.media_type,
+            "source_media_type": response.header("content-type") or "",
+        }
+        if topic:
+            artifact_details["topic"] = topic
+        if normalized_storage_key:
+            artifact_details["normalized_storage_key"] = normalized_storage_key
         review_item_id = uuid4()
         self.snapshot_store.put(
             storage_key,
@@ -222,6 +237,12 @@ class IngestionService:
             artifact_bytes,
             content_type="application/json",
         )
+        if normalized_storage_key is not None:
+            self.snapshot_store.put(
+                normalized_storage_key,
+                normalized.text.encode("utf-8"),
+                content_type="text/markdown; charset=utf-8",
+            )
         self.repository.record_snapshot(snapshot)
         self.repository.record_extraction_artifact(
             ExtractionArtifactMetadata(
@@ -233,7 +254,7 @@ class IngestionService:
                 sha256=artifact.sha256,
                 normalized_sha256=normalized.sha256,
                 section_count=len(artifact.sections),
-                details={"media_type": artifact.media_type},
+                details=artifact_details,
             )
         )
         self.repository.enqueue_review(

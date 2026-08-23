@@ -267,6 +267,14 @@ def test_candidate_must_match_reviewed_artifact_and_source() -> None:
         )
     assert repository.published == []
 
+    wrong_topic = publication_candidate.model_copy(update={"topic": "Student visas"})
+    with pytest.raises(PublicationError, match="topic must match"):
+        service.publish(
+            principal,
+            wrong_topic,
+            published_at=datetime(2026, 7, 31, 13, tzinfo=UTC),
+        )
+
     wrong_source = candidate(publication_candidate.review_item_id, source_id=uuid4())
     with pytest.raises(PublicationError, match="reviewed source"):
         service.publish(

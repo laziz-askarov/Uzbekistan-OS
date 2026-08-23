@@ -18,6 +18,7 @@ def test_retrieval_queries_use_eligibility_view_and_current_source_policy() -> N
         assert "source.last_verified_at" in statement
 
     assert "websearch_to_tsquery" in LEXICAL_SEARCH_SQL
+    assert "version.content ->> 'topic'" in LEXICAL_SEARCH_SQL
     assert "embedding.model_key = :model_key" in VECTOR_SEARCH_SQL
     assert "<=> CAST(:query_vector AS vector)" in VECTOR_SEARCH_SQL
 

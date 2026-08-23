@@ -1,6 +1,6 @@
 # Worker
 
-The ingestion worker is implemented as the `app.worker` entrypoint in the shared Python package so it uses the same deterministic HTML/text/PDF/JSON ingestion, repository, evidence-storage, and validation code as the API. PDF extraction is text-first, bounded, and page preserving; encrypted and image-only files fail closed. Generic JSON rejects duplicate keys, excessive depth, excessive node counts, invalid UTF-8, and non-object/array roots.
+The ingestion worker is implemented as the `app.worker` entrypoint in the shared Python package so it uses the same deterministic HTML/text/PDF/JSON ingestion, repository, evidence-storage, and validation code as the API. PDF extraction is text-first, bounded, page preserving, and normalized to Markdown; encrypted and image-only files fail closed. Generic JSON rejects duplicate keys, excessive depth, excessive node counts, invalid UTF-8, and non-object/array roots.
 
 The deployable in this directory supports three operational roles: registry synchronization, deterministic crawl scheduling, and Redis Stream consumption. The consumer reclaims stale deliveries, schedules delayed retries, and dead-letters terminal work. PostgreSQL remains authoritative for source lineage, job idempotency, attempt counts, and terminal state.
 

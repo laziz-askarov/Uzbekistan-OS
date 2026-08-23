@@ -561,7 +561,8 @@ button:disabled {
   font-size: var(--text-xs);
   font-weight: 700;
 }
-.sourceSelect select {
+.sourceSelect select,
+.sourceSelect input {
   min-height: 3rem;
   width: 100%;
   padding: 0 var(--space-4);
@@ -571,10 +572,16 @@ button:disabled {
   border-radius: var(--radius-control);
   font: inherit;
 }
-.sourceSelect select:focus-visible {
+.sourceSelect select:focus-visible,
+.sourceSelect input:focus-visible {
   border-color: var(--color-focus);
   outline: 3px solid color-mix(in srgb, var(--color-focus) 22%, transparent);
   outline-offset: 1px;
+}
+.sourceSelect small {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  line-height: 1.45;
 }
 .filePicker {
   min-height: 6.5rem;

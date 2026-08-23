@@ -61,6 +61,7 @@ type IngestionJob = {
 type UploadResult = {
   source_id: string;
   filename: string;
+  topic: string;
   status: "changed" | "unchanged";
   snapshot_id: string | null;
   extraction_artifact_id: string | null;
@@ -163,11 +164,13 @@ export default function OperationsDashboard() {
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [sources, setSources] = useState<AdminSource[]>([]);
   const [jobs, setJobs] = useState<IngestionJob[]>([]);
+  const [topics, setTopics] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [uploadSource, setUploadSource] = useState<AdminSource | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTopic, setUploadTopic] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [systemChecks, setSystemChecks] = useState<SystemCheck[]>([]);
@@ -287,11 +290,16 @@ export default function OperationsDashboard() {
     setError("");
     const healthRequest = loadSystemHealth();
     try {
-      const [identity, nextSources, nextJobs] = await Promise.all([
+      const [identity, nextSources, nextJobs, nextTopics] = await Promise.all([
         request<Principal>("/auth/me", undefined, bearerToken),
         request<AdminSource[]>("/admin/sources", undefined, bearerToken),
         request<IngestionJob[]>(
           "/admin/ingestion/jobs?limit=50",
+          undefined,
+          bearerToken,
+        ),
+        request<string[]>(
+          "/admin/ingestion/topics",
           undefined,
           bearerToken,
         ),
@@ -302,6 +310,7 @@ export default function OperationsDashboard() {
       setPrincipal(identity);
       setSources(nextSources);
       setJobs(nextJobs);
+      setTopics(nextTopics);
       setUploadSource((current) =>
         current && nextSources.some((source) => source.id === current.id)
           ? current
@@ -311,6 +320,7 @@ export default function OperationsDashboard() {
       setPrincipal(null);
       setSources([]);
       setJobs([]);
+      setTopics([]);
       setError(errorMessage(caught));
     } finally {
       await healthRequest;
@@ -362,6 +372,7 @@ export default function OperationsDashboard() {
   function startUpload(source: AdminSource) {
     setUploadSource(source);
     setUploadFile(null);
+    setUploadTopic("");
     setError("");
     setMessage("");
     window.requestAnimationFrame(() => {
@@ -373,7 +384,8 @@ export default function OperationsDashboard() {
 
   async function uploadEvidence(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!uploadSource || !uploadFile) return;
+    const topic = uploadTopic.trim();
+    if (!uploadSource || !uploadFile || topic.length < 2) return;
     if (uploadFile.size > MAX_UPLOAD_BYTES) {
       setError("The selected document exceeds the 10 MB upload limit.");
       return;
@@ -393,17 +405,26 @@ export default function OperationsDashboard() {
             filename: uploadFile.name,
             content_type: contentType,
             content_base64: contentBase64,
+            topic,
             max_attempts: 1,
           }),
         },
       );
       setMessage(
         result.status === "changed"
-          ? `${result.filename} was secured, extracted, and sent to review.`
+          ? `${result.filename} was secured, converted, and sent to ${result.topic} for review.`
           : `${result.filename} matches the latest source snapshot; no duplicate review was created.`,
+      );
+      setTopics((current) =>
+        current.some((item) => item.toLowerCase() === result.topic.toLowerCase())
+          ? current
+          : [...current, result.topic].toSorted((left, right) =>
+              left.localeCompare(right),
+            ),
       );
       setUploadSource(null);
       setUploadFile(null);
+      setUploadTopic("");
       const nextJobs = await request<IngestionJob[]>(
         "/admin/ingestion/jobs?limit=50",
       );
@@ -740,11 +761,12 @@ export default function OperationsDashboard() {
               <p className={styles.eyebrow}>Manual evidence</p>
               <h2 id="upload-heading">Upload PDF or JSON evidence</h2>
               <p>
-                Attach the file to an approved official source. PDFs are parsed
-                page by page into structured JSON sections; JSON is normalized
-                into the same review format. Nothing reaches the assistant until
-                a reviewer approves and publishes it. Encrypted or image-only
-                PDFs are rejected because OCR is not enabled.
+                Attach the file to an approved official source and choose an
+                existing topic or type a new one. Readable PDFs are converted to
+                Markdown page by page; JSON is normalized into the same review
+                format. Nothing reaches the assistant until a reviewer approves
+                and publishes it. Encrypted or image-only PDFs are rejected
+                because OCR is not enabled.
               </p>
             </div>
             <form onSubmit={uploadEvidence}>
@@ -770,6 +792,28 @@ export default function OperationsDashboard() {
                     ))}
                 </select>
               </label>
+              <label className={styles.sourceSelect} htmlFor="upload-topic">
+                Topic
+                <input
+                  autoComplete="off"
+                  id="upload-topic"
+                  list="knowledge-topics"
+                  maxLength={120}
+                  onChange={(event) => setUploadTopic(event.target.value)}
+                  placeholder="Choose or create a topic"
+                  required
+                  value={uploadTopic}
+                />
+                <small>
+                  Select a previous topic or type a new name to create it with
+                  this upload.
+                </small>
+              </label>
+              <datalist id="knowledge-topics">
+                {topics.map((topic) => (
+                  <option key={topic} value={topic} />
+                ))}
+              </datalist>
               <label className={styles.filePicker} htmlFor="evidence-file">
                 <span>
                   {uploadFile ? uploadFile.name : "Choose official document"}
@@ -794,6 +838,7 @@ export default function OperationsDashboard() {
                   className={styles.quietButton}
                   onClick={() => {
                     setUploadFile(null);
+                    setUploadTopic("");
                   }}
                   type="button"
                 >
@@ -801,7 +846,12 @@ export default function OperationsDashboard() {
                 </button>
                 <button
                   className={styles.primaryButton}
-                  disabled={!uploadFile || !uploadSource || activeAction !== null}
+                  disabled={
+                    !uploadFile ||
+                    !uploadSource ||
+                    uploadTopic.trim().length < 2 ||
+                    activeAction !== null
+                  }
                   type="submit"
                 >
                   {activeAction?.startsWith("upload:")

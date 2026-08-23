@@ -91,7 +91,16 @@ class ManualUploadRequest(BaseModel):
         "text/plain",
     ]
     content_base64: str = Field(min_length=1, max_length=14_000_000)
+    topic: str = Field(min_length=2, max_length=120)
     max_attempts: int = Field(default=1, ge=1, le=3)
+
+    @field_validator("topic")
+    @classmethod
+    def topic_must_be_safe_text(cls, value: str) -> str:
+        cleaned = " ".join(value.split())
+        if len(cleaned) < 2 or not cleaned.isprintable():
+            raise ValueError("topic must contain printable text")
+        return cleaned
 
     @field_validator("filename")
     @classmethod
@@ -154,6 +163,7 @@ class ManualUploadResult(BaseModel):
 
     source_id: UUID
     filename: str
+    topic: str
     status: str
     snapshot_id: UUID | None
     extraction_artifact_id: UUID | None
@@ -163,11 +173,13 @@ class ManualUploadResult(BaseModel):
     def from_outcome(
         cls,
         filename: str,
+        topic: str,
         outcome: IngestionOutcome,
     ) -> "ManualUploadResult":
         return cls(
             source_id=outcome.source_id,
             filename=filename,
+            topic=topic,
             status=outcome.status.value,
             snapshot_id=outcome.snapshot_id,
             extraction_artifact_id=outcome.extraction_artifact_id,
@@ -186,6 +198,8 @@ class AdminIngestionRepository(Protocol):
     def source_states(self) -> tuple[SourceDatabaseState, ...]: ...
 
     def list_jobs(self, *, limit: int) -> tuple[IngestionJobRecord, ...]: ...
+
+    def list_topics(self) -> tuple[str, ...]: ...
 
     def prepare_crawl_job(
         self,
@@ -256,6 +270,10 @@ class AdminIngestionService:
     ) -> tuple[IngestionJobRecord, ...]:
         self._authorize(principal)
         return self.repository.list_jobs(limit=limit)
+
+    def list_topics(self, principal: AuthenticatedPrincipal) -> tuple[str, ...]:
+        self._authorize(principal)
+        return self.repository.list_topics()
 
     def queue_crawl(
         self,
@@ -330,8 +348,9 @@ class AdminIngestionService:
             ),
             idempotency_key=idempotency_key,
             max_attempts=request.max_attempts,
+            topic=request.topic,
         )
-        return ManualUploadResult.from_outcome(request.filename, outcome)
+        return ManualUploadResult.from_outcome(request.filename, request.topic, outcome)
 
     def _source(self, source_id: UUID):
         source = next((item for item in self.registry.sources if item.id == source_id), None)

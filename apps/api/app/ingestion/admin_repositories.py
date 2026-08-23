@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models.ingestion import CrawlJob
+from app.database.models.ingestion import CrawlJob, ExtractionArtifact
 from app.database.models.knowledge import Source
 from app.ingestion.admin import (
     AdminIngestionError,
@@ -46,6 +46,16 @@ class SqlAlchemyAdminIngestionRepository:
             .limit(limit)
         )
         return tuple(self._job_record(job, title) for job, title in rows)
+
+    def list_topics(self) -> tuple[str, ...]:
+        topic = ExtractionArtifact.details["topic"].as_string()
+        values = self.session.scalars(
+            select(topic)
+            .where(topic.is_not(None), topic != "")
+            .distinct()
+            .order_by(topic)
+        )
+        return tuple(str(value) for value in values if value)
 
     def prepare_crawl_job(
         self,

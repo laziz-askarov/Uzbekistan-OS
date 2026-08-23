@@ -67,6 +67,7 @@ class ReviewQueueRecord:
     source_url: str
     fetched_at: datetime
     section_count: int
+    topic: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

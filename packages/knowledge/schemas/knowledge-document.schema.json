@@ -31,6 +31,7 @@
         "everyday-living"
       ]
     },
+    "topic": { "type": ["string", "null"], "minLength": 2, "maxLength": 120 },
     "language": { "type": "string", "enum": ["en", "uz", "ru"] },
     "status": {
       "type": "string",
