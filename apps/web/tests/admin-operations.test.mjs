@@ -102,9 +102,15 @@ test("admin evidence uploads accept PDF and JSON and keep publication review gat
   ]);
 
   assert.match(dashboard, /accept="\.pdf,\.json,application\/pdf,application\/json"/);
-  assert.match(dashboard, /PDFs are parsed/);
+  assert.match(dashboard, /PDFs are converted to/);
+  assert.match(dashboard, /\/admin\/ingestion\/topics/);
+  assert.match(dashboard, /list="knowledge-topics"/);
+  assert.match(dashboard, /topic,/);
+  assert.match(dashboard, /Choose or create a topic/);
   assert.match(dashboard, /Nothing reaches the assistant until/);
+  assert.match(reviewConsole, /Download Markdown/);
   assert.match(reviewConsole, /Download extracted JSON/);
+  assert.match(reviewConsole, /topic: artifact\.topic/);
   assert.match(reviewConsole, /ThemeToggle/);
   assert.match(reviewStyles, /background: var\(--color-background\)/);
   assert.doesNotMatch(reviewStyles, /\.documentPanel[^}]*background:\s*white/s);

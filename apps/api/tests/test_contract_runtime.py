@@ -13,6 +13,7 @@ IMPLEMENTED_OPERATIONS = {
     "/admin/sources": "get",
     "/admin/sources/{source_id}/uploads": "post",
     "/admin/ingestion/jobs": ("get", "post"),
+    "/admin/ingestion/topics": "get",
     "/admin/reviews": "get",
     "/admin/reviews/{review_item_id}/claim": "post",
     "/admin/reviews/{review_item_id}/decision": "post",
@@ -32,6 +33,7 @@ IMPLEMENTED_AUTHORIZATION = {
         "roles": ["admin"],
     },
     "/admin/ingestion/jobs": {"mode": "role-gated", "roles": ["admin"]},
+    "/admin/ingestion/topics": {"mode": "role-gated", "roles": ["admin"]},
     "/admin/reviews": {"mode": "role-gated", "roles": ["content_reviewer", "admin"]},
     "/admin/reviews/{review_item_id}/claim": {
         "mode": "role-gated",

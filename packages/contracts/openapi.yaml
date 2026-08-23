@@ -721,6 +721,25 @@ paths:
                 $ref: "#/components/schemas/IngestionJobResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /admin/ingestion/topics:
+    get:
+      tags: [ingestion]
+      operationId: listIngestionTopics
+      summary: List topics used by manual evidence uploads
+      x-authorization:
+        mode: role-gated
+        roles: [admin]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Previously used evidence topics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionTopicListResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
   /admin/reviews:
     get:
       tags: [administration]
@@ -2055,7 +2074,7 @@ components:
       additionalProperties: false
     ManualUploadRequest:
       type: object
-      required: [filename, content_type, content_base64]
+      required: [filename, content_type, content_base64, topic]
       properties:
         filename: { type: string, minLength: 1, maxLength: 255 }
         content_type:
@@ -2067,6 +2086,7 @@ components:
             - application/xhtml+xml
             - text/plain
         content_base64: { type: string, minLength: 1, maxLength: 14000000 }
+        topic: { type: string, minLength: 2, maxLength: 120 }
         max_attempts: { type: integer, minimum: 1, maximum: 3, default: 1 }
       additionalProperties: false
     ManualUploadData:
@@ -2074,6 +2094,7 @@ components:
       required:
         - source_id
         - filename
+        - topic
         - status
         - snapshot_id
         - extraction_artifact_id
@@ -2081,6 +2102,7 @@ components:
       properties:
         source_id: { type: string, format: uuid }
         filename: { type: string }
+        topic: { type: string, minLength: 2, maxLength: 120 }
         status: { type: string, enum: [changed, unchanged] }
         snapshot_id: { type: [string, "null"], format: uuid }
         extraction_artifact_id: { type: [string, "null"], format: uuid }
@@ -2091,6 +2113,16 @@ components:
       required: [data, meta]
       properties:
         data: { $ref: "#/components/schemas/ManualUploadData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    IngestionTopicListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { type: string, minLength: 2, maxLength: 120 }
+          uniqueItems: true
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
     PrincipalData:
@@ -2161,6 +2193,7 @@ components:
         - source_url
         - fetched_at
         - section_count
+        - topic
       properties:
         review: { $ref: "#/components/schemas/ReviewItemData" }
         source_id: { type: string, format: uuid }
@@ -2168,6 +2201,7 @@ components:
         source_url: { type: string, format: uri }
         fetched_at: { type: string, format: date-time }
         section_count: { type: integer, minimum: 1 }
+        topic: { type: [string, "null"], minLength: 2, maxLength: 120 }
       additionalProperties: false
     ReviewQueueResponse:
       type: object
@@ -2194,6 +2228,7 @@ components:
         - snapshot_id
         - adapter_key
         - media_type
+        - topic
         - raw_sha256
         - normalized_sha256
         - extracted_at
@@ -2204,6 +2239,7 @@ components:
         snapshot_id: { type: string, format: uuid }
         adapter_key: { type: string }
         media_type: { type: string }
+        topic: { type: [string, "null"], minLength: 2, maxLength: 120 }
         raw_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
         normalized_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
         extracted_at: { type: string, format: date-time }
@@ -2368,6 +2404,7 @@ components:
         review_item_id: { type: string, format: uuid }
         slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
         domain: { $ref: "#/components/schemas/DomainSlug" }
+        topic: { type: [string, "null"], minLength: 2, maxLength: 120 }
         language: { $ref: "#/components/schemas/LanguageCode" }
         version: { $ref: "#/components/schemas/CandidateVersion" }
         title: { type: string, minLength: 1, maxLength: 500 }

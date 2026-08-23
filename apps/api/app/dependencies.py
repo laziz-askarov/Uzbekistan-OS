@@ -116,6 +116,29 @@ def get_admin_ingestion_service(
     )
 
 
+def get_admin_ingestion_upload_service(
+    session: Annotated[Session, Depends(get_database_session)],
+    object_store: Annotated[SnapshotStore, Depends(get_snapshot_store)],
+    registry: Annotated[SourceRegistry, Depends(get_runtime_source_registry)],
+) -> AdminIngestionService:
+    """Build synchronous manual ingestion without requiring the crawler queue."""
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    return AdminIngestionService(
+        registry=registry,
+        repository=SqlAlchemyAdminIngestionRepository(session),
+        ingestion_service=IngestionService(
+            fetcher=HttpSourceFetcher(),
+            snapshot_store=object_store,
+            repository=SqlAlchemyIngestionRepository(session),
+            max_pdf_pages=settings.ingestion_max_pdf_pages,
+            max_normalized_characters=settings.ingestion_max_normalized_characters,
+        ),
+    )
+
+
 def get_admin_ingestion_query_service(
     session: Annotated[Session, Depends(get_database_session)],
     registry: Annotated[SourceRegistry, Depends(get_runtime_source_registry)],

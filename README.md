@@ -30,7 +30,7 @@ pnpm dev
 
 The application is served at `http://localhost:3000`.
 
-The internal ingestion operations dashboard is available at `http://localhost:3000/admin`, with the reviewer console at `http://localhost:3000/admin/reviews`. The dashboard lists the configured source registry, accepts bounded PDF and JSON evidence uploads, converts them into structured extraction JSON, queues approved crawlers, and displays recent job health. Uploaded evidence remains unavailable to the assistant until review and publication. Both surfaces require an authorized staff principal.
+The internal ingestion operations dashboard is available at `http://localhost:3000/admin`, with the reviewer console at `http://localhost:3000/admin/reviews`. The dashboard lists the configured source registry, accepts bounded PDF and JSON evidence uploads assigned to an existing or newly named topic, converts readable PDFs to page-preserving Markdown and review JSON, queues approved crawlers, and displays recent job health. Uploaded evidence remains unavailable to the assistant until review and publication. Both surfaces require an authorized staff principal.
 
 ## API setup
 

@@ -576,10 +576,16 @@ def test_pdf_normalization_and_artifact_preserve_page_boundaries() -> None:
 
     normalized = normalize_response(fetched)
 
-    assert normalized.media_type == "application/pdf"
+    assert normalized.media_type == "text/markdown"
     assert normalized.sections == (
-        ("Page 1", "Entry guidance\nApplicants must use the official form."),
-        ("Page 2", "Required documents\nPassport\nApplication receipt"),
+        (
+            "Page 1",
+            "## Page 1\n\nEntry guidance\nApplicants must use the official form.",
+        ),
+        (
+            "Page 2",
+            "## Page 2\n\nRequired documents\nPassport\nApplication receipt",
+        ),
     )
 
     repository = MemoryRepository()
@@ -592,15 +598,21 @@ def test_pdf_normalization_and_artifact_preserve_page_boundaries() -> None:
     payload = loads(store.objects[artifact.storage_key])
     assert outcome.status is ChangeStatus.CHANGED
     assert artifact.adapter_key == "generic-pdf"
-    assert artifact.details == {"media_type": "application/pdf"}
+    markdown_key = artifact.details["normalized_storage_key"]
+    assert artifact.details == {
+        "media_type": "text/markdown",
+        "source_media_type": "application/pdf",
+        "normalized_storage_key": markdown_key,
+    }
+    assert store.objects[markdown_key] == normalized.text.encode("utf-8")
     assert payload["sections"] == [
         {
-            "body": "Entry guidance\nApplicants must use the official form.",
+            "body": "## Page 1\n\nEntry guidance\nApplicants must use the official form.",
             "heading": "Page 1",
             "id": "page-1",
         },
         {
-            "body": "Required documents\nPassport\nApplication receipt",
+            "body": "## Page 2\n\nRequired documents\nPassport\nApplication receipt",
             "heading": "Page 2",
             "id": "page-2",
         },
@@ -620,12 +632,16 @@ def test_manual_pdf_upload_uses_pdf_extraction_for_an_approved_html_source() -> 
             content_type="application/pdf",
         ),
         idempotency_key="upload:manual-pdf",
+        topic="Entry requirements",
     )
 
     artifact = loads(store.objects[repository.artifacts[0].storage_key])
     assert repository.artifacts[0].adapter_key == "generic-pdf"
+    assert repository.artifacts[0].details["topic"] == "Entry requirements"
+    assert artifact["topic"] == "Entry requirements"
+    assert artifact["media_type"] == "text/markdown"
     assert artifact["sections"][0]["heading"] == "Page 1"
-    assert artifact["sections"][0]["body"] == "Official PDF guidance"
+    assert artifact["sections"][0]["body"] == "## Page 1\n\nOfficial PDF guidance"
 
 
 def test_pdf_parser_rejects_encrypted_scanned_and_oversized_documents() -> None:

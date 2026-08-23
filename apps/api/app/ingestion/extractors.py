@@ -92,6 +92,7 @@ def extract_artifact(
     normalized_content: NormalizedContent,
     *,
     adapter_key: str | None = None,
+    topic: str | None = None,
 ) -> ExtractionArtifact:
     media_type = normalized_content.media_type
     if normalized_content.sections:
@@ -127,6 +128,7 @@ def extract_artifact(
         snapshot_id=snapshot.id,
         adapter_key=adapter_key or source.adapter_key,
         media_type=media_type,
+        topic=topic,
         raw_sha256=snapshot.sha256,
         normalized_sha256=normalized_content.sha256,
         extracted_at=snapshot.fetched_at,

@@ -31,6 +31,7 @@ type QueueItem = {
   source_url: string;
   fetched_at: string;
   section_count: number;
+  topic: string | null;
 };
 
 type Artifact = {
@@ -39,6 +40,7 @@ type Artifact = {
   snapshot_id: string;
   adapter_key: string;
   media_type: string;
+  topic: string | null;
   raw_sha256: string;
   normalized_sha256: string;
   extracted_at: string;
@@ -255,8 +257,8 @@ export default function ReviewConsole() {
   async function selectItem(item: QueueItem) {
     setSelected(item);
     setPublication(null);
-    setPublicationSlug(slugify(item.source_title));
-    setPublicationTitle(item.source_title);
+    setPublicationSlug(slugify(item.topic ?? item.source_title));
+    setPublicationTitle(item.topic ?? item.source_title);
     setPublicationSummary("");
     setPublicationJson(null);
     setPublicationJsonName("");
@@ -358,12 +360,13 @@ export default function ReviewConsole() {
       review_item_id: selected.review.id,
       slug: publicationSlug,
       domain: publicationDomain,
+      topic: artifact.topic,
       language: publicationLanguage,
       version: { major: versionMajor, minor: 0, revision: 0 },
       title: publicationTitle.trim(),
       summary: publicationSummary.trim(),
       audiences: [],
-      keywords: [],
+      keywords: artifact.topic ? [artifact.topic] : [],
       sections: artifact.sections.map((section) => ({
         ...section,
         citations: [
@@ -479,6 +482,25 @@ export default function ReviewConsole() {
     URL.revokeObjectURL(url);
   }
 
+  function downloadArtifactMarkdown() {
+    if (!artifact || !selected) return;
+    const content = artifact.sections
+      .map((section) =>
+        section.body.startsWith("#")
+          ? section.body
+          : `## ${section.heading}\n\n${section.body}`,
+      )
+      .join("\n\n");
+    const url = URL.createObjectURL(
+      new Blob([content], { type: "text/markdown;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${slugify(selected.topic ?? selected.source_title) || "evidence"}.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   const canDecide =
     selected?.review.status === "in_review" &&
     selected.review.assigned_principal_id === principal?.id;
@@ -586,6 +608,7 @@ export default function ReviewConsole() {
                     </span>
                     <strong>{item.source_title}</strong>
                     <span>
+                      {item.topic ? `${item.topic} · ` : ""}
                       {item.section_count} sections ·{" "}
                       {formatDate(item.fetched_at)}
                     </span>
@@ -611,6 +634,9 @@ export default function ReviewConsole() {
                   <div>
                     <p className={styles.eyebrow}>Extracted evidence</p>
                     <h2 id="document-title">{selected.source_title}</h2>
+                    {selected.topic ? (
+                      <p className={styles.topicLabel}>{selected.topic}</p>
+                    ) : null}
                     <a
                       href={selected.source_url}
                       target="_blank"
@@ -619,13 +645,24 @@ export default function ReviewConsole() {
                       Open official source <span aria-hidden="true">↗</span>
                     </a>
                     {artifact ? (
-                      <button
-                        className={styles.downloadButton}
-                        onClick={downloadArtifactJson}
-                        type="button"
-                      >
-                        Download extracted JSON
-                      </button>
+                      <div className={styles.downloadActions}>
+                        {artifact.media_type === "text/markdown" ? (
+                          <button
+                            className={styles.downloadButton}
+                            onClick={downloadArtifactMarkdown}
+                            type="button"
+                          >
+                            Download Markdown
+                          </button>
+                        ) : null}
+                        <button
+                          className={styles.downloadButton}
+                          onClick={downloadArtifactJson}
+                          type="button"
+                        >
+                          Download extracted JSON
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                   <StatusPill status={selected.review.status} />
@@ -698,6 +735,10 @@ export default function ReviewConsole() {
                   <div>
                     <dt>Media</dt>
                     <dd>{artifact.media_type}</dd>
+                  </div>
+                  <div>
+                    <dt>Topic</dt>
+                    <dd>{artifact.topic ?? "Not assigned"}</dd>
                   </div>
                   <div>
                     <dt>Changes</dt>

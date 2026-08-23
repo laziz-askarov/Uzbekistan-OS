@@ -23,6 +23,7 @@ class ExtractionArtifact(BaseModel):
     snapshot_id: UUID
     adapter_key: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     media_type: str = Field(min_length=1)
+    topic: str | None = Field(default=None, min_length=2, max_length=120)
     raw_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     normalized_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     extracted_at: datetime
