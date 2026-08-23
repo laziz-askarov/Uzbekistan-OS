@@ -125,6 +125,8 @@ def install_exception_handlers(application: FastAPI) -> None:
             "upload_too_large",
         }:
             status_code = 422
+        elif error.code == "ingestion_infrastructure_unavailable":
+            status_code = 503
         else:
             status_code = 409
         return _error_response(

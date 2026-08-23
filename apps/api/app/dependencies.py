@@ -112,6 +112,18 @@ def get_admin_ingestion_service(
     )
 
 
+def get_admin_ingestion_query_service(
+    session: Annotated[Session, Depends(get_database_session)],
+    registry: Annotated[SourceRegistry, Depends(get_runtime_source_registry)],
+) -> AdminIngestionService:
+    """Build read-only ingestion queries without requiring Redis or object storage."""
+
+    return AdminIngestionService(
+        registry=registry,
+        repository=SqlAlchemyAdminIngestionRepository(session),
+    )
+
+
 def get_review_service(
     session: Annotated[Session, Depends(get_database_session)],
     object_store: Annotated[SnapshotStore, Depends(get_snapshot_store)],

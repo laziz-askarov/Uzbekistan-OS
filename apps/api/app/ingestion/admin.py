@@ -181,8 +181,8 @@ class AdminIngestionService:
         *,
         registry: SourceRegistry,
         repository: AdminIngestionRepository,
-        queue: IngestionQueue,
-        ingestion_service: IngestionService,
+        queue: IngestionQueue | None = None,
+        ingestion_service: IngestionService | None = None,
     ) -> None:
         self.registry = registry
         self.repository = repository
@@ -250,6 +250,11 @@ class AdminIngestionService:
                 "source_not_crawl_eligible",
                 "source is not approved for automatic crawling",
             )
+        if self.queue is None:
+            raise AdminIngestionError(
+                "ingestion_infrastructure_unavailable",
+                "crawler operations are unavailable until the ingestion queue is configured",
+            )
         prepared = self.repository.prepare_crawl_job(
             source.id,
             idempotency_key,
@@ -282,6 +287,11 @@ class AdminIngestionService:
             raise AdminIngestionError(
                 "source_not_upload_eligible",
                 "source is not approved for manual evidence uploads",
+            )
+        if self.ingestion_service is None:
+            raise AdminIngestionError(
+                "ingestion_infrastructure_unavailable",
+                "document uploads are unavailable until evidence storage is configured",
             )
         content = request.decoded_content()
         outcome = self.ingestion_service.run_manual(

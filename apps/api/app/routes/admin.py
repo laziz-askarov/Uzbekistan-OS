@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 
 from app.dependencies import (
+    get_admin_ingestion_query_service,
     get_admin_ingestion_service,
     get_authenticated_principal,
     get_knowledge_lifecycle_service,
@@ -52,7 +53,7 @@ router = APIRouter(prefix="/admin", tags=["administration"])
 def list_admin_sources(
     request: Request,
     principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
-    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_service)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_query_service)],
 ) -> SuccessResponse[list[AdminSourceRecord]]:
     return SuccessResponse(
         data=list(service.list_sources(principal)),
@@ -69,7 +70,7 @@ def list_admin_sources(
 def list_ingestion_jobs(
     request: Request,
     principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
-    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_service)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_query_service)],
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> SuccessResponse[list[IngestionJobRecord]]:
     return SuccessResponse(

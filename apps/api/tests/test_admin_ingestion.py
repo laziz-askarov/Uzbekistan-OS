@@ -178,6 +178,33 @@ def test_non_admin_cannot_read_or_mutate_ingestion_operations() -> None:
         )
 
 
+def test_read_only_service_does_not_require_queue_or_object_storage() -> None:
+    source = approved_source()
+    repository = MemoryAdminRepository()
+    service = AdminIngestionService(
+        registry=SourceRegistry(
+            registry_version="1.1",
+            environment="production",
+            sources=[source],
+        ),
+        repository=repository,
+    )
+    actor = principal("admin")
+
+    assert service.list_sources(actor)[0].id == source.id
+    assert service.list_jobs(actor, limit=50) == ()
+
+    with pytest.raises(AdminIngestionError) as unavailable:
+        service.queue_crawl(
+            actor,
+            QueueCrawlRequest(source_id=source.id),
+            idempotency_key="manual-crawl-1",
+            enqueued_at=NOW,
+        )
+    assert unavailable.value.code == "ingestion_infrastructure_unavailable"
+    assert repository.jobs == {}
+
+
 def test_admin_upload_decodes_content_and_runs_manual_ingestion() -> None:
     service, source, _, _, ingestion = admin_service()
     document = b"<h1>Official guidance</h1><p>Verified rule.</p>"
