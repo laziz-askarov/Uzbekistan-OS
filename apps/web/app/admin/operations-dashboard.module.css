@@ -554,6 +554,28 @@ button:disabled {
   display: grid;
   gap: var(--space-3);
 }
+.sourceSelect {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.sourceSelect select {
+  min-height: 3rem;
+  width: 100%;
+  padding: 0 var(--space-4);
+  color: var(--color-text-primary);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+}
+.sourceSelect select:focus-visible {
+  border-color: var(--color-focus);
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 22%, transparent);
+  outline-offset: 1px;
+}
 .filePicker {
   min-height: 6.5rem;
   padding: var(--space-4);

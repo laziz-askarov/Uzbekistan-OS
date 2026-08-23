@@ -1,15 +1,17 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.ai.settings import load_ai_runtime_configuration
 from app.config import get_settings
 from app.errors import install_exception_handlers
-from app.middleware import request_id_middleware
+from app.middleware import apply_security_headers, request_id_middleware
 from app.observability import configure_logging
 from app.routes.admin import router as admin_router
+from app.routes.assistant import router as assistant_router
 from app.routes.auth import router as auth_router
 from app.routes.health import get_health, get_readiness
 from app.routes.health import router as health_router
@@ -48,6 +50,17 @@ def create_app() -> FastAPI:
             "x-request-id",
         ],
     )
+    application.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
+
+    @application.middleware("http")
+    async def security_headers(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        response = await call_next(request)
+        apply_security_headers(response, production=settings.app_env == "production")
+        return response
+
     application.middleware("http")(request_id_middleware)
     install_exception_handlers(application)
     application.include_router(health_router, prefix="/api/v1")
@@ -65,6 +78,7 @@ def create_app() -> FastAPI:
         response_model=None,
     )
     application.include_router(auth_router, prefix="/api/v1")
+    application.include_router(assistant_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
     return application
 

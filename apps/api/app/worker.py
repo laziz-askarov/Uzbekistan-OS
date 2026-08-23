@@ -24,7 +24,7 @@ from app.ingestion.registry_sync import RegistrySyncResult, RegistrySyncService
 from app.ingestion.repositories import SqlAlchemyIngestionRepository
 from app.ingestion.scheduler import IngestionScheduler
 from app.ingestion.service import IngestionService
-from app.ingestion.stores import S3SnapshotStore
+from app.ingestion.stores import S3SnapshotStore, SqlAlchemySnapshotStore
 from app.ingestion.worker import IngestionWorker
 from app.observability import configure_logging
 
@@ -87,10 +87,15 @@ def build_worker(
     settings = settings or get_settings()
     registry = registry or load_runtime_registry(settings)
     queue = build_queue(settings)
-    snapshot_store = S3SnapshotStore.from_settings(settings)
+    s3_snapshot_store = (
+        S3SnapshotStore.from_settings(settings)
+        if settings.snapshot_store_backend == "s3"
+        else None
+    )
     fetcher = HttpSourceFetcher()
 
     def service_factory(session: Session) -> IngestionService:
+        snapshot_store = s3_snapshot_store or SqlAlchemySnapshotStore(session)
         return IngestionService(
             fetcher=fetcher,
             snapshot_store=snapshot_store,
@@ -193,6 +198,9 @@ def ensure_object_store(
     if attempts < 1:
         raise ValueError("object-store readiness attempts must be positive")
     settings = settings or get_settings()
+    if settings.snapshot_store_backend == "database":
+        logging.getLogger(__name__).info("database evidence store is configured")
+        return
     logger = logging.getLogger(__name__)
     for attempt in range(1, attempts + 1):
         try:

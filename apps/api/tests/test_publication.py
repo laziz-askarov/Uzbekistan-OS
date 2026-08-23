@@ -131,7 +131,21 @@ def candidate(review_item_id: UUID, *, source_id: UUID = SOURCE_ID) -> Publicati
             )
         ],
         effective_from=date(2026, 7, 31),
+        effective_until=date(2026, 8, 30),
     )
+
+
+def test_candidate_requires_bounded_domain_freshness() -> None:
+    review_item_id = uuid4()
+    payload = candidate(review_item_id).model_dump(mode="json")
+
+    with pytest.raises(ValueError, match="freshness window"):
+        PublicationCandidate.model_validate(
+            {**payload, "effective_until": "2026-09-01"}
+        )
+
+    with pytest.raises(ValueError, match="valid date"):
+        PublicationCandidate.model_validate({**payload, "effective_until": None})
 
 
 def setup_publication():
@@ -179,7 +193,8 @@ def test_checked_in_publication_candidate_template_matches_runtime_model() -> No
 
     parsed = PublicationCandidate.model_validate(template)
 
-    assert parsed.nationalities == ["US"]
+    assert parsed.language == "uz"
+    assert parsed.nationalities == []
     assert parsed.requirements[0].id == "identity-document"
     assert parsed.steps[0].requirement_ids == ["identity-document"]
     assert parsed.fees[0].amount_type == "unknown"

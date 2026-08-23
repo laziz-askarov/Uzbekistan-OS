@@ -134,6 +134,7 @@ function inferredContentType(file: File) {
   if (file.type) return file.type;
   const extension = file.name.split(".").pop()?.toLowerCase();
   if (extension === "pdf") return "application/pdf";
+  if (extension === "json") return "application/json";
   if (extension === "html" || extension === "htm") return "text/html";
   if (extension === "txt") return "text/plain";
   return "application/octet-stream";
@@ -301,6 +302,11 @@ export default function OperationsDashboard() {
       setPrincipal(identity);
       setSources(nextSources);
       setJobs(nextJobs);
+      setUploadSource((current) =>
+        current && nextSources.some((source) => source.id === current.id)
+          ? current
+          : (nextSources.find((source) => source.manual_upload_eligible) ?? null),
+      );
     } catch (caught) {
       setPrincipal(null);
       setSources([]);
@@ -358,6 +364,11 @@ export default function OperationsDashboard() {
     setUploadFile(null);
     setError("");
     setMessage("");
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("manual-upload")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   async function uploadEvidence(event: FormEvent<HTMLFormElement>) {
@@ -720,21 +731,45 @@ export default function OperationsDashboard() {
           ) : null}
         </div>
 
-        {uploadSource ? (
-          <section
-            className={styles.uploadPanel}
-            aria-labelledby="upload-heading"
-          >
+        <section
+          className={styles.uploadPanel}
+          id="manual-upload"
+          aria-labelledby="upload-heading"
+        >
             <div>
               <p className={styles.eyebrow}>Manual evidence</p>
-              <h2 id="upload-heading">Upload for {uploadSource.title}</h2>
+              <h2 id="upload-heading">Upload PDF or JSON evidence</h2>
               <p>
-                Accepted: PDF, HTML, XHTML, or plain text. Maximum 10 MB. The
-                file is checksum-verified, stored as source evidence, and queued
-                for review.
+                Attach the file to an approved official source. PDFs are parsed
+                page by page into structured JSON sections; JSON is normalized
+                into the same review format. Nothing reaches the assistant until
+                a reviewer approves and publishes it. Encrypted or image-only
+                PDFs are rejected because OCR is not enabled.
               </p>
             </div>
             <form onSubmit={uploadEvidence}>
+              <label className={styles.sourceSelect} htmlFor="upload-source">
+                Approved source
+                <select
+                  id="upload-source"
+                  value={uploadSource?.id ?? ""}
+                  onChange={(event) =>
+                    setUploadSource(
+                      sources.find((source) => source.id === event.target.value) ??
+                        null,
+                    )
+                  }
+                >
+                  <option value="">Select a source</option>
+                  {sources
+                    .filter((source) => source.manual_upload_eligible)
+                    .map((source) => (
+                      <option key={source.id} value={source.id}>
+                        {source.title}
+                      </option>
+                    ))}
+                </select>
+              </label>
               <label className={styles.filePicker} htmlFor="evidence-file">
                 <span>
                   {uploadFile ? uploadFile.name : "Choose official document"}
@@ -742,11 +777,11 @@ export default function OperationsDashboard() {
                 <small>
                   {uploadFile
                     ? `${Math.ceil(uploadFile.size / 1024)} KB`
-                    : "PDF, HTML, or TXT"}
+                    : "PDF or JSON · maximum 10 MB"}
                 </small>
               </label>
               <input
-                accept=".pdf,.html,.htm,.txt,application/pdf,text/html,application/xhtml+xml,text/plain"
+                accept=".pdf,.json,application/pdf,application/json"
                 className={styles.visuallyHidden}
                 id="evidence-file"
                 onChange={(event) =>
@@ -758,7 +793,6 @@ export default function OperationsDashboard() {
                 <button
                   className={styles.quietButton}
                   onClick={() => {
-                    setUploadSource(null);
                     setUploadFile(null);
                   }}
                   type="button"
@@ -767,19 +801,16 @@ export default function OperationsDashboard() {
                 </button>
                 <button
                   className={styles.primaryButton}
-                  disabled={
-                    !uploadFile || activeAction === `upload:${uploadSource.id}`
-                  }
+                  disabled={!uploadFile || !uploadSource || activeAction !== null}
                   type="submit"
                 >
-                  {activeAction === `upload:${uploadSource.id}`
-                    ? "Processing…"
-                    : "Upload and process"}
+                  {activeAction?.startsWith("upload:")
+                    ? "Extracting evidence…"
+                    : "Upload and create review"}
                 </button>
               </div>
             </form>
-          </section>
-        ) : null}
+        </section>
 
         <section className={styles.section} aria-labelledby="sources-heading">
           <div className={styles.sectionHeading}>

@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from io import BytesIO
-from json import loads
+from json import dumps, loads
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[3]
 REGISTRY_PATH = ROOT / "data/sources/registry.development.json"
 STAGING_REGISTRY_PATH = ROOT / "data/sources/registry.staging.json"
 PROPOSED_REGISTRY_PATH = ROOT / "data/sources/registry.production.proposed.json"
+PRODUCTION_REGISTRY_PATH = ROOT / "data/sources/registry.production.json"
 
 
 def approved_source() -> SourceRegistryEntry:
@@ -279,11 +280,14 @@ def test_development_registry_is_valid_but_not_automatically_eligible() -> None:
     assert registry.sources[0].automatic_fetch_eligible is False
 
 
-def test_staging_registry_is_valid_empty_and_fail_closed() -> None:
+def test_staging_registry_contains_only_approved_uzbek_manual_sources() -> None:
     registry = load_source_registry(STAGING_REGISTRY_PATH)
 
     assert registry.environment == "staging"
-    assert registry.sources == []
+    assert len(registry.sources) == 2
+    assert all(source.languages == ["uz"] for source in registry.sources)
+    assert all(source.manual_ingestion_eligible for source in registry.sources)
+    assert all(not source.automatic_fetch_eligible for source in registry.sources)
 
 
 def test_proposed_production_registry_is_valid_and_fails_closed() -> None:
@@ -292,6 +296,19 @@ def test_proposed_production_registry_is_valid_and_fails_closed() -> None:
     assert registry.environment == "production"
     assert len(registry.sources) == 5
     assert all(source.automatic_fetch_eligible is False for source in registry.sources)
+
+
+def test_production_registry_contains_only_approved_uzbek_manual_sources() -> None:
+    registry = load_source_registry(PRODUCTION_REGISTRY_PATH)
+
+    assert registry.environment == "production"
+    assert {source.adapter_key for source in registry.sources} == {
+        "govuz-activity-html",
+        "evisa-uz-localization-json",
+    }
+    assert all(source.languages == ["uz"] for source in registry.sources)
+    assert all(source.manual_ingestion_eligible for source in registry.sources)
+    assert all(not source.automatic_fetch_eligible for source in registry.sources)
 
 
 def test_allowed_source_requires_approval_metadata() -> None:
@@ -417,6 +434,138 @@ def test_extraction_artifact_preserves_heading_sections() -> None:
     ]
 
 
+def test_govuz_adapter_keeps_article_and_discards_site_chrome() -> None:
+    source = load_source_registry(PRODUCTION_REGISTRY_PATH).sources[0]
+    body = b"""
+      <nav><h2>Davlat organlari</h2><p>Shared navigation</p></nav>
+      <main>
+        <h1>O'zbekiston Respublikasi vizasi</h1>
+        <p>Viza olish uchun ariza topshiriladi.</p>
+        <h2>Kerakli hujjatlar</h2><p>Pasport talab etiladi.</p>
+      </main>
+      <footer><h2>Foydali havolalar</h2><p>Shared footer</p></footer>
+    """
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+
+    service(FakeFetcher([]), repository, store).run_manual(
+        source,
+        response(source, body),
+        idempotency_key="upload:govuz-uz-v1",
+    )
+
+    payload = loads(store.objects[repository.artifacts[0].storage_key])
+    assert [section["heading"] for section in payload["sections"]] == [
+        "O'zbekiston Respublikasi vizasi",
+        "Kerakli hujjatlar",
+    ]
+    assert "Shared navigation" not in str(payload)
+    assert "Shared footer" not in str(payload)
+
+
+def test_evisa_adapter_extracts_only_required_uzbek_guidance_fields() -> None:
+    source = load_source_registry(PRODUCTION_REGISTRY_PATH).sources[1]
+    payload = {
+        "ABOUT_EVISA_P1": "Elektron viza 30 kungacha amal qiladi.<br>Pasport talab etiladi.",
+        "ABOUT_WEBSITE_P1": "Arizani to'ldiring.",
+        "ABOUT_WEBSITE_P1_1": "Suratni yuklang.",
+        "ABOUT_WEBSITE_P1_2": "Ma'lumotlarni tekshiring.",
+        "ABOUT_WEBSITE_P1_3": "To'lovni amalga oshiring.",
+        "ABOUT_WEBSITE_P1_4": "Xabarnomani kuting.",
+        "ABOUT_WEBSITE_P1_5": "Vizani yuklab oling.",
+        "ABOUT_WEBSITE_P1_6": "Safarga olib boring.",
+        "ABOUT_WEBSITE_P2": "Ariza holatini saytda tekshirish mumkin.",
+        "UNRELATED_PROMOTION": "This must never be published.",
+    }
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+    fetched = response(
+        source,
+        ("\ufeff" + dumps(payload, ensure_ascii=False)).encode(),
+        content_type="application/json; charset=utf-8",
+    )
+
+    service(FakeFetcher([]), repository, store).run_manual(
+        source,
+        fetched,
+        idempotency_key="upload:evisa-uz-v1",
+    )
+
+    artifact = loads(store.objects[repository.artifacts[0].storage_key])
+    assert [section["heading"] for section in artifact["sections"]] == [
+        "Elektron viza haqida",
+        "Veb-saytdan foydalanish",
+    ]
+    assert "Pasport talab etiladi." in artifact["sections"][0]["body"]
+    assert "UNRELATED_PROMOTION" not in str(artifact)
+
+
+def test_generic_json_upload_is_normalized_into_retrievable_sections() -> None:
+    source = approved_source()
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+    payload = {
+        "requirements": {
+            "passport": "Pasport amal qilish muddati yetarli bo'lishi kerak.",
+            "photo": "Raqamli fotosurat talab etiladi.",
+        },
+        "steps": ["Arizani to'ldiring.", "Ma'lumotlarni tekshiring."],
+    }
+
+    service(FakeFetcher([]), repository, store).run_manual(
+        source,
+        response(
+            source,
+            dumps(payload, ensure_ascii=False).encode(),
+            content_type="application/json",
+        ),
+        idempotency_key="upload:generic-json-v1",
+    )
+
+    artifact = loads(store.objects[repository.artifacts[0].storage_key])
+    assert repository.artifacts[0].adapter_key == "generic-json"
+    assert [section["heading"] for section in artifact["sections"]] == [
+        "requirements",
+        "steps",
+    ]
+    assert "passport: Pasport amal qilish muddati" in artifact["sections"][0]["body"]
+    assert "Item 1: Arizani to'ldiring." in artifact["sections"][1]["body"]
+
+
+def test_generic_json_rejects_duplicate_keys_and_non_container_roots() -> None:
+    source = approved_source()
+
+    with pytest.raises(IngestionError) as duplicate:
+        normalize_response(
+            response(
+                source,
+                b'{"rule":"first","rule":"second"}',
+                content_type="application/json",
+            )
+        )
+    assert duplicate.value.code == "duplicate_json_key"
+
+    with pytest.raises(IngestionError) as scalar:
+        normalize_response(
+            response(source, b'"not structured"', content_type="application/json")
+        )
+    assert scalar.value.code == "invalid_json_root"
+
+
+def test_unknown_source_adapter_fails_closed_before_storing_evidence() -> None:
+    source = approved_source().model_copy(update={"adapter_key": "unknown-adapter"})
+    repository = MemoryRepository()
+
+    with pytest.raises(IngestionError, match="no approved source adapter"):
+        service(FakeFetcher([response(source, b"<p>Official text</p>")]), repository).run(
+            source,
+            idempotency_key="scheduled:unknown-adapter",
+        )
+
+    assert repository.snapshots == []
+    assert repository.artifacts == []
+
+
 def test_pdf_normalization_and_artifact_preserve_page_boundaries() -> None:
     source = approved_pdf_source()
     body = pdf_bytes(
@@ -456,6 +605,27 @@ def test_pdf_normalization_and_artifact_preserve_page_boundaries() -> None:
             "id": "page-2",
         },
     ]
+
+
+def test_manual_pdf_upload_uses_pdf_extraction_for_an_approved_html_source() -> None:
+    source = approved_source()
+    repository = MemoryRepository()
+    store = MemorySnapshotStore()
+
+    service(FakeFetcher([]), repository, store).run_manual(
+        source,
+        response(
+            source,
+            pdf_bytes("Official PDF guidance"),
+            content_type="application/pdf",
+        ),
+        idempotency_key="upload:manual-pdf",
+    )
+
+    artifact = loads(store.objects[repository.artifacts[0].storage_key])
+    assert repository.artifacts[0].adapter_key == "generic-pdf"
+    assert artifact["sections"][0]["heading"] == "Page 1"
+    assert artifact["sections"][0]["body"] == "Official PDF guidance"
 
 
 def test_pdf_parser_rejects_encrypted_scanned_and_oversized_documents() -> None:

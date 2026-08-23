@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.assistant.service import AssistantError
 from app.identity.authentication import AuthenticationError
 from app.ingestion.admin import AdminIngestionError
 from app.ingestion.errors import IngestionError
@@ -63,7 +64,7 @@ def install_exception_handlers(application: FastAPI) -> None:
         request: Request,
         error: AuthenticationError,
     ) -> JSONResponse:
-        if error.code == "authentication_unconfigured":
+        if error.code in {"authentication_unconfigured", "identity_provider_unavailable"}:
             status_code = 503
         elif error.code in {"principal_not_provisioned", "principal_disabled"}:
             status_code = 403
@@ -75,6 +76,18 @@ def install_exception_handlers(application: FastAPI) -> None:
             code=error.code,
             message=str(error),
             authenticate=status_code == 401,
+        )
+
+    @application.exception_handler(AssistantError)
+    async def assistant_error_handler(
+        request: Request,
+        error: AssistantError,
+    ) -> JSONResponse:
+        return _error_response(
+            request,
+            status_code=422,
+            code=error.code,
+            message=str(error),
         )
 
     @application.exception_handler(ReviewError)
@@ -112,6 +125,8 @@ def install_exception_handlers(application: FastAPI) -> None:
             "upload_too_large",
         }:
             status_code = 422
+        elif error.code == "ingestion_infrastructure_unavailable":
+            status_code = 503
         else:
             status_code = 409
         return _error_response(

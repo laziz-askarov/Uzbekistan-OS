@@ -10,19 +10,140 @@ import {
   readLimitedText,
   RequestBodyTooLargeError,
 } from "@/lib/request-guards";
+import { chatRequestSchema } from "@/lib/chat-contract";
 import { createClient } from "@/lib/supabase/server";
-import { chatRequestSchema, generateVisaChatResult } from "@/lib/visa-ai";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 const maximumBodyBytes = 32 * 1024;
+const groundedApiBase =
+  process.env.GROUNDED_API_BASE_URL ??
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "http://localhost:8000/api/v1";
 const chatQuotaSchema = z.object({
   allowed: z.boolean(),
   remaining: z.number().int().nonnegative(),
   retry_after_seconds: z.number().int().nonnegative(),
   limit_scope: z.enum(["chat_10_minutes", "chat_day"]).nullable(),
 });
+const groundedCitationSchema = z.object({
+  source_id: z.string().uuid(),
+  locator: z.string(),
+  quote: z.string().nullable().optional(),
+  source_url: z.string().url().nullable().optional(),
+  source_title: z.string().nullable().optional(),
+  reviewed_at: z.string().nullable().optional(),
+});
+const groundedResponseSchema = z.object({
+  data: z.object({
+    answer: z.object({
+      status: z.enum(["answered", "needs_clarification", "insufficient"]),
+      language: z.enum(["en", "uz", "ru"]),
+      summary: z.string(),
+      sections: z.array(
+        z.object({
+          id: z.string(),
+          heading: z.string(),
+          claims: z.array(
+            z.object({
+              id: z.string(),
+              text: z.string(),
+              citations: z.array(
+                z.object({ evidence_id: z.string(), quote: z.string() }),
+              ),
+            }),
+          ),
+        }),
+      ),
+      clarification: z.object({ question: z.string() }).nullable().optional(),
+    }),
+    evidence: z.object({
+      items: z.array(
+        z.object({
+          chunk_id: z.string(),
+          title: z.string(),
+          heading: z.string(),
+          content: z.string(),
+          citations: z.array(groundedCitationSchema),
+        }),
+      ),
+    }),
+    intent: z.string(),
+    accepted: z.boolean(),
+    generated: z.boolean(),
+  }),
+});
+
+function workflowForIntent(intent: string) {
+  const title = intent
+    .split("_")
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+  return {
+    id: intent.replaceAll("_", "-"),
+    title: title || "Official guidance",
+    description: "Grounded in reviewed, currently eligible official evidence.",
+  };
+}
+
+function toVisaResult(parsed: z.infer<typeof groundedResponseSchema>) {
+  const { answer, evidence, intent, accepted, generated } = parsed.data;
+  const citationIds = [
+    ...new Set(
+      answer.sections.flatMap((section) =>
+        section.claims.flatMap((claim) =>
+          claim.citations.map((citation) => citation.evidence_id),
+        ),
+      ),
+    ),
+  ];
+  return {
+    answer: {
+      status:
+        answer.status === "needs_clarification"
+          ? ("needs_information" as const)
+          : answer.status,
+      summary: answer.summary,
+      summaryCitationIds: answer.status === "answered" ? citationIds : [],
+      sections: answer.sections.map((section) => ({
+        heading: section.heading,
+        content: section.claims.map((claim) => claim.text).join("\n\n"),
+        citationIds: [
+          ...new Set(
+            section.claims.flatMap((claim) =>
+              claim.citations.map((citation) => citation.evidence_id),
+            ),
+          ),
+        ],
+      })),
+      profile: [],
+      missingProfileFields: [],
+      followUpQuestions: answer.clarification?.question
+        ? [answer.clarification.question]
+        : [],
+    },
+    workflow: workflowForIntent(intent),
+    sources: evidence.items
+      .map((item) => {
+        const citation = item.citations.find(
+          (candidate) => candidate.source_url,
+        );
+        return citation?.source_url
+          ? {
+              id: item.chunk_id,
+              title: citation.source_title ?? item.title,
+              url: citation.source_url,
+              reviewedAt: citation.reviewed_at ?? new Date().toISOString(),
+              content: item.content,
+              sourceFile: item.heading,
+            }
+          : null;
+      })
+      .filter((item) => item !== null),
+    generated: generated && accepted,
+  };
+}
 
 export async function POST(request: Request) {
   const context = createRequestContext(request, "/api/chat");
@@ -148,7 +269,55 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await generateVisaChatResult(payload.data.messages);
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (sessionError || !accessToken) {
+      return NextResponse.json(
+        {
+          error: "authentication_required",
+          message: "Sign in again to use the assistant.",
+        },
+        { status: 401, headers: requestHeaders(context) },
+      );
+    }
+    const groundedResponse = await fetch(
+      `${groundedApiBase}/assistant/answer`,
+      {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json",
+          "x-request-id": context.requestId,
+        },
+        body: JSON.stringify({ messages: payload.data.messages }),
+        cache: "no-store",
+      },
+    );
+    if (!groundedResponse.ok) {
+      logEvent("error", "grounded_api_failed", context, {
+        status: groundedResponse.status,
+      });
+      return NextResponse.json(
+        {
+          error: "chat_unavailable",
+          message: "Grounded guidance is temporarily unavailable.",
+        },
+        {
+          status:
+            groundedResponse.status >= 500 ? 503 : groundedResponse.status,
+          headers: requestHeaders(context),
+        },
+      );
+    }
+    const groundedPayload = groundedResponseSchema.safeParse(
+      await groundedResponse.json(),
+    );
+    if (!groundedPayload.success) {
+      throw new Error("GroundedApiResponseInvalid");
+    }
+    const result = toVisaResult(groundedPayload.data);
     logEvent("info", "api_request_completed", context, {
       status: 200,
       outcome: "success",

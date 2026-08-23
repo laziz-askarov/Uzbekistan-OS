@@ -2,10 +2,11 @@ from collections.abc import Callable, Mapping
 from hashlib import sha256
 from uuid import uuid4
 
+from app.ingestion.adapters import SourceAdapterRegistry
 from app.ingestion.errors import IngestionError, SourceNotEligibleError
 from app.ingestion.extractors import extract_artifact
 from app.ingestion.models import SourceRegistryEntry, SourceType
-from app.ingestion.normalizers import PDF_MEDIA_TYPES, normalize_response
+from app.ingestion.normalizers import JSON_MEDIA_TYPES, PDF_MEDIA_TYPES
 from app.ingestion.ports import IngestionRepository, SnapshotStore, SourceFetcher
 from app.ingestion.types import (
     ChangeStatus,
@@ -28,6 +29,7 @@ class IngestionService:
         max_response_bytes: int = 10_000_000,
         max_pdf_pages: int = 250,
         max_normalized_characters: int = 2_000_000,
+        adapter_registry: SourceAdapterRegistry | None = None,
     ) -> None:
         self.fetcher = fetcher
         self.snapshot_store = snapshot_store
@@ -35,6 +37,7 @@ class IngestionService:
         self.max_response_bytes = max_response_bytes
         self.max_pdf_pages = max_pdf_pages
         self.max_normalized_characters = max_normalized_characters
+        self.adapter_registry = adapter_registry or SourceAdapterRegistry()
 
     def run(
         self,
@@ -70,6 +73,7 @@ class IngestionService:
                 source,
                 response,
                 self.repository.latest_snapshot(source.id),
+                manual_upload=True,
             ),
         )
 
@@ -130,6 +134,8 @@ class IngestionService:
         source: SourceRegistryEntry,
         response: FetchResponse,
         previous: SnapshotMetadata | None,
+        *,
+        manual_upload: bool = False,
     ) -> IngestionOutcome:
 
         if response.url != str(source.url):
@@ -160,17 +166,23 @@ class IngestionService:
                 retryable=False,
             )
 
-        self._validate_source_media_type(source, response)
+        self._validate_source_media_type(source, response, manual_upload=manual_upload)
 
         raw_sha256 = sha256(response.body).hexdigest()
         existing = self.repository.snapshot_by_sha256(source.id, raw_sha256)
         if existing is not None:
             return self._unchanged(source, existing)
 
-        normalized = normalize_response(
+        if manual_upload:
+            adapter_key, adapter = self.adapter_registry.resolve_manual(source, response)
+        else:
+            adapter_key = source.adapter_key
+            adapter = self.adapter_registry.resolve(source.adapter_key)
+        normalized = adapter.normalize(
+            source,
             response,
             max_pdf_pages=self.max_pdf_pages,
-            max_normalized_characters=self.max_normalized_characters,
+            max_characters=self.max_normalized_characters,
         )
         snapshot_id = uuid4()
         storage_key = f"sources/{source.id}/{raw_sha256}.bin"
@@ -187,11 +199,17 @@ class IngestionService:
             fetched_at=response.fetched_at,
             byte_size=len(response.body),
         )
-        artifact = extract_artifact(source, snapshot, response, normalized)
+        artifact = extract_artifact(
+            source,
+            snapshot,
+            response,
+            normalized,
+            adapter_key=adapter_key,
+        )
         artifact_id = uuid4()
         artifact_bytes = artifact.canonical_bytes()
         artifact_storage_key = (
-            f"sources/{source.id}/{raw_sha256}.{source.adapter_key}.extraction.json"
+            f"sources/{source.id}/{raw_sha256}.{adapter_key}.extraction.json"
         )
         review_item_id = uuid4()
         self.snapshot_store.put(
@@ -209,7 +227,7 @@ class IngestionService:
             ExtractionArtifactMetadata(
                 id=artifact_id,
                 source_snapshot_id=snapshot_id,
-                adapter_key=source.adapter_key,
+                adapter_key=adapter_key,
                 schema_version=artifact.schema_version,
                 storage_key=artifact_storage_key,
                 sha256=artifact.sha256,
@@ -251,9 +269,14 @@ class IngestionService:
     def _validate_source_media_type(
         source: SourceRegistryEntry,
         response: FetchResponse,
+        *,
+        manual_upload: bool = False,
     ) -> None:
         media_type = (response.header("content-type") or "").split(";", 1)[0].strip().casefold()
         is_pdf = media_type in PDF_MEDIA_TYPES
+        is_json = media_type in JSON_MEDIA_TYPES
+        if manual_upload and (is_pdf or is_json):
+            return
         if source.source_type is SourceType.PDF and not is_pdf:
             raise IngestionError(
                 "source_content_type_mismatch",
@@ -264,6 +287,18 @@ class IngestionService:
             raise IngestionError(
                 "source_content_type_mismatch",
                 "PDF response requires a source registered with type pdf",
+                retryable=False,
+            )
+        if source.source_type is SourceType.FEED and not is_json:
+            raise IngestionError(
+                "source_content_type_mismatch",
+                "registered feed source did not return JSON",
+                retryable=False,
+            )
+        if source.source_type is not SourceType.FEED and is_json:
+            raise IngestionError(
+                "source_content_type_mismatch",
+                "JSON response requires a source registered with type feed",
                 retryable=False,
             )
 

@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -19,6 +20,22 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 from app.database.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+
+
+class SnapshotObject(Base):
+    __tablename__ = "snapshot_objects"
+    __table_args__ = ({"schema": "ingestion"},)
+
+    storage_key: Mapped[str] = mapped_column(Text, primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    content_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
 
 
 class SourceSnapshot(UUIDPrimaryKeyMixin, Base):

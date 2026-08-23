@@ -1,5 +1,56 @@
 {
   "registry_version": "1.1",
   "environment": "staging",
-  "sources": []
+  "sources": [
+    {
+      "id": "00000000-0000-0000-0000-000000002102",
+      "slug": "mfa-visa-guidance-uz",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000002100",
+        "slug": "uzbekistan-ministry-of-foreign-affairs",
+        "name": "O‘zbekiston Respublikasi Tashqi ishlar vazirligi",
+        "website_url": "https://gov.uz/oz/mfa",
+        "country_iso2": "UZ",
+        "is_official": true
+      },
+      "title": "O‘zbekiston Respublikasi vizasi",
+      "url": "https://gov.uz/oz/mfa/pages/o-zbekiston-respublikasi-vizasi",
+      "source_type": "html",
+      "domains": ["immigration", "tourism"],
+      "languages": ["uz"],
+      "crawl_policy": "manual_only",
+      "adapter_key": "govuz-activity-html",
+      "trust_tier": 1,
+      "status": "approved",
+      "owner": "Laziz <laziz@cogotulsa.com>",
+      "reviewed_at": "2026-08-21T07:11:55Z",
+      "production_eligible": true,
+      "schedule": null
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000002104",
+      "slug": "official-evisa-guidance-uz",
+      "organization": {
+        "id": "00000000-0000-0000-0000-000000002100",
+        "slug": "uzbekistan-ministry-of-foreign-affairs",
+        "name": "O‘zbekiston Respublikasi Tashqi ishlar vazirligi",
+        "website_url": "https://gov.uz/oz/mfa",
+        "country_iso2": "UZ",
+        "is_official": true
+      },
+      "title": "O‘zbekiston elektron vizasi bo‘yicha rasmiy yo‘riqnoma",
+      "url": "https://e-visa.gov.uz/assets/localization/uz.json",
+      "source_type": "feed",
+      "domains": ["immigration", "tourism"],
+      "languages": ["uz"],
+      "crawl_policy": "manual_only",
+      "adapter_key": "evisa-uz-localization-json",
+      "trust_tier": 1,
+      "status": "approved",
+      "owner": "Laziz <laziz@cogotulsa.com>",
+      "reviewed_at": "2026-08-21T07:11:55Z",
+      "production_eligible": true,
+      "schedule": null
+    }
+  ]
 }

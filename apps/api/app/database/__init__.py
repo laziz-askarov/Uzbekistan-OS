@@ -8,6 +8,7 @@ from app.database.models.ingestion import (
     CrawlJob,
     ExtractionArtifact,
     ReviewItem,
+    SnapshotObject,
     SourceSnapshot,
 )
 from app.database.models.knowledge import (
@@ -44,6 +45,7 @@ __all__ = [
     "PublicationRecord",
     "ReviewItem",
     "Role",
+    "SnapshotObject",
     "Source",
     "SourceOrganization",
     "SourceSnapshot",

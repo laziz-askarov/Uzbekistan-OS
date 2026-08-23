@@ -3,6 +3,7 @@ import "server-only";
 import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { chatRequestSchema } from "./chat-contract";
 import {
   evidenceForWorkflow,
   selectVisaWorkflow,
@@ -10,17 +11,7 @@ import {
   type VisaWorkflow,
 } from "./visa-workflows";
 
-export const chatRequestSchema = z.object({
-  messages: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant"]),
-        content: z.string().trim().min(1).max(2_000),
-      }),
-    )
-    .min(1)
-    .max(24),
-});
+export { chatRequestSchema };
 
 const citationIds = z.array(z.string().min(1)).max(6);
 const profileItemSchema = z.object({

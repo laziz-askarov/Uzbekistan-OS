@@ -11,6 +11,19 @@ from app.observability import bind_request_id, reset_request_id
 logger = logging.getLogger("uzbekistan_os.http")
 
 
+def apply_security_headers(response: Response, *, production: bool) -> None:
+    response.headers.setdefault("cache-control", "no-store")
+    response.headers.setdefault("permissions-policy", "camera=(), geolocation=(), microphone=()")
+    response.headers.setdefault("referrer-policy", "no-referrer")
+    response.headers.setdefault("x-content-type-options", "nosniff")
+    response.headers.setdefault("x-frame-options", "DENY")
+    if production:
+        response.headers.setdefault(
+            "strict-transport-security",
+            "max-age=31536000; includeSubDomains",
+        )
+
+
 def _request_id(value: str | None) -> str:
     if value and len(value) <= 128 and fullmatch(r"[A-Za-z0-9._:-]+", value):
         return value

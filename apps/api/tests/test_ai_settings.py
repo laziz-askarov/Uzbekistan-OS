@@ -43,18 +43,18 @@ def test_mvp_ai_defaults_match_prd_scope_quality_and_latency_targets() -> None:
     assert policy.citation_coverage_target == 0.95
     assert policy.conversation_context_max_characters == 16_000
     assert policy.build_context_assembler().recent_turns == 8
-    assert settings.openai_generation_model == "gpt-5.6-terra"
+    assert settings.openai_generation_model == "gpt-5.4-mini"
 
 
-def test_runtime_loads_proposed_route_but_keeps_generation_disabled() -> None:
+def test_runtime_loads_approved_route_but_keeps_generation_disabled_by_default() -> None:
     runtime = load_ai_runtime_configuration(configured_settings())
 
     assert runtime.generation_enabled is False
     assert runtime.prompts.resolve("grounded-answer").version == "1.2.0"
-    assert runtime.routes.routes[0].status == "proposed"
+    assert runtime.routes.routes[0].status == "approved"
     assert runtime.routes.routes[0].reasoning_effort == "low"
     assert runtime.routes.routes[0].store is False
-    assert runtime.provider_model_by_role == {"grounded-answer-balanced": "gpt-5.6-terra"}
+    assert runtime.provider_model_by_role == {"grounded-answer-balanced": "gpt-5.4-mini"}
 
 
 def test_api_construction_validates_and_exposes_ai_runtime() -> None:
@@ -66,9 +66,20 @@ def test_api_construction_validates_and_exposes_ai_runtime() -> None:
     assert runtime.policy.supported_languages == SUPPORTED_LANGUAGES
 
 
-def test_enabling_generation_with_unapproved_route_fails_closed() -> None:
+def test_enabling_generation_with_unapproved_route_fails_closed(tmp_path) -> None:
+    payload = json.loads(MODEL_REGISTRY.read_text(encoding="utf-8"))
+    payload["routes"][0]["status"] = "proposed"
+    path = tmp_path / "unapproved-routes.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
     with pytest.raises(AiRuntimeConfigurationError) as failure:
-        load_ai_runtime_configuration(configured_settings(ai_generation_enabled=True))
+        load_ai_runtime_configuration(
+            configured_settings(
+                ai_generation_enabled=True,
+                ai_model_route_registry_path=str(path),
+                openai_api_key="test-key",
+            )
+        )
 
     assert failure.value.code == "generation_route_unapproved"
 
@@ -76,6 +87,13 @@ def test_enabling_generation_with_unapproved_route_fails_closed() -> None:
 def test_provider_response_storage_cannot_be_enabled() -> None:
     with pytest.raises(ValidationError):
         Settings.model_validate({"OPENAI_STORE_RESPONSES": True})
+
+
+@pytest.mark.parametrize("value", [False, "0", "false", "False", "no", "off"])
+def test_provider_response_storage_accepts_disabled_environment_values(value: object) -> None:
+    settings = Settings.model_validate({"OPENAI_STORE_RESPONSES": value})
+
+    assert settings.openai_store_responses is False
 
 
 def test_blank_provider_key_is_treated_as_missing(tmp_path) -> None:

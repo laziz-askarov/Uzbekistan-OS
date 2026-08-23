@@ -4,8 +4,8 @@
 
 | Setting | MVP value | Purpose |
 | --- | ---: | --- |
-| `AI_GENERATION_ENABLED` | `false` | Fail closed until D-006 and frozen evaluations approve the route |
-| `OPENAI_GENERATION_MODEL` | `gpt-5.6-terra` | Proposed balanced quality/cost provider model |
+| `AI_GENERATION_ENABLED` | `false` by default | Explicit deployment switch; D-006 and the checked-in route are approved |
+| `OPENAI_GENERATION_MODEL` | `gpt-5.4-mini` | Approved balanced quality/cost provider model |
 | Reasoning effort | `low` | Latency-sensitive grounded answer generation |
 | Route timeout / attempts | 7 seconds / 1 | Fit within the 8-second completion target |
 | Input / output tokens | 12,000 / 2,000 | Bound evidence, context, latency, and cost |
@@ -23,22 +23,24 @@ The supported languages are English, Uzbek, and Russian. The configured domains
 are Immigration, Tourism, Business Registration, Healthcare, and Everyday
 Living. These are validated product invariants.
 
-## Approval procedure
+## Deployment procedure
 
 Before setting `AI_GENERATION_ENABLED=true`:
 
-1. Freeze representative multilingual, high-risk, adversarial, and abstention
-   evaluations with approved source expectations.
-2. Record groundedness, claim citation coverage, citation validity, latency,
-   token use, and cost for the proposed route.
-3. Approve D-006 and change the checked-in route from `proposed` to `approved`.
-4. Supply `OPENAI_API_KEY` through the deployment secret manager, never Git.
+1. Supply `OPENAI_API_KEY` through the deployment secret manager, never Git.
+2. Configure `SUPABASE_URL` and the Supabase publishable key so the API can
+   verify customer access tokens.
+3. Set the environment-specific source registry path and publish reviewed,
+   unexpired Uzbek knowledge candidates.
+4. Run the frozen high-risk, adversarial, abstention, latency, and cost gates.
 5. Run staging smoke/load tests and verify that provider response storage remains
    false.
-6. Enable a small controlled traffic slice with rollback to disabled generation.
+6. Set `AI_GENERATION_ENABLED=true` for a small controlled traffic slice with
+   rollback to disabled generation.
 
-Changing only the environment flag cannot bypass the checked-in approval state.
-The API refuses to start when generation is enabled against an unapproved route.
+Changing only the environment flag cannot bypass the checked-in approval state,
+credential checks, retrieval eligibility, structured-output validation, or exact
+evidence-quote validation.
 
 ## Validation
 

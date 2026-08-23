@@ -95,12 +95,12 @@ def test_gateway_enforces_configured_route_and_non_storage_boundary() -> None:
     assert result.cost_usd == 0.01
 
 
-def test_checked_in_model_registry_is_valid_and_intentionally_proposed() -> None:
+def test_checked_in_model_registry_is_valid_and_approved_for_grounded_answers() -> None:
     registry = load_model_route_registry(MODEL_REGISTRY)
 
     assert registry.registry_version == "1.0"
     assert registry.routes[0].key == "grounded-answer-default"
-    assert registry.routes[0].status == "proposed"
+    assert registry.routes[0].status == "approved"
     assert registry.routes[0].store is False
 
 

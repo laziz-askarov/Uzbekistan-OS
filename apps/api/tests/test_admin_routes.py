@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from app.dependencies import (
+    get_admin_ingestion_query_service,
     get_admin_ingestion_service,
     get_identity_service,
     get_identity_verifier,
@@ -325,7 +326,7 @@ def publication_payload(review_item_id: UUID) -> dict[str, object]:
             }
         ],
         "effective_from": "2026-08-01",
-        "effective_until": None,
+        "effective_until": "2026-08-31",
         "translation_of_id": None,
     }
 
@@ -555,6 +556,7 @@ def test_admin_can_list_sources_queue_crawl_and_upload_through_http() -> None:
     application.dependency_overrides[get_identity_verifier] = StubIdentityVerifier
     application.dependency_overrides[get_identity_service] = lambda: identity_service
     application.dependency_overrides[get_admin_ingestion_service] = lambda: admin_service
+    application.dependency_overrides[get_admin_ingestion_query_service] = lambda: admin_service
     client = TestClient(application)
 
     sources = client.get("/api/v1/admin/sources", headers=auth_headers())

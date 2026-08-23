@@ -78,3 +78,34 @@ test("admin error views do not expose tokens or ingestion idempotency keys", asy
   assert.match(dashboard, /incident\.error_message/);
   assert.match(dashboard, /incident\.error_code/);
 });
+
+test("review publishers can load a bounded JSON candidate for server-side publication", async () => {
+  const consoleSource = await webFile("app/admin/reviews/review-console.tsx");
+
+  assert.match(consoleSource, /type="file"/);
+  assert.match(consoleSource, /accept="\.json,application\/json"/);
+  assert.match(consoleSource, /file\.size > 1024 \* 1024/);
+  assert.match(
+    consoleSource,
+    /parsed\.review_item_id !== selected\?\.review\.id/,
+  );
+  assert.match(consoleSource, /Validate and publish JSON/);
+  assert.match(consoleSource, /request<Publication>\("\/admin\/publications"/);
+  assert.match(consoleSource, /freshnessDeadline\(publicationDomain\)/);
+});
+
+test("admin evidence uploads accept PDF and JSON and keep publication review gated", async () => {
+  const [dashboard, reviewConsole, reviewStyles] = await Promise.all([
+    webFile("app/admin/operations-dashboard.tsx"),
+    webFile("app/admin/reviews/review-console.tsx"),
+    webFile("app/admin/reviews/review-console.module.css"),
+  ]);
+
+  assert.match(dashboard, /accept="\.pdf,\.json,application\/pdf,application\/json"/);
+  assert.match(dashboard, /PDFs are parsed/);
+  assert.match(dashboard, /Nothing reaches the assistant until/);
+  assert.match(reviewConsole, /Download extracted JSON/);
+  assert.match(reviewConsole, /ThemeToggle/);
+  assert.match(reviewStyles, /background: var\(--color-background\)/);
+  assert.doesNotMatch(reviewStyles, /\.documentPanel[^}]*background:\s*white/s);
+});

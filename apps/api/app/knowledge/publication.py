@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from hashlib import sha256
 from json import dumps
 from typing import Literal, Protocol
@@ -12,6 +12,13 @@ from app.ingestion.models import DomainSlug, LanguageCode
 from app.ingestion.ports import SnapshotStore
 
 PUBLISHER_ROLES = frozenset({"knowledge_publisher", "admin"})
+FRESHNESS_DAYS_BY_DOMAIN: dict[DomainSlug, int] = {
+    "immigration": 30,
+    "business-registration": 30,
+    "healthcare": 30,
+    "everyday-living": 60,
+    "tourism": 180,
+}
 
 
 class PublicationError(RuntimeError):
@@ -180,7 +187,7 @@ class PublicationCandidate(BaseModel):
     processing_time: CandidateProcessingTime | None = None
     sections: list[CandidateSection] = Field(min_length=1)
     effective_from: date
-    effective_until: date | None = None
+    effective_until: date
     translation_of_id: UUID | None = None
 
     @field_validator("title", "summary")
@@ -200,8 +207,15 @@ class PublicationCandidate(BaseModel):
 
     @model_validator(mode="after")
     def validate_candidate(self) -> "PublicationCandidate":
-        if self.effective_until is not None and self.effective_until < self.effective_from:
+        if self.effective_until < self.effective_from:
             raise ValueError("effective_until cannot precede effective_from")
+        maximum_until = self.effective_from + timedelta(
+            days=FRESHNESS_DAYS_BY_DOMAIN[self.domain]
+        )
+        if self.effective_until > maximum_until:
+            raise ValueError(
+                "effective_until exceeds the approved freshness window for this domain"
+            )
         section_ids = [section.id for section in self.sections]
         if len(section_ids) != len(set(section_ids)):
             raise ValueError("candidate section IDs must be unique")

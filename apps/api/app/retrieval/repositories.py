@@ -58,6 +58,23 @@ SELECT
     chunk.content_hash,
     r.attributes,
     COALESCE(
+        (
+            SELECT jsonb_agg(
+                jsonb_build_object(
+                    'source_id', source.id::text,
+                    'source_url', source.url,
+                    'source_title', source.title,
+                    'reviewed_at', source.last_verified_at
+                )
+                ORDER BY source.id
+            )
+            FROM knowledge.document_sources AS source_link
+            JOIN knowledge.sources AS source ON source.id = source_link.source_id
+            WHERE source_link.document_version_id = r.document_version_id
+        ),
+        '[]'::jsonb
+    ) AS source_catalog,
+    COALESCE(
         version.content -> 'applicability' -> 'audiences',
         version.content -> 'audiences',
         '[]'::jsonb
@@ -160,6 +177,26 @@ class SqlAlchemyRetrievalRepository:
         citations = attributes.get("citations")
         if not isinstance(citations, list):
             citations = []
+        source_catalog = row.get("source_catalog")
+        source_catalog = source_catalog if isinstance(source_catalog, list) else []
+        source_by_id = {
+            str(item.get("source_id")): item
+            for item in source_catalog
+            if isinstance(item, dict) and item.get("source_id")
+        }
+        enriched_citations = []
+        for citation in citations:
+            if not isinstance(citation, dict):
+                continue
+            source = source_by_id.get(str(citation.get("source_id")), {})
+            enriched_citations.append(
+                {
+                    **citation,
+                    "source_url": source.get("source_url"),
+                    "source_title": source.get("source_title"),
+                    "reviewed_at": source.get("reviewed_at"),
+                }
+            )
         return RankedCandidate(
             candidate=RetrievalCandidate(
                 chunk_id=row["chunk_id"],
@@ -177,7 +214,7 @@ class SqlAlchemyRetrievalRepository:
                 ordinal=int(row["ordinal"]),
                 content=str(row["content"]),
                 content_hash=str(row["content_hash"]),
-                citations=citations,
+                citations=enriched_citations,
                 audiences=SqlAlchemyRetrievalRepository._string_list(row.get("audiences")),
                 nationalities=SqlAlchemyRetrievalRepository._string_list(row.get("nationalities")),
                 residency_statuses=SqlAlchemyRetrievalRepository._string_list(
