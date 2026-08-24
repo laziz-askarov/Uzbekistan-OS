@@ -138,6 +138,13 @@ class SqlAlchemyAdminIngestionRepository:
             is_active=True,
             last_verified_at=created_at,
         )
+        # ManagedSourceConfig uses its source_id as both its primary key and a
+        # foreign key. Flush the parent explicitly so SQLAlchemy cannot emit the
+        # configuration insert before knowledge.sources when no ORM relationship
+        # is present between these models. The surrounding request transaction
+        # still commits or rolls back all source-creation writes atomically.
+        self.session.add(source)
+        self.session.flush()
         config = ManagedSourceConfig(
             source_id=source_id,
             slug=self._available_source_slug(request.title, source_id),
@@ -152,7 +159,7 @@ class SqlAlchemyAdminIngestionRepository:
             created_at=created_at,
             updated_at=created_at,
         )
-        self.session.add_all([source, config])
+        self.session.add(config)
         self.session.add(
             AuditEvent(
                 id=uuid4(),
