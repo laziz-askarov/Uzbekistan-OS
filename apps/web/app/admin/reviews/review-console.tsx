@@ -110,6 +110,16 @@ function reviewError(error: unknown) {
     : "The review service could not complete the request.";
 }
 
+function errorBannerTitle(error: string) {
+  return error.startsWith("Invalid publication JSON")
+    ? "Invalid publication JSON"
+    : "Review service unavailable";
+}
+
+function errorBannerMessage(error: string) {
+  return error.replace(/^Invalid publication JSON\.\s*/, "");
+}
+
 function freshnessDeadline(domain: string) {
   const days =
     domain === "tourism" ? 180 : domain === "everyday-living" ? 60 : 30;
@@ -121,14 +131,44 @@ function freshnessDeadline(domain: string) {
 function isPublicationCandidateJson(
   value: unknown,
 ): value is PublicationCandidateJson {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return publicationCandidateIssues(value).length === 0;
+}
+
+function publicationCandidateIssues(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return ["root JSON object"];
+  }
   const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.review_item_id === "string" &&
-    typeof candidate.title === "string" &&
-    typeof candidate.language === "string" &&
-    Array.isArray(candidate.sections)
-  );
+  const issues: string[] = [];
+  const requiredStrings = [
+    "review_item_id",
+    "slug",
+    "domain",
+    "language",
+    "title",
+    "summary",
+    "effective_from",
+    "effective_until",
+  ];
+  for (const field of requiredStrings) {
+    if (
+      typeof candidate[field] !== "string" ||
+      !(candidate[field] as string).trim()
+    ) {
+      issues.push(field);
+    }
+  }
+  if (
+    !candidate.version ||
+    typeof candidate.version !== "object" ||
+    Array.isArray(candidate.version)
+  ) {
+    issues.push("version");
+  }
+  if (!Array.isArray(candidate.sections) || candidate.sections.length === 0) {
+    issues.push("sections");
+  }
+  return issues;
 }
 
 export default function ReviewConsole() {
@@ -356,7 +396,14 @@ export default function ReviewConsole() {
       !publicationSummary.trim()
     )
       return;
-    await publishCandidate({
+    await publishCandidate(buildPublicationCandidate());
+  }
+
+  function buildPublicationCandidate(): PublicationCandidateJson {
+    if (!selected || !artifact) {
+      throw new Error("Select an approved review with extracted evidence first.");
+    }
+    return {
       review_item_id: selected.review.id,
       slug: publicationSlug,
       domain: publicationDomain,
@@ -366,7 +413,15 @@ export default function ReviewConsole() {
       title: publicationTitle.trim(),
       summary: publicationSummary.trim(),
       audiences: [],
+      nationalities: [],
+      residency_statuses: [],
+      locations: [],
+      applicability_conditions: [],
       keywords: artifact.topic ? [artifact.topic] : [],
+      requirements: [],
+      steps: [],
+      fees: [],
+      processing_time: null,
       sections: artifact.sections.map((section) => ({
         ...section,
         citations: [
@@ -379,7 +434,32 @@ export default function ReviewConsole() {
       effective_from: new Date().toISOString().slice(0, 10),
       effective_until: freshnessDeadline(publicationDomain),
       translation_of_id: null,
-    });
+    };
+  }
+
+  function downloadPublicationTemplate() {
+    if (
+      !selected ||
+      !artifact ||
+      !publicationSlug ||
+      !publicationTitle.trim() ||
+      !publicationSummary.trim()
+    ) {
+      setError(
+        "Invalid publication JSON. Complete the slug, title, and reviewed summary before downloading a publication template.",
+      );
+      return;
+    }
+    const content = JSON.stringify(buildPublicationCandidate(), null, 2);
+    const url = URL.createObjectURL(
+      new Blob([content], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${publicationSlug}.publication.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setMessage("Publication template JSON downloaded.");
   }
 
   async function loadPublicationJson(file: File | undefined) {
@@ -388,17 +468,20 @@ export default function ReviewConsole() {
     setError("");
     if (!file) return;
     if (file.size > 1024 * 1024) {
-      setError("Publication JSON must be 1 MB or smaller.");
+      setError("Invalid publication JSON. The file must be 1 MB or smaller.");
       return;
     }
     try {
       const parsed = JSON.parse(await file.text()) as unknown;
-      if (!isPublicationCandidateJson(parsed)) {
-        throw new Error("The file is not a publication candidate JSON object.");
+      const issues = publicationCandidateIssues(parsed);
+      if (issues.length > 0 || !isPublicationCandidateJson(parsed)) {
+        throw new Error(
+          `Invalid publication JSON. Missing or invalid fields: ${issues.join(", ")}.`,
+        );
       }
       if (parsed.review_item_id !== selected?.review.id) {
         throw new Error(
-          "The JSON review_item_id does not match the selected approved review.",
+          "Invalid publication JSON. The review_item_id does not match the selected approved review.",
         );
       }
       setPublicationJson(parsed);
@@ -407,7 +490,12 @@ export default function ReviewConsole() {
         "Publication JSON loaded. Server validation runs when you publish.",
       );
     } catch (caught) {
-      setError(reviewError(caught));
+      const message = reviewError(caught);
+      setError(
+        message.startsWith("Invalid publication JSON")
+          ? message
+          : `Invalid publication JSON. The file could not be parsed: ${message}`,
+      );
     }
   }
 
@@ -660,7 +748,7 @@ export default function ReviewConsole() {
                           onClick={downloadArtifactJson}
                           type="button"
                         >
-                          Download extracted JSON
+                          Download extraction JSON — not publishable
                         </button>
                       </div>
                     ) : null}
@@ -847,6 +935,18 @@ export default function ReviewConsole() {
                                   review ID, evidence lineage, citations,
                                   sections, and freshness deadline are validated
                                   by the API before publication.
+                                </p>
+                                <button
+                                  className={styles.secondaryButton}
+                                  type="button"
+                                  onClick={downloadPublicationTemplate}
+                                >
+                                  Download publication template JSON
+                                </button>
+                                <p className={styles.lockedNote}>
+                                  Complete the publication fields below first.
+                                  The template includes this review ID, extracted
+                                  sections, citations, and freshness dates.
                                 </p>
                                 <label htmlFor="publication-json">
                                   Publication candidate JSON
@@ -1050,8 +1150,8 @@ export default function ReviewConsole() {
       </div>
       {error && (
         <div className={styles.errorBanner} role="alert">
-          <strong>Review service unavailable</strong>
-          <span>{error}</span>
+          <strong>{errorBannerTitle(error)}</strong>
+          <span>{errorBannerMessage(error)}</span>
           <button
             type="button"
             onClick={() => setError("")}

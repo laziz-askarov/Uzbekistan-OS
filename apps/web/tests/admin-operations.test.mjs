@@ -90,6 +90,9 @@ test("review publishers can load a bounded JSON candidate for server-side public
     /parsed\.review_item_id !== selected\?\.review\.id/,
   );
   assert.match(consoleSource, /Validate and publish JSON/);
+  assert.match(consoleSource, /Download publication template JSON/);
+  assert.match(consoleSource, /Missing or invalid fields:/);
+  assert.match(consoleSource, /Invalid publication JSON/);
   assert.match(consoleSource, /request<Publication>\("\/admin\/publications"/);
   assert.match(consoleSource, /freshnessDeadline\(publicationDomain\)/);
 });
@@ -109,7 +112,10 @@ test("admin evidence uploads accept PDF and JSON and keep publication review gat
   assert.match(dashboard, /Choose or create a topic/);
   assert.match(dashboard, /Nothing reaches the assistant until/);
   assert.match(reviewConsole, /Download Markdown/);
-  assert.match(reviewConsole, /Download extracted JSON/);
+  assert.match(
+    reviewConsole,
+    /Download extraction JSON — not publishable/,
+  );
   assert.match(reviewConsole, /topic: artifact\.topic/);
   assert.match(reviewConsole, /ThemeToggle/);
   assert.match(reviewStyles, /background: var\(--color-background\)/);
