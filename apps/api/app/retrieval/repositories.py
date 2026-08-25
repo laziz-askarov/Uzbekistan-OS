@@ -6,6 +6,12 @@ from sqlalchemy.orm import Session
 from app.retrieval.planning import RetrievalPlan
 from app.retrieval.service import RankedCandidate, RetrievalCandidate, RetrievalError
 
+_TEXT_SEARCH_CONFIG = {
+    "en": "english",
+    "ru": "russian",
+    "uz": "simple",
+}
+
 _ELIGIBLE_SOURCE_CLAUSE = """
 EXISTS (
     SELECT 1
@@ -101,16 +107,16 @@ LIMIT :limit
 
 LEXICAL_SEARCH_SQL = _COMMON_SELECT.format(
     score_expression=(
-        "ts_rank_cd(to_tsvector('simple', r.title || ' ' || "
+        "ts_rank_cd(to_tsvector(CAST(:text_search_config AS regconfig), r.title || ' ' || "
         "COALESCE(version.content ->> 'topic', '') || ' ' || r.content), "
-        "websearch_to_tsquery('simple', :query))"
+        "websearch_to_tsquery(CAST(:text_search_config AS regconfig), :query))"
     ),
     extra_join="",
     eligible_source_clause=_ELIGIBLE_SOURCE_CLAUSE,
     extra_where=(
-        "AND to_tsvector('simple', r.title || ' ' || "
+        "AND to_tsvector(CAST(:text_search_config AS regconfig), r.title || ' ' || "
         "COALESCE(version.content ->> 'topic', '') || ' ' || r.content) "
-        "@@ websearch_to_tsquery('simple', :query)"
+        "@@ websearch_to_tsquery(CAST(:text_search_config AS regconfig), :query)"
     ),
 )
 
@@ -140,7 +146,8 @@ class SqlAlchemyRetrievalRepository:
         rows = self.session.execute(
             text(LEXICAL_SEARCH_SQL),
             {
-                "query": plan.normalized_query,
+                "query": " OR ".join(plan.query_terms),
+                "text_search_config": _TEXT_SEARCH_CONFIG[plan.language.value],
                 "language": plan.language.value,
                 "domains": plan.domains,
                 "limit": limit,

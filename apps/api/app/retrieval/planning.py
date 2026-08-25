@@ -186,6 +186,79 @@ _INTENT_DOMAINS = {
 _HIGH_RISK_DOMAINS = {"immigration", "business-registration", "healthcare"}
 _UZBEK_MARKERS = {"uchun", "kerak", "qanday", "o'zbekiston", "viza", "ro'yxatdan", "ijara"}
 _RUSSIAN_MARKERS = {"для", "нужно", "как", "узбекистан", "виза", "регистрация", "аренда"}
+_QUERY_STOPWORDS = {
+    QueryLanguage.EN: {
+        "about",
+        "an",
+        "and",
+        "any",
+        "are",
+        "can",
+        "could",
+        "did",
+        "do",
+        "does",
+        "for",
+        "how",
+        "into",
+        "is",
+        "me",
+        "my",
+        "of",
+        "on",
+        "or",
+        "should",
+        "the",
+        "their",
+        "there",
+        "they",
+        "to",
+        "we",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "with",
+        "would",
+        "you",
+        "your",
+    },
+    QueryLanguage.UZ: {
+        "bilan",
+        "biz",
+        "bu",
+        "ham",
+        "men",
+        "mening",
+        "nima",
+        "qachon",
+        "qanday",
+        "qayerda",
+        "uchun",
+        "va",
+        "yoki",
+    },
+    QueryLanguage.RU: {
+        "без",
+        "где",
+        "для",
+        "есть",
+        "или",
+        "как",
+        "какие",
+        "какой",
+        "когда",
+        "мне",
+        "можно",
+        "мой",
+        "моя",
+        "нужно",
+        "что",
+        "это",
+    },
+}
 
 
 class RetrievalPlanner:
@@ -211,7 +284,7 @@ class RetrievalPlanner:
             if any(domain in _HIGH_RISK_DOMAINS for domain in domains)
             else RetrievalRisk.MEDIUM
         )
-        query_terms = self._terms(normalized, intent)
+        query_terms = self._terms(normalized, language, intent)
         fingerprint_source = "|".join(
             [normalized, language.value, intent.value, *domains, *query_terms]
         )
@@ -254,9 +327,16 @@ class RetrievalPlanner:
         return best_intent
 
     @staticmethod
-    def _terms(query: str, intent: RetrievalIntent) -> list[str]:
+    def _terms(
+        query: str,
+        language: QueryLanguage,
+        intent: RetrievalIntent,
+    ) -> list[str]:
         tokens = [
             token for token in re.findall(r"[^\W_]+", query, flags=re.UNICODE) if len(token) > 1
         ]
+        meaningful = [token for token in tokens if token not in _QUERY_STOPWORDS[language]]
+        if meaningful:
+            return list(dict.fromkeys(meaningful))[:32]
         intent_terms = intent.value.split("_") if intent is not RetrievalIntent.GENERAL else []
-        return list(dict.fromkeys([*tokens, *intent_terms]))[:32]
+        return list(dict.fromkeys([*intent_terms, *tokens]))[:32]

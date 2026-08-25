@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from typing import Literal
 
@@ -17,6 +18,8 @@ from app.retrieval.planning import (
 )
 from app.retrieval.service import HybridRetrievalService
 from app.retrieval.web import WebFallbackEvidenceProvider
+
+logger = logging.getLogger("uzbekistan_os.assistant")
 
 
 class AssistantError(RuntimeError):
@@ -108,10 +111,12 @@ class GroundedAssistantService:
             )
         retrieval = self.retrieval.retrieve(plan, limit=self.retrieval_limit)
         evidence = self.evidence_builder.build(retrieval)
+        evidence_source = "local"
         if evidence.status != "sufficient" and self.web_fallback is not None:
             web_evidence = self.web_fallback.retrieve(plan, request_id=request_id)
             if web_evidence is not None and web_evidence.status == "sufficient":
                 evidence = web_evidence
+                evidence_source = "web"
         created_at = datetime.now(UTC)
         context = self.context_assembler.assemble(
             language=plan.language,
@@ -135,12 +140,30 @@ class GroundedAssistantService:
             request_id=request_id,
             context=context,
         )
+        issue_codes = [issue.code for issue in outcome.issues]
+        generated = outcome.route_key is not None and outcome.accepted
+        logger.info(
+            "assistant answer completed",
+            extra={
+                "assistant_intent": plan.intent.value,
+                "assistant_risk": plan.risk.value,
+                "retrieval_status": retrieval.status,
+                "lexical_candidate_count": retrieval.lexical_candidate_count,
+                "vector_candidate_count": retrieval.vector_candidate_count,
+                "evidence_status": evidence.status,
+                "evidence_item_count": len(evidence.items),
+                "evidence_source": evidence_source,
+                "answer_accepted": outcome.accepted,
+                "answer_generated": generated,
+                "answer_issue_codes": issue_codes,
+            },
+        )
         return AssistantAnswerData(
             answer=outcome.answer,
             evidence=evidence,
             intent=plan.intent.value,
             risk=plan.risk.value,
             accepted=outcome.accepted,
-            issues=[issue.code for issue in outcome.issues],
-            generated=outcome.route_key is not None and outcome.accepted,
+            issues=issue_codes,
+            generated=generated,
         )

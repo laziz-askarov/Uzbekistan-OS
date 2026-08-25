@@ -10,11 +10,22 @@ request_id_context: ContextVar[str | None] = ContextVar("request_id", default=No
 
 class JsonFormatter(logging.Formatter):
     _EXTRA_FIELDS: ClassVar[tuple[str, ...]] = (
+        "answer_accepted",
+        "answer_generated",
+        "answer_issue_codes",
+        "assistant_intent",
+        "assistant_risk",
         "duration_ms",
         "dependency",
+        "evidence_item_count",
+        "evidence_source",
+        "evidence_status",
         "http_method",
         "http_path",
+        "lexical_candidate_count",
+        "retrieval_status",
         "status_code",
+        "vector_candidate_count",
     )
 
     def format(self, record: logging.LogRecord) -> str:
