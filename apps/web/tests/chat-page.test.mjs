@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { z } from "zod";
 
 const workspaceUrl = new URL("../app/chat/chat-workspace.tsx", import.meta.url);
 const pageUrl = new URL("../app/chat/page.tsx", import.meta.url);
 const apiUrl = new URL("../app/api/chat/route.ts", import.meta.url);
 const aiUrl = new URL("../lib/visa-ai.ts", import.meta.url);
 const chatContractUrl = new URL("../lib/chat-contract.ts", import.meta.url);
+const postgresUuidUrl = new URL("../lib/postgres-uuid.ts", import.meta.url);
 const workflowsUrl = new URL("../lib/visa-workflows.ts", import.meta.url);
 const knowledgeUrl = new URL("../lib/visa-knowledge.json", import.meta.url);
 
@@ -68,6 +70,18 @@ test("chat sends bounded message history to the grounded server endpoint", async
   assert.match(monitoring, /"x-request-id"/);
   assert.match(chatContract, /\.max\(24\)/);
   assert.doesNotMatch(api, /visa-ai|generateVisaChatResult/);
+});
+
+test("grounded responses accept deterministic PostgreSQL source UUIDs", async () => {
+  const api = await readFile(apiUrl, "utf8");
+  const postgresUuid = await readFile(postgresUuidUrl, "utf8");
+  const sourceId = "00000000-0000-0000-0000-000000002102";
+
+  assert.equal(z.guid().safeParse(sourceId).success, true);
+  assert.match(postgresUuid, /postgresUuidSchema = z\.guid\(\)/);
+  assert.match(api, /source_id: postgresUuidSchema/);
+  assert.match(api, /grounded_api_response_invalid/);
+  assert.match(api, /issue\.path\.join\("\."\)/);
 });
 
 test("chat starts with a clean conversation instead of a seeded visa workflow", async () => {

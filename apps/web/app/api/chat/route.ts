@@ -11,6 +11,7 @@ import {
   RequestBodyTooLargeError,
 } from "@/lib/request-guards";
 import { chatRequestSchema } from "@/lib/chat-contract";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
@@ -28,7 +29,7 @@ const chatQuotaSchema = z.object({
   limit_scope: z.enum(["chat_10_minutes", "chat_day"]).nullable(),
 });
 const groundedCitationSchema = z.object({
-  source_id: z.string().uuid(),
+  source_id: postgresUuidSchema,
   locator: z.string(),
   quote: z.string().nullable().optional(),
   source_url: z.string().url().nullable().optional(),
@@ -315,7 +316,20 @@ export async function POST(request: Request) {
       await groundedResponse.json(),
     );
     if (!groundedPayload.success) {
-      throw new Error("GroundedApiResponseInvalid");
+      logEvent("error", "grounded_api_response_invalid", context, {
+        status: 503,
+        schemaIssues: groundedPayload.error.issues
+          .slice(0, 8)
+          .map((issue) => `${issue.path.join(".")}:${issue.code}`)
+          .join(","),
+      });
+      return NextResponse.json(
+        {
+          error: "chat_unavailable",
+          message: "Grounded guidance is temporarily unavailable.",
+        },
+        { status: 503, headers: requestHeaders(context) },
+      );
     }
     const result = toVisaResult(groundedPayload.data);
     logEvent("info", "api_request_completed", context, {
