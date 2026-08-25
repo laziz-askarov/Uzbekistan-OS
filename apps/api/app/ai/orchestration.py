@@ -144,6 +144,25 @@ class GroundedAnswerOrchestrator:
             risk=risk,
             state=state,
         )
+        if validated.issues and all(
+            issue.code == "claim_not_supported" for issue in validated.issues
+        ):
+            repaired_answer = self._repair_claims_extractively(
+                raw_answer,
+                language=language,
+                unsupported_claim_ids={
+                    issue.claim_id for issue in validated.issues if issue.claim_id is not None
+                },
+            )
+            repaired = self.validator.validate(
+                answer=repaired_answer,
+                evidence=evidence,
+                expected_language=language,
+                risk=risk,
+                state=state,
+            )
+            if repaired.accepted:
+                validated = repaired
         return OrchestrationOutcome(
             **validated.model_dump(),
             prompt_fingerprint=result.prompt_fingerprint,
@@ -156,6 +175,42 @@ class GroundedAnswerOrchestrator:
             context_fingerprint=context.fingerprint if context else None,
             state_fingerprint=state.fingerprint if state else None,
             evidence_feedback=evidence_feedback,
+        )
+
+    @staticmethod
+    def _repair_claims_extractively(
+        answer: GroundedAnswer,
+        *,
+        language: QueryLanguage,
+        unsupported_claim_ids: set[str],
+    ) -> GroundedAnswer:
+        summaries = {
+            QueryLanguage.EN: "The reviewed official evidence provides the following information.",
+            QueryLanguage.UZ: "Koʻrib chiqilgan rasmiy dalillarda quyidagi maʼlumotlar berilgan.",  # noqa: RUF001
+            QueryLanguage.RU: "Проверенные официальные источники содержат следующие сведения.",
+        }
+        sections = []
+        for section in answer.sections:
+            claims = []
+            for claim in section.claims:
+                if claim.id not in unsupported_claim_ids:
+                    claims.append(claim)
+                    continue
+                citation = claim.citations[0]
+                claims.append(
+                    claim.model_copy(
+                        update={
+                            "text": citation.quote,
+                            "citations": [citation],
+                        }
+                    )
+                )
+            sections.append(section.model_copy(update={"claims": claims}))
+        return answer.model_copy(
+            update={
+                "summary": summaries[language],
+                "sections": sections,
+            }
         )
 
     @staticmethod

@@ -162,7 +162,7 @@ def test_insufficient_evidence_never_calls_provider() -> None:
     assert outcome.issues[0].code == "evidence_insufficient"
 
 
-def test_invalid_schema_and_unsupported_claim_degrade_safely() -> None:
+def test_invalid_schema_degrades_safely_and_unsupported_claim_repairs_extractively() -> None:
     invalid = ask(orchestrator(StubProvider({"status": "answered"})))
     unsupported = ask(
         orchestrator(
@@ -176,8 +176,12 @@ def test_invalid_schema_and_unsupported_claim_degrade_safely() -> None:
 
     assert invalid.answer.status == "insufficient"
     assert invalid.issues[0].code == "answer_schema_invalid"
-    assert unsupported.answer.status == "insufficient"
-    assert unsupported.issues[0].code == "claim_not_supported"
+    assert unsupported.answer.status == "answered"
+    assert unsupported.accepted is True
+    assert unsupported.issues == []
+    repaired_claim = unsupported.answer.sections[0].claims[0]
+    assert repaired_claim.text == "Visa-free entry is permitted for up to 30 days"
+    assert len(repaired_claim.citations) == 1
 
 
 def test_provider_failure_does_not_leak_provider_error_to_answer() -> None:
