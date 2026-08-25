@@ -96,7 +96,21 @@ _INTENT_RULES: tuple[tuple[RetrievalIntent, tuple[str, ...]], ...] = (
     (RetrievalIntent.PINFL, ("pinfl", "jshshir", "пинфл")),
     (
         RetrievalIntent.STAY_EXTENSION,
-        ("extend stay", "visa extension", "uzaytir", "продлить", "продление"),
+        (
+            "extend stay",
+            "visa extension",
+            "overstay",
+            "overstaying",
+            "visa expired",
+            "stay expired",
+            "muddatidan osh",
+            "qolish muddati",
+            "uzaytir",
+            "просроч",
+            "срок пребывания",
+            "продлить",
+            "продление",
+        ),
     ),
     (
         RetrievalIntent.RESIDENCE_PERMIT,

@@ -43,6 +43,12 @@ from app.knowledge.publication_repositories import SqlAlchemyPublicationReposito
 from app.retrieval.evidence import EvidencePackBuilder
 from app.retrieval.repositories import SqlAlchemyRetrievalRepository
 from app.retrieval.service import HybridRetrievalService
+from app.retrieval.web import (
+    OpenAIWebSearchClient,
+    SafeWebPageFetcher,
+    SqlAlchemyWebSourcePolicyRepository,
+    WebFallbackEvidenceProvider,
+)
 
 bearer_scheme = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
 
@@ -191,12 +197,35 @@ def get_grounded_assistant_service(
             api_key=settings.openai_api_key.get_secret_value(),
             model_by_role=runtime.provider_model_by_role,
         )
+    evidence_builder = EvidencePackBuilder(
+        max_items=runtime.policy.evidence_max_items,
+        max_characters=runtime.policy.evidence_max_characters,
+    )
+    web_fallback = None
+    web_model = runtime.provider_model_by_role.get("grounded-answer-balanced")
+    if (
+        settings.ai_web_fallback_enabled
+        and runtime.generation_enabled
+        and settings.openai_api_key is not None
+        and web_model is not None
+    ):
+        web_fallback = WebFallbackEvidenceProvider(
+            source_repository=SqlAlchemyWebSourcePolicyRepository(session),
+            search_client=OpenAIWebSearchClient(
+                api_key=settings.openai_api_key.get_secret_value(),
+                model=web_model,
+            ),
+            page_fetcher=SafeWebPageFetcher(),
+            evidence_builder=evidence_builder,
+            search_timeout_seconds=settings.ai_web_search_timeout_seconds,
+            fetch_timeout_seconds=settings.ai_web_fetch_timeout_seconds,
+            max_sources=settings.ai_web_max_sources,
+            max_fetch_bytes=settings.ai_web_max_fetch_bytes,
+            max_page_characters=settings.ai_web_max_page_characters,
+        )
     return GroundedAssistantService(
         retrieval=HybridRetrievalService(SqlAlchemyRetrievalRepository(session)),
-        evidence_builder=EvidencePackBuilder(
-            max_items=runtime.policy.evidence_max_items,
-            max_characters=runtime.policy.evidence_max_characters,
-        ),
+        evidence_builder=evidence_builder,
         orchestrator=GroundedAnswerOrchestrator(
             prompts=runtime.prompts,
             gateway=ModelGateway(routes=runtime.routes, providers=providers),
@@ -204,6 +233,7 @@ def get_grounded_assistant_service(
         ),
         context_assembler=runtime.policy.build_context_assembler(),
         retrieval_limit=runtime.policy.retrieval_limit,
+        web_fallback=web_fallback,
     )
 
 

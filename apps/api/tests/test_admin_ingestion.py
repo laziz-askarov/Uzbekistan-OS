@@ -99,7 +99,7 @@ class MemoryAdminRepository:
                 "languages": request.languages,
                 "crawl_policy": "manual_only",
                 "adapter_key": "generic-manual",
-                "trust_tier": 2,
+                "trust_tier": 1,
                 "status": "approved",
                 "owner": "admin",
                 "reviewed_at": created_at,
@@ -253,6 +253,7 @@ def test_admin_creates_manual_only_source_idempotently_without_expanding_crawler
     assert created.manual_upload_eligible is True
     assert created.automatic_fetch_eligible is False
     assert created.crawl_policy == "manual_only"
+    assert created.trust_tier == 1
     assert len(repository.managed) == 1
     assert any(source.id == created.id for source in service.list_sources(actor))
 

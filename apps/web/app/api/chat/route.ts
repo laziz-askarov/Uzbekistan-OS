@@ -83,7 +83,7 @@ function workflowForIntent(intent: string) {
   return {
     id: intent.replaceAll("_", "-"),
     title: title || "Official guidance",
-    description: "Grounded in reviewed, currently eligible official evidence.",
+    description: "Grounded in cited evidence from approved official sources.",
   };
 }
 

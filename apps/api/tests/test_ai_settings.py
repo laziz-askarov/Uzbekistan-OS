@@ -44,6 +44,7 @@ def test_mvp_ai_defaults_match_prd_scope_quality_and_latency_targets() -> None:
     assert policy.conversation_context_max_characters == 16_000
     assert policy.build_context_assembler().recent_turns == 8
     assert settings.openai_generation_model == "gpt-5.4-mini"
+    assert settings.ai_web_fallback_enabled is False
 
 
 def test_runtime_loads_approved_route_but_keeps_generation_disabled_by_default() -> None:

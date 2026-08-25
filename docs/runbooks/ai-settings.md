@@ -18,6 +18,8 @@
 | Stream / first content / completion | 2s / 3s / 8s | PRD and reliability response objectives |
 | Citation benchmark coverage | 95% | PRD minimum; runtime factual-claim coverage remains 100% |
 | Provider response storage | `false` | Uzbekistan OS remains the conversation system of record |
+| Web fallback | `false` by default | Explicit opt-in; searches and fetches only approved official Uzbekistan domains when local evidence is empty |
+| Web fallback source/fetch limits | 4 sources / 750 KB each | Bound latency, cost, and untrusted input size |
 
 The supported languages are English, Uzbek, and Russian. The configured domains
 are Immigration, Tourism, Business Registration, Healthcare, and Everyday
@@ -35,12 +37,20 @@ Before setting `AI_GENERATION_ENABLED=true`:
 4. Run the frozen high-risk, adversarial, abstention, latency, and cost gates.
 5. Run staging smoke/load tests and verify that provider response storage remains
    false.
-6. Set `AI_GENERATION_ENABLED=true` for a small controlled traffic slice with
+6. If live official-domain fallback is approved, set `AI_WEB_FALLBACK_ENABLED=true`.
+   It reuses `OPENAI_API_KEY`; do not add a browser or search credential to the web app.
+7. Set `AI_GENERATION_ENABLED=true` for a small controlled traffic slice with
    rollback to disabled generation.
 
 Changing only the environment flag cannot bypass the checked-in approval state,
 credential checks, retrieval eligibility, structured-output validation, or exact
 evidence-quote validation.
+
+The web fallback never searches arbitrary domains. It obtains its domain allowlist
+from active, official Uzbekistan sources already approved in the database, rejects
+redirects and non-HTTPS URLs, blocks private/reserved network addresses, bounds every
+response, strips executable HTML, and sends the resulting evidence through the same
+quote and citation validator as local knowledge.
 
 ## Validation
 

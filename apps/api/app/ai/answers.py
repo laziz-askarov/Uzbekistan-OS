@@ -166,6 +166,24 @@ class GroundedAnswer(BaseModel):
         return cls(status="insufficient", language=language, summary=messages[language])
 
     @classmethod
+    def out_of_scope(cls, language: QueryLanguage) -> "GroundedAnswer":
+        messages = {
+            QueryLanguage.EN: (
+                "I can only help with Uzbekistan-related questions about immigration, "
+                "tourism, business registration, healthcare, and everyday living."
+            ),
+            QueryLanguage.UZ: (
+                "Men faqat Oʻzbekistonga oid immigratsiya, turizm, biznesni roʻyxatdan "  # noqa: RUF001
+                "oʻtkazish, sogʻliqni saqlash va kundalik hayot savollariga yordam bera olaman."  # noqa: RUF001
+            ),
+            QueryLanguage.RU: (
+                "Я могу помочь только с вопросами об Узбекистане: иммиграция, туризм, "  # noqa: RUF001
+                "регистрация бизнеса, здравоохранение и повседневная жизнь."
+            ),
+        }
+        return cls(status="insufficient", language=language, summary=messages[language])
+
+    @classmethod
     def clarification_needed(
         cls,
         language: QueryLanguage,

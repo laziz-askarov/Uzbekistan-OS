@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.ai.answers import GroundedAnswer
 from app.ai.context import ConversationContextAssembler, ConversationMessage
 from app.ai.orchestration import GroundedAnswerOrchestrator
+from app.assistant.scope import UzbekistanScopeGuard
 from app.retrieval.evidence import EvidencePack, EvidencePackBuilder
 from app.retrieval.planning import (
     ApplicabilityContext,
@@ -15,6 +16,7 @@ from app.retrieval.planning import (
     RetrievalPlanningError,
 )
 from app.retrieval.service import HybridRetrievalService
+from app.retrieval.web import WebFallbackEvidenceProvider
 
 
 class AssistantError(RuntimeError):
@@ -65,12 +67,16 @@ class GroundedAssistantService:
         orchestrator: GroundedAnswerOrchestrator,
         context_assembler: ConversationContextAssembler,
         retrieval_limit: int,
+        web_fallback: WebFallbackEvidenceProvider | None = None,
+        scope_guard: UzbekistanScopeGuard | None = None,
     ) -> None:
         self.retrieval = retrieval
         self.evidence_builder = evidence_builder
         self.orchestrator = orchestrator
         self.context_assembler = context_assembler
         self.retrieval_limit = retrieval_limit
+        self.web_fallback = web_fallback
+        self.scope_guard = scope_guard or UzbekistanScopeGuard()
 
     def answer(self, payload: AssistantAnswerRequest, *, request_id: str) -> AssistantAnswerData:
         latest_question = next(
@@ -86,8 +92,26 @@ class GroundedAssistantService:
             )
         except RetrievalPlanningError as error:
             raise AssistantError(error.code, str(error)) from error
+        if not self.scope_guard.allows(plan):
+            evidence = self.evidence_builder.empty(
+                plan.fingerprint,
+                reason="question is outside the Uzbekistan assistant scope",
+            )
+            return AssistantAnswerData(
+                answer=GroundedAnswer.out_of_scope(plan.language),
+                evidence=evidence,
+                intent=plan.intent.value,
+                risk=plan.risk.value,
+                accepted=False,
+                issues=["question_out_of_scope"],
+                generated=False,
+            )
         retrieval = self.retrieval.retrieve(plan, limit=self.retrieval_limit)
         evidence = self.evidence_builder.build(retrieval)
+        if evidence.status != "sufficient" and self.web_fallback is not None:
+            web_evidence = self.web_fallback.retrieve(plan, request_id=request_id)
+            if web_evidence is not None and web_evidence.status == "sufficient":
+                evidence = web_evidence
         created_at = datetime.now(UTC)
         context = self.context_assembler.assemble(
             language=plan.language,

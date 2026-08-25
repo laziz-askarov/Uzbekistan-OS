@@ -106,6 +106,19 @@ class EvidencePackBuilder:
         )
 
     @staticmethod
+    def empty(plan_fingerprint: str, *, reason: str) -> EvidencePack:
+        canonical = f"{plan_fingerprint}|insufficient|{reason}"
+        return EvidencePack(
+            plan_fingerprint=plan_fingerprint,
+            evidence_fingerprint=sha256(canonical.encode()).hexdigest(),
+            status="insufficient",
+            reason=reason,
+            total_characters=0,
+            quarantined_chunk_ids=[],
+            items=[],
+        )
+
+    @staticmethod
     def _contains_control_pattern(content: str) -> bool:
         normalized = content.casefold()
         return any(pattern in normalized for pattern in _RETRIEVED_CONTROL_PATTERNS)

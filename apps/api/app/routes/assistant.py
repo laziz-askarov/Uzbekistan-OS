@@ -18,7 +18,7 @@ router = APIRouter(prefix="/assistant", tags=["assistant"])
     "/answer",
     response_model=SuccessResponse[AssistantAnswerData],
     operation_id="answerGroundedQuestion",
-    summary="Answer from reviewed and currently eligible official evidence",
+    summary="Answer from eligible official evidence with a bounded live fallback",
 )
 def answer_grounded_question(
     payload: AssistantAnswerRequest,

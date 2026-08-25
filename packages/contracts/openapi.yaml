@@ -561,7 +561,7 @@ paths:
     post:
       tags: [assistant]
       operationId: answerGroundedQuestion
-      summary: Answer from reviewed and currently eligible official evidence
+      summary: Answer from eligible official evidence with a bounded live fallback
       x-authorization:
         mode: authenticated
         roles: []
@@ -578,7 +578,7 @@ paths:
               $ref: "#/components/schemas/AssistantAnswerRequest"
       responses:
         "200":
-          description: Grounded answer or safe insufficiency
+          description: Grounded local or live-source answer, or safe insufficiency
           content:
             application/json:
               schema:

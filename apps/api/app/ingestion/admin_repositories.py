@@ -134,7 +134,10 @@ class SqlAlchemyAdminIngestionRepository:
             title=request.title,
             source_type=SourceType.MANUAL.value,
             crawl_policy=CrawlPolicy.MANUAL_ONLY.value,
-            trust_tier=2,
+            # Admin-created sources require an explicit official-domain confirmation,
+            # then every uploaded document still passes review and publication. Treat
+            # that reviewed lineage as tier 1 so high-risk retrieval can use it.
+            trust_tier=1,
             is_active=True,
             last_verified_at=created_at,
         )

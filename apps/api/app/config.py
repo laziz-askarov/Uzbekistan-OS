@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     ai_first_content_target_ms: int = Field(default=3_000, ge=500, le=15_000)
     ai_response_target_ms: int = Field(default=8_000, ge=1_000, le=30_000)
     ai_citation_coverage_target: float = Field(default=0.95, ge=0.95, le=1)
+    ai_web_fallback_enabled: bool = False
+    ai_web_search_timeout_seconds: float = Field(default=10, ge=2, le=30)
+    ai_web_fetch_timeout_seconds: float = Field(default=5, ge=1, le=15)
+    ai_web_max_sources: int = Field(default=4, ge=1, le=8)
+    ai_web_max_fetch_bytes: int = Field(default=750_000, ge=50_000, le=2_000_000)
+    ai_web_max_page_characters: int = Field(default=5_000, ge=500, le=10_000)
     ingestion_max_pdf_pages: int = Field(default=250, ge=1, le=2000)
     ingestion_max_normalized_characters: int = Field(default=2_000_000, ge=1000)
     snapshot_store_backend: Literal["database", "s3"] = "database"
