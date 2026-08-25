@@ -208,7 +208,6 @@ export default function OperationsDashboard() {
   const [uploadSource, setUploadSource] = useState<AdminSource | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadTopic, setUploadTopic] = useState("");
-  const [showCreateSource, setShowCreateSource] = useState(false);
   const [sourceDraft, setSourceDraft] = useState<NewSourceDraft>(newSourceDraft);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -421,17 +420,6 @@ export default function OperationsDashboard() {
     });
   }
 
-  function openCreateSource() {
-    setShowCreateSource(true);
-    setError("");
-    setMessage("");
-    window.requestAnimationFrame(() => {
-      document
-        .getElementById("create-source")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  }
-
   function toggleSourceDomain(domain: DomainSlug) {
     setSourceDraft((current) => ({
       ...current,
@@ -484,9 +472,8 @@ export default function OperationsDashboard() {
       );
       setUploadSource(created);
       setSourceDraft(newSourceDraft());
-      setShowCreateSource(false);
       setMessage(
-        `${created.title} was added as an audited manual source. You can attach evidence now.`,
+        `${created.title} was added as an audited official website source. You can attach evidence now.`,
       );
       window.requestAnimationFrame(() => {
         document
@@ -674,6 +661,7 @@ export default function OperationsDashboard() {
         <Brand />
         <nav className={styles.topActions} aria-label="Admin utilities">
           <a href="#analytics">Analytics</a>
+          <a href="#official-websites">Official websites</a>
           <Link href="/admin/reviews">Review queue</Link>
           <Link href="/admin/feedback">Feedback</Link>
           <ThemeToggle className={styles.themeButton} />
@@ -870,24 +858,25 @@ export default function OperationsDashboard() {
           ) : null}
         </div>
 
-        {showCreateSource ? (
-          <section
-            className={styles.createSourcePanel}
-            id="create-source"
-            aria-labelledby="create-source-heading"
-          >
+        <section
+          className={styles.createSourcePanel}
+          id="official-websites"
+          aria-labelledby="official-websites-heading"
+        >
             <div className={styles.createSourceIntro}>
-              <p className={styles.eyebrow}>Official source</p>
-              <h2 id="create-source-heading">Add a new manual source</h2>
+              <p className={styles.eyebrow}>Official websites</p>
+              <h2 id="official-websites-heading">Add an official website</h2>
               <p>
-                Register an official Uzbekistan source for manual evidence. New
-                sources cannot run crawlers, and uploaded content still requires
-                review and publication before the assistant can retrieve it.
+                Register a verified Uzbekistan government or public-institution
+                website as an approved evidence source. New websites remain
+                manual-only until their crawler configuration is separately
+                reviewed and deployed. Uploaded content still requires review
+                and publication before the assistant can retrieve it.
               </p>
             </div>
             <form className={styles.createSourceForm} onSubmit={createSource}>
               <label className={styles.sourceSelect} htmlFor="source-title">
-                Source title
+                Website or page title
                 <input
                   id="source-title"
                   maxLength={500}
@@ -897,13 +886,13 @@ export default function OperationsDashboard() {
                       title: event.target.value,
                     }))
                   }
-                  placeholder="Official tourism handbook"
+                  placeholder="Official tourism portal"
                   required
                   value={sourceDraft.title}
                 />
               </label>
               <label className={styles.sourceSelect} htmlFor="source-url">
-                Official source URL
+                Official page URL
                 <input
                   autoComplete="url"
                   id="source-url"
@@ -913,7 +902,7 @@ export default function OperationsDashboard() {
                       url: event.target.value,
                     }))
                   }
-                  placeholder="https://agency.gov.uz/document"
+                  placeholder="https://agency.gov.uz/service"
                   required
                   type="url"
                   value={sourceDraft.url}
@@ -1013,12 +1002,11 @@ export default function OperationsDashboard() {
                 <button
                   className={styles.quietButton}
                   onClick={() => {
-                    setShowCreateSource(false);
                     setSourceDraft(newSourceDraft());
                   }}
                   type="button"
                 >
-                  Cancel
+                  Clear
                 </button>
                 <button
                   className={styles.primaryButton}
@@ -1031,13 +1019,12 @@ export default function OperationsDashboard() {
                   type="submit"
                 >
                   {activeAction === "create-source"
-                    ? "Adding source…"
-                    : "Add source"}
+                    ? "Adding website…"
+                    : "Add official website"}
                 </button>
               </div>
             </form>
-          </section>
-        ) : null}
+        </section>
 
         <section
           className={styles.uploadPanel}
@@ -1055,13 +1042,12 @@ export default function OperationsDashboard() {
                 and publishes it. Encrypted or image-only PDFs are rejected
                 because OCR is not enabled.
               </p>
-              <button
+              <a
                 className={styles.secondaryButton}
-                onClick={openCreateSource}
-                type="button"
+                href="#official-websites"
               >
-                + Add new source
-              </button>
+                + Add official website
+              </a>
             </div>
             <form onSubmit={uploadEvidence}>
               <label className={styles.sourceSelect} htmlFor="upload-source">

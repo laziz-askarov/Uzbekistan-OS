@@ -104,7 +104,10 @@ test("admin evidence uploads accept PDF and JSON and keep publication review gat
     webFile("app/admin/reviews/review-console.module.css"),
   ]);
 
-  assert.match(dashboard, /accept="\.pdf,\.json,application\/pdf,application\/json"/);
+  assert.match(
+    dashboard,
+    /accept="\.pdf,\.json,application\/pdf,application\/json"/,
+  );
   assert.match(dashboard, /PDFs are converted to/);
   assert.match(dashboard, /\/admin\/ingestion\/topics/);
   assert.match(dashboard, /list="knowledge-topics"/);
@@ -112,25 +115,24 @@ test("admin evidence uploads accept PDF and JSON and keep publication review gat
   assert.match(dashboard, /Choose or create a topic/);
   assert.match(dashboard, /Nothing reaches the assistant until/);
   assert.match(reviewConsole, /Download Markdown/);
-  assert.match(
-    reviewConsole,
-    /Download extraction JSON — not publishable/,
-  );
+  assert.match(reviewConsole, /Download extraction JSON — not publishable/);
   assert.match(reviewConsole, /topic: artifact\.topic/);
   assert.match(reviewConsole, /ThemeToggle/);
   assert.match(reviewStyles, /background: var\(--color-background\)/);
   assert.doesNotMatch(reviewStyles, /\.documentPanel[^}]*background:\s*white/s);
 });
 
-test("admins can add bounded manual sources without expanding crawler scope", async () => {
+test("admins can add official websites without expanding crawler scope", async () => {
   const dashboard = await webFile("app/admin/operations-dashboard.tsx");
 
-  assert.match(dashboard, /\+ Add new source/);
+  assert.match(dashboard, /id="official-websites"/);
+  assert.match(dashboard, /Add an official website/);
+  assert.match(dashboard, /\+ Add official website/);
   assert.match(dashboard, /request<AdminSource>\("\/admin\/sources"/);
   assert.match(dashboard, /confirmed_official: sourceDraft\.confirmedOfficial/);
   assert.match(dashboard, /Knowledge domains/);
   assert.match(dashboard, /Document languages/);
   assert.match(dashboard, /controlled by the named official/);
-  assert.match(dashboard, /New\s+sources cannot run crawlers/);
+  assert.match(dashboard, /New websites remain\s+manual-only/);
   assert.match(dashboard, /setUploadSource\(created\)/);
 });

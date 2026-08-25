@@ -117,12 +117,12 @@ export default function AuthForm() {
           password,
           options: {
             ...(captchaToken ? { captchaToken } : {}),
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=/account`,
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/chat`,
           },
         });
         if (error) throw error;
         if (data.session) {
-          window.location.assign("/account");
+          window.location.assign("/chat");
           return;
         }
         setMessage(`Check ${nextEmail} to confirm your account.`);
@@ -133,7 +133,7 @@ export default function AuthForm() {
           options: captchaToken ? { captchaToken } : undefined,
         });
         if (error) throw error;
-        window.location.assign("/account");
+        window.location.assign("/chat");
       }
     } catch (error) {
       setMessage(
@@ -206,7 +206,7 @@ export default function AuthForm() {
         });
         if (error) throw error;
         if (data.session) {
-          window.location.assign("/account");
+          window.location.assign("/chat");
           return;
         }
         setNormalizedPhone(nextPhone);
@@ -219,7 +219,7 @@ export default function AuthForm() {
           options: captchaToken ? { captchaToken } : undefined,
         });
         if (error) throw error;
-        window.location.assign("/account");
+        window.location.assign("/chat");
       }
     } catch (error) {
       setMessage(
@@ -250,7 +250,7 @@ export default function AuthForm() {
         type: "sms",
       });
       if (error) throw error;
-      window.location.assign("/account");
+      window.location.assign("/chat");
     } catch (error) {
       setMessage(
         friendlyError(

@@ -85,3 +85,30 @@ test("account contact inputs keep dark text including Safari autofill", async ()
   assert.match(styles, /-webkit-text-fill-color: #0f172a;/);
   assert.match(styles, /\.account-inline-form input:-webkit-autofill/);
 });
+
+test("account navigation separates staff tools and stacks customer actions", async () => {
+  const page = await readFile(new URL("app/account/page.tsx", webRoot), "utf8");
+  const settings = await readFile(
+    new URL("app/account/account-settings.tsx", webRoot),
+    "utf8",
+  );
+  const styles = await readFile(new URL("app/globals.css", webRoot), "utf8");
+
+  assert.match(page, /className="account-section account-admin-section"/);
+  assert.match(page, /Staff access/);
+  assert.match(page, /Admin tools/);
+  assert.match(page, /className="account-admin-actions"/);
+  assert.match(page, /Return to chat/);
+  assert.match(page, /<footer className="account-actions">/);
+  assert.match(
+    settings,
+    /<details className="account-section account-privacy-accordion">/,
+  );
+  assert.match(settings, /<summary className="account-privacy-summary">/);
+  assert.doesNotMatch(settings, /<details[^>]*\sopen(?:\s|=|>)/);
+  assert.match(styles, /\.account-actions \{[\s\S]*display: grid;/);
+  assert.match(
+    styles,
+    /\.account-admin-actions \{[\s\S]*grid-template-columns:/,
+  );
+});

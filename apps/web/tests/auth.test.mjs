@@ -24,6 +24,15 @@ test("email and international phone registration use passwords", async () => {
   assert.match(form, /Forgot password\? Recover by email/);
   assert.match(form, /Already have an account\? Sign in/g);
   assert.match(form, /No PINFL or passport number required/);
+  assert.match(
+    form,
+    /emailRedirectTo: `\$\{window\.location\.origin\}\/auth\/callback\?next=\/chat`/,
+  );
+  assert.equal(
+    (form.match(/window\.location\.assign\("\/chat"\)/g) ?? []).length,
+    5,
+  );
+  assert.doesNotMatch(form, /window\.location\.assign\("\/account"\)/);
   assert.doesNotMatch(form, /auth-tabs|signInAnonymously|signInWithOtp/);
   assert.doesNotMatch(form, /Continue with Google|Continue with Apple/);
 });

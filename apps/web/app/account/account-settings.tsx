@@ -559,64 +559,75 @@ export default function AccountSettings({
         </div>
       </section>
 
-      <section className="account-section" aria-labelledby="privacy-heading">
-        <p className="section-kicker">Data & privacy</p>
-        <h2 id="privacy-heading">Retention and controls</h2>
-        <p className="account-section-copy">
-          Saved conversations do not expire automatically. They remain in your
-          account until you delete each conversation or delete your account.
-        </p>
-
-        <div className="account-data-action">
+      <details className="account-section account-privacy-accordion">
+        <summary className="account-privacy-summary">
           <div>
-            <strong>Export your account</strong>
-            <span>
-              Download a JSON copy of your profile, conversations, messages,
-              checklists, guidance reports, account details, and current
-              usage-limit records.
-            </span>
+            <p className="section-kicker">Data & privacy</p>
+            <h2>Retention and controls</h2>
           </div>
-          <a className="pill pill-light" href="/api/account/export">
-            Download account data
-          </a>
+          <span className="account-accordion-icon" aria-hidden="true">
+            +
+          </span>
+        </summary>
+
+        <div className="account-privacy-content">
+          <p className="account-section-copy">
+            Saved conversations do not expire automatically. They remain in
+            your account until you delete each conversation or delete your
+            account.
+          </p>
+
+          <div className="account-data-action">
+            <div>
+              <strong>Export your account</strong>
+              <span>
+                Download a JSON copy of your profile, conversations, messages,
+                checklists, guidance reports, account details, and current
+                usage-limit records.
+              </span>
+            </div>
+            <a className="pill pill-light" href="/api/account/export">
+              Download account data
+            </a>
+          </div>
+
+          <form className="account-danger" onSubmit={deleteAccount}>
+            <div>
+              <strong>Delete account permanently</strong>
+              <p id="delete-account-help">
+                This removes your account, profile image, saved conversations,
+                messages, checklists, and guidance reports from the active
+                service. This cannot be undone. Limited records may remain
+                temporarily in provider logs or backups as described in the
+                Privacy Policy.
+              </p>
+            </div>
+            <label htmlFor="delete-account-confirmation">
+              Type <strong>DELETE</strong> to confirm
+            </label>
+            <div className="account-danger-actions">
+              <input
+                aria-describedby="delete-account-help"
+                autoComplete="off"
+                disabled={busy !== null}
+                id="delete-account-confirmation"
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                spellCheck={false}
+                value={deleteConfirmation}
+              />
+              <button
+                className="pill account-delete-button"
+                disabled={busy !== null || deleteConfirmation !== "DELETE"}
+                type="submit"
+              >
+                {busy === "delete-account"
+                  ? "Deleting account…"
+                  : "Delete account permanently"}
+              </button>
+            </div>
+          </form>
         </div>
-
-        <form className="account-danger" onSubmit={deleteAccount}>
-          <div>
-            <strong>Delete account permanently</strong>
-            <p id="delete-account-help">
-              This removes your account, profile image, saved conversations,
-              messages, checklists, and guidance reports from the active
-              service. This cannot be undone. Limited records may remain
-              temporarily in provider logs or backups as described in the
-              Privacy Policy.
-            </p>
-          </div>
-          <label htmlFor="delete-account-confirmation">
-            Type <strong>DELETE</strong> to confirm
-          </label>
-          <div className="account-danger-actions">
-            <input
-              aria-describedby="delete-account-help"
-              autoComplete="off"
-              disabled={busy !== null}
-              id="delete-account-confirmation"
-              onChange={(event) => setDeleteConfirmation(event.target.value)}
-              spellCheck={false}
-              value={deleteConfirmation}
-            />
-            <button
-              className="pill account-delete-button"
-              disabled={busy !== null || deleteConfirmation !== "DELETE"}
-              type="submit"
-            >
-              {busy === "delete-account"
-                ? "Deleting account…"
-                : "Delete account permanently"}
-            </button>
-          </div>
-        </form>
-      </section>
+      </details>
 
       {notice ? (
         <p

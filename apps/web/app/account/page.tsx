@@ -67,24 +67,36 @@ export default async function AccountPage() {
           userId={data.user.id}
         />
 
-        <footer className="account-actions">
-          {staffIdentity?.role === "admin" ? (
-            <Link className="pill pill-light" href="/admin">
-              Ingestion operations
-            </Link>
-          ) : null}
-          {staffIdentity ? (
-            <>
+        {staffIdentity ? (
+          <section
+            className="account-section account-admin-section"
+            aria-labelledby="admin-tools-heading"
+          >
+            <p className="section-kicker">Staff access</p>
+            <h2 id="admin-tools-heading">Admin tools</h2>
+            <p className="account-section-copy">
+              Review official knowledge, ingestion activity, and customer
+              feedback from the protected staff workspace.
+            </p>
+            <div className="account-admin-actions">
+              {staffIdentity?.role === "admin" ? (
+                <Link className="pill pill-light" href="/admin">
+                  Ingestion operations
+                </Link>
+              ) : null}
               <Link className="pill pill-light" href="/admin/reviews">
                 Review queue
               </Link>
               <Link className="pill pill-light" href="/admin/feedback">
                 Review feedback
               </Link>
-            </>
-          ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        <footer className="account-actions">
           <Link className="pill pill-dark" href="/chat">
-            Open assistant
+            Return to chat
           </Link>
           <form action="/auth/signout" method="post">
             <button className="pill pill-light" type="submit">
