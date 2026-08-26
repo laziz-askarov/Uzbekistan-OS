@@ -7,6 +7,9 @@ from alembic.script import ScriptDirectory
 
 ROOT = Path(__file__).resolve().parents[3]
 ALEMBIC_CONFIG = ROOT / "apps/api/alembic.ini"
+SUPABASE_ALEMBIC_SECURITY_MIGRATION = (
+    ROOT / "supabase/migrations/202608260012_secure_alembic_version.sql"
+)
 
 
 def test_migration_history_has_one_linear_head() -> None:
@@ -86,3 +89,12 @@ def test_foundation_downgrade_compiles_to_postgresql_sql() -> None:
     assert "DROP TABLE knowledge.document_lifecycle_events" in sql
     assert "DROP TABLE ingestion.snapshot_objects" in sql
     assert "DROP TABLE ingestion.managed_source_configs" in sql
+
+
+def test_supabase_migration_ledger_is_not_exposed_to_client_roles() -> None:
+    sql = SUPABASE_ALEMBIC_SECURITY_MIGRATION.read_text(encoding="utf-8").lower()
+
+    assert "alter table public.alembic_version enable row level security" in sql
+    assert "revoke all privileges on table public.alembic_version" in sql
+    assert "from public, anon, authenticated, service_role" in sql
+    assert "create policy" not in sql
