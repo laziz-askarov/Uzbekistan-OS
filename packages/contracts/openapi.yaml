@@ -20,6 +20,7 @@ tags:
   - name: ingestion
   - name: administration
   - name: assistant
+  - name: editorial-content
 paths:
   /health:
     get:
@@ -669,6 +670,40 @@ paths:
                 $ref: "#/components/schemas/ManualUploadResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /admin/sources/{source_id}:
+    put:
+      tags: [ingestion]
+      operationId: updateAdminSource
+      summary: Update audited official source metadata
+      x-authorization:
+        mode: role-gated
+        roles: [admin]
+      x-idempotency:
+        mode: deterministic-replay
+        replay: identical-source-metadata
+        conflict: none
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: source_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminSourceRequest"
+      responses:
+        "200":
+          description: Source metadata updated and audit logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSourceResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
   /admin/ingestion/jobs:
     get:
       tags: [ingestion]
@@ -965,6 +1000,315 @@ paths:
                 $ref: "#/components/schemas/IndexJobResponse"
         default:
           $ref: "#/components/responses/ErrorResponse"
+  /admin/content/authors:
+    get:
+      tags: [editorial-content]
+      operationId: listEditorialAuthors
+      summary: List active editorial authors
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Active editorial authors
+          content:
+            application/json:
+              schema:
+                { $ref: "#/components/schemas/EditorialAuthorListResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+    post:
+      tags: [editorial-content]
+      operationId: createEditorialAuthor
+      summary: Create the current staff member's editorial author profile
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, admin]
+      x-idempotency:
+        mode: natural-key
+        replay: principal-author-profile
+        conflict: principal-or-slug-already-exists
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditorialAuthorDraft" }
+      responses:
+        "201":
+          description: Author profile created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialAuthorResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/content/posts:
+    get:
+      tags: [editorial-content]
+      operationId: listEditorialPosts
+      summary: List editorial posts by latest revision status
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/EditorialStatus" }
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Editorial posts and latest revision state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialPostListResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+    post:
+      tags: [editorial-content]
+      operationId: createEditorialPost
+      summary: Create a new editorial post draft
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, admin]
+      x-idempotency:
+        mode: natural-key
+        replay: post-slug
+        conflict: slug-already-exists
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditorialPostDraft" }
+      responses:
+        "201":
+          description: Initial draft revision created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRevisionResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/content/posts/{post_id}/revisions:
+    post:
+      tags: [editorial-content]
+      operationId: createEditorialRevision
+      summary: Create a new draft revision for a published post
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, admin]
+      x-idempotency:
+        mode: deterministic-replay
+        replay: existing-open-revision
+        conflict: unpublished-revision-already-exists
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditorialRevisionDraft" }
+      responses:
+        "201":
+          description: Draft revision created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRevisionResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/content/revisions/{revision_id}:
+    get:
+      tags: [editorial-content]
+      operationId: getEditorialRevision
+      summary: Get an editorial revision and its source citations
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: revision_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Editorial revision detail
+          content:
+            application/json:
+              schema:
+                { $ref: "#/components/schemas/EditorialRevisionDetailResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+    put:
+      tags: [editorial-content]
+      operationId: updateEditorialRevision
+      summary: Update an editable editorial draft
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, admin]
+      x-idempotency:
+        mode: deterministic-replay
+        replay: revision-checksum
+        conflict: revision-not-draft
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: revision_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditorialRevisionDraft" }
+      responses:
+        "200":
+          description: Updated draft detail
+          content:
+            application/json:
+              schema:
+                { $ref: "#/components/schemas/EditorialRevisionDetailResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/content/revisions/{revision_id}/submit:
+    post:
+      tags: [editorial-content]
+      operationId: submitEditorialRevision
+      summary: Submit an editorial draft for review
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, admin]
+      x-idempotency:
+        mode: state-transition
+        replay: submitted-revision
+        conflict: revision-not-draft
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: revision_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Revision submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRevisionResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/content/revisions/{revision_id}/decision:
+    post:
+      tags: [editorial-content]
+      operationId: decideEditorialRevision
+      summary: Approve an editorial revision or request changes
+      x-authorization:
+        mode: role-gated
+        roles: [content_reviewer, admin]
+      x-idempotency:
+        mode: state-transition
+        replay: recorded-decision
+        conflict: revision-not-in-review
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: revision_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditorialDecisionRequest" }
+      responses:
+        "200":
+          description: Review decision recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRevisionResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/content/revisions/{revision_id}/publish:
+    post:
+      tags: [editorial-content]
+      operationId: publishEditorialRevision
+      summary: Publish an approved editorial revision
+      x-authorization:
+        mode: role-gated
+        roles: [knowledge_publisher, admin]
+      x-idempotency:
+        mode: state-transition
+        replay: publication-record
+        conflict: revision-not-approved
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: revision_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Revision published
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRevisionResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /content/posts:
+    get:
+      tags: [editorial-content]
+      operationId: listPublishedEditorialPosts
+      summary: List currently published editorial posts
+      x-authorization:
+        mode: public
+      security: []
+      parameters:
+        - name: domain
+          in: query
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/DomainSlug"
+              - type: "null"
+        - name: language
+          in: query
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/LanguageCode"
+              - type: "null"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Current published editorial posts only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublishedPostListResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
+  /content/posts/{slug}:
+    get:
+      tags: [editorial-content]
+      operationId: getPublishedEditorialPost
+      summary: Get the current published revision of an editorial post
+      x-authorization:
+        mode: public
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      responses:
+        "200":
+          description: Current published revision with author and source lineage
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublishedPostResponse" }
+        default: { $ref: "#/components/responses/ErrorResponse" }
 components:
   securitySchemes:
     BearerAuth:
@@ -1055,6 +1399,379 @@ components:
           healthcare,
           everyday-living,
         ]
+    EditorialStatus:
+      type: string
+      enum: [draft, in_review, approved, published, stale, archived]
+    EditorialContentType:
+      type: string
+      enum: [article, guide, platform_update, interview]
+    EditorialAuthorDraft:
+      type: object
+      required: [slug, name]
+      properties:
+        slug:
+          type: string
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        name: { type: string, minLength: 1, maxLength: 240 }
+        bio: { type: [string, "null"], maxLength: 5000 }
+        avatar_url: { type: [string, "null"], maxLength: 2000 }
+        profile_url: { type: [string, "null"], maxLength: 2000 }
+      additionalProperties: false
+    EditorialAuthorData:
+      type: object
+      required:
+        [id, principal_id, slug, name, bio, avatar_url, profile_url, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        principal_id: { type: [string, "null"], format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        bio: { type: [string, "null"] }
+        avatar_url: { type: [string, "null"] }
+        profile_url: { type: [string, "null"] }
+        is_active: { type: boolean }
+      additionalProperties: false
+    EditorialSourceReference:
+      type: object
+      required: [source_id, locator]
+      properties:
+        source_id: { type: string, format: uuid }
+        document_version_id: { type: [string, "null"], format: uuid }
+        locator: { type: string, minLength: 1, maxLength: 2000 }
+        quote: { type: [string, "null"], maxLength: 5000 }
+      additionalProperties: false
+    EditorialRevisionDraft:
+      type: object
+      required: [author_id, title, summary, body_markdown]
+      properties:
+        author_id: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        summary: { type: string, minLength: 1, maxLength: 2000 }
+        body_markdown: { type: string, minLength: 1 }
+        structured_content:
+          type: object
+          additionalProperties: true
+        seo_title: { type: [string, "null"], maxLength: 70 }
+        seo_description: { type: [string, "null"], maxLength: 200 }
+        canonical_url: { type: [string, "null"], maxLength: 2000 }
+        hero_image_url: { type: [string, "null"], maxLength: 2000 }
+        hero_image_alt: { type: [string, "null"], maxLength: 500 }
+        include_in_rag: { type: boolean, default: false }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/EditorialSourceReference" }
+      additionalProperties: false
+    EditorialPostDraft:
+      allOf:
+        - $ref: "#/components/schemas/EditorialRevisionDraft"
+        - type: object
+          required: [slug, content_type, language_code]
+          properties:
+            slug:
+              type: string
+              pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            content_type: { $ref: "#/components/schemas/EditorialContentType" }
+            domain_slug:
+              oneOf:
+                - $ref: "#/components/schemas/DomainSlug"
+                - type: "null"
+            language_code: { $ref: "#/components/schemas/LanguageCode" }
+            translation_group_id: { type: [string, "null"], format: uuid }
+    EditorialRevisionData:
+      type: object
+      required:
+        - id
+        - post_id
+        - version_number
+        - content_type
+        - status
+        - checksum_sha256
+        - created_by_principal_id
+        - include_in_rag
+        - submitted_at
+        - reviewed_by_principal_id
+        - reviewed_at
+        - decision_reason
+        - published_by_principal_id
+        - published_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        post_id: { type: string, format: uuid }
+        version_number: { type: integer, minimum: 1 }
+        content_type: { $ref: "#/components/schemas/EditorialContentType" }
+        status: { $ref: "#/components/schemas/EditorialStatus" }
+        checksum_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+        created_by_principal_id: { type: string, format: uuid }
+        include_in_rag: { type: boolean }
+        submitted_at: { type: [string, "null"], format: date-time }
+        reviewed_by_principal_id: { type: [string, "null"], format: uuid }
+        reviewed_at: { type: [string, "null"], format: date-time }
+        decision_reason: { type: [string, "null"] }
+        published_by_principal_id: { type: [string, "null"], format: uuid }
+        published_at: { type: [string, "null"], format: date-time }
+        updated_at: { type: [string, "null"], format: date-time }
+      additionalProperties: false
+    EditorialPostSummaryData:
+      type: object
+      required:
+        - id
+        - slug
+        - content_type
+        - domain_slug
+        - language_code
+        - status
+        - published_version_id
+        - latest_revision_id
+        - latest_revision_number
+        - latest_revision_status
+        - latest_title
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        content_type: { $ref: "#/components/schemas/EditorialContentType" }
+        domain_slug:
+          oneOf:
+            - $ref: "#/components/schemas/DomainSlug"
+            - type: "null"
+        language_code: { $ref: "#/components/schemas/LanguageCode" }
+        status: { $ref: "#/components/schemas/EditorialStatus" }
+        published_version_id: { type: [string, "null"], format: uuid }
+        latest_revision_id: { type: string, format: uuid }
+        latest_revision_number: { type: integer, minimum: 1 }
+        latest_revision_status: { $ref: "#/components/schemas/EditorialStatus" }
+        latest_title: { type: string }
+        updated_at: { type: string, format: date-time }
+      additionalProperties: false
+    EditorialRevisionDetailData:
+      type: object
+      required:
+        - revision
+        - slug
+        - domain_slug
+        - language_code
+        - translation_group_id
+        - title
+        - summary
+        - body_markdown
+        - structured_content
+        - seo_title
+        - seo_description
+        - canonical_url
+        - hero_image_url
+        - hero_image_alt
+        - include_in_rag
+        - author
+        - sources
+      properties:
+        revision: { $ref: "#/components/schemas/EditorialRevisionData" }
+        slug: { type: string }
+        domain_slug:
+          oneOf:
+            - $ref: "#/components/schemas/DomainSlug"
+            - type: "null"
+        language_code: { $ref: "#/components/schemas/LanguageCode" }
+        translation_group_id: { type: string, format: uuid }
+        title: { type: string }
+        summary: { type: string }
+        body_markdown: { type: string }
+        structured_content:
+          type: object
+          additionalProperties: true
+        seo_title: { type: [string, "null"] }
+        seo_description: { type: [string, "null"] }
+        canonical_url: { type: [string, "null"] }
+        hero_image_url: { type: [string, "null"] }
+        hero_image_alt: { type: [string, "null"] }
+        include_in_rag: { type: boolean }
+        author: { $ref: "#/components/schemas/EditorialAuthorData" }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/EditorialSourceReference" }
+      additionalProperties: false
+    PublishedAuthorData:
+      type: object
+      required: [slug, name, bio, avatar_url, profile_url]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        bio: { type: [string, "null"] }
+        avatar_url: { type: [string, "null"] }
+        profile_url: { type: [string, "null"] }
+      additionalProperties: false
+    PublishedSourceData:
+      type: object
+      required: [source_id, title, organization, url, locator]
+      properties:
+        source_id: { type: string, format: uuid }
+        title: { type: string }
+        organization: { type: string }
+        url: { type: string, format: uri }
+        locator: { type: string }
+      additionalProperties: false
+    PublishedTranslationData:
+      type: object
+      required: [language_code, slug, title]
+      properties:
+        language_code: { $ref: "#/components/schemas/LanguageCode" }
+        slug: { type: string }
+        title: { type: string }
+      additionalProperties: false
+    PublishedPostSummaryData:
+      type: object
+      required:
+        - id
+        - slug
+        - content_type
+        - domain_slug
+        - language_code
+        - title
+        - summary
+        - hero_image_url
+        - hero_image_alt
+        - author_name
+        - author_slug
+        - published_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        content_type: { $ref: "#/components/schemas/EditorialContentType" }
+        domain_slug:
+          oneOf:
+            - $ref: "#/components/schemas/DomainSlug"
+            - type: "null"
+        language_code: { $ref: "#/components/schemas/LanguageCode" }
+        title: { type: string }
+        summary: { type: string }
+        hero_image_url: { type: [string, "null"] }
+        hero_image_alt: { type: [string, "null"] }
+        author_name: { type: string }
+        author_slug: { type: string }
+        published_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      additionalProperties: false
+    PublishedPostData:
+      type: object
+      required:
+        - id
+        - version_id
+        - version_number
+        - slug
+        - content_type
+        - domain_slug
+        - language_code
+        - title
+        - summary
+        - body_markdown
+        - structured_content
+        - seo_title
+        - seo_description
+        - canonical_url
+        - hero_image_url
+        - hero_image_alt
+        - author
+        - sources
+        - translations
+        - published_at
+        - updated_at
+        - review_due_at
+      properties:
+        id: { type: string, format: uuid }
+        version_id: { type: string, format: uuid }
+        version_number: { type: integer, minimum: 1 }
+        slug: { type: string }
+        content_type: { $ref: "#/components/schemas/EditorialContentType" }
+        domain_slug:
+          oneOf:
+            - $ref: "#/components/schemas/DomainSlug"
+            - type: "null"
+        language_code: { $ref: "#/components/schemas/LanguageCode" }
+        title: { type: string }
+        summary: { type: string }
+        body_markdown: { type: string }
+        structured_content:
+          type: object
+          additionalProperties: true
+        seo_title: { type: [string, "null"] }
+        seo_description: { type: [string, "null"] }
+        canonical_url: { type: [string, "null"] }
+        hero_image_url: { type: [string, "null"] }
+        hero_image_alt: { type: [string, "null"] }
+        author: { $ref: "#/components/schemas/PublishedAuthorData" }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/PublishedSourceData" }
+        translations:
+          type: array
+          items: { $ref: "#/components/schemas/PublishedTranslationData" }
+        published_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        review_due_at: { type: [string, "null"], format: date-time }
+      additionalProperties: false
+    EditorialDecisionRequest:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision: { type: string, enum: [approve, request_changes] }
+        reason: { type: string, minLength: 1, maxLength: 2000 }
+      additionalProperties: false
+    EditorialAuthorResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/EditorialAuthorData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    EditorialAuthorListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/EditorialAuthorData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    EditorialPostListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/EditorialPostSummaryData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    EditorialRevisionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/EditorialRevisionData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    EditorialRevisionDetailResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/EditorialRevisionDetailData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    PublishedPostListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/PublishedPostSummaryData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    PublishedPostResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/PublishedPostData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
     ResponseMeta:
       type: object
       properties:
@@ -1178,7 +1895,14 @@ components:
         - fingerprint
       properties:
         version: { type: string, const: "1.0" }
-        workflow: { oneOf: [{ $ref: "#/components/schemas/RetrievalIntent" }, { type: "null" }] }
+        workflow:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/RetrievalIntent" },
+                { type: "null" },
+              ],
+          }
         goal: { type: [string, "null"], minLength: 1, maxLength: 160 }
         language: { $ref: "#/components/schemas/LanguageCode" }
         facts:
@@ -1218,7 +1942,14 @@ components:
         id: { type: string, format: uuid }
         language: { $ref: "#/components/schemas/LanguageCode" }
         title: { type: [string, "null"] }
-        state: { oneOf: [{ $ref: "#/components/schemas/ConversationState" }, { type: "null" }] }
+        state:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/ConversationState" },
+                { type: "null" },
+              ],
+          }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
       additionalProperties: false
@@ -1350,10 +2081,25 @@ components:
       required: [id, type, label]
       properties:
         id: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
-        type: { type: string, enum: [continue_flow, change_context, view_evidence] }
+        type:
+          { type: string, enum: [continue_flow, change_context, view_evidence] }
         label: { type: string, minLength: 1, maxLength: 160 }
-        workflow: { oneOf: [{ $ref: "#/components/schemas/RetrievalIntent" }, { type: "null" }] }
-        field: { oneOf: [{ $ref: "#/components/schemas/ConversationField" }, { type: "null" }] }
+        workflow:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/RetrievalIntent" },
+                { type: "null" },
+              ],
+          }
+        field:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/ConversationField" },
+                { type: "null" },
+              ],
+          }
       additionalProperties: false
     GroundedAnswer:
       type: object
@@ -1366,7 +2112,8 @@ components:
         - limitations
         - next_actions
       properties:
-        status: { type: string, enum: [answered, needs_clarification, insufficient] }
+        status:
+          { type: string, enum: [answered, needs_clarification, insufficient] }
         language: { $ref: "#/components/schemas/LanguageCode" }
         summary: { type: string, minLength: 1, maxLength: 2000 }
         sections:
@@ -1402,7 +2149,8 @@ components:
       properties:
         audience: { type: [string, "null"], minLength: 1, maxLength: 120 }
         nationality: { type: [string, "null"], pattern: "^[A-Z]{2}$" }
-        residency_status: { type: [string, "null"], minLength: 1, maxLength: 120 }
+        residency_status:
+          { type: [string, "null"], minLength: 1, maxLength: 120 }
         location: { type: [string, "null"], minLength: 1, maxLength: 160 }
       additionalProperties: false
     AssistantAnswerRequest:
@@ -1500,7 +2248,8 @@ components:
       additionalProperties: false
     EvidenceFeedback:
       type: object
-      required: [evidence_fingerprint, official_source_count, document_version_ids]
+      required:
+        [evidence_fingerprint, official_source_count, document_version_ids]
       properties:
         evidence_fingerprint: { type: string, pattern: "^[a-f0-9]{64}$" }
         official_source_count: { type: integer, minimum: 0 }
@@ -1627,7 +2376,10 @@ components:
             message_id: { type: string, format: uuid }
             citation_count: { type: integer, minimum: 0 }
             outcome:
-              { type: string, enum: [answered, needs_clarification, insufficient] }
+              {
+                type: string,
+                enum: [answered, needs_clarification, insufficient],
+              }
             answer: { $ref: "#/components/schemas/GroundedAnswer" }
             evidence_feedback: { $ref: "#/components/schemas/EvidenceFeedback" }
           additionalProperties: false
@@ -1943,6 +2695,7 @@ components:
         - id
         - slug
         - organization
+        - organization_website_url
         - url
         - title
         - source_type
@@ -1959,10 +2712,12 @@ components:
         - schedule_interval_minutes
         - last_verified_at
         - latest_job_status
+        - editable
       properties:
         id: { type: string, format: uuid }
         slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
         organization: { type: string, minLength: 1 }
+        organization_website_url: { type: string, format: uri }
         url: { type: string, format: uri }
         title: { type: string, minLength: 1, maxLength: 500 }
         source_type: { $ref: "#/components/schemas/SourceType" }
@@ -1990,6 +2745,7 @@ components:
           oneOf:
             - { $ref: "#/components/schemas/IngestionJobStatus" }
             - { type: "null" }
+        editable: { type: boolean }
       additionalProperties: false
     CreateAdminSourceRequest:
       type: object
@@ -2018,6 +2774,36 @@ components:
           default: [uz]
           items: { $ref: "#/components/schemas/LanguageCode" }
         confirmed_official: { type: boolean, const: true }
+      additionalProperties: false
+    UpdateAdminSourceRequest:
+      type: object
+      required:
+        - title
+        - url
+        - organization_name
+        - organization_website_url
+        - domains
+        - confirmed_official
+        - active
+      properties:
+        title: { type: string, minLength: 2, maxLength: 500 }
+        url: { type: string, format: uri, pattern: "^https://" }
+        organization_name: { type: string, minLength: 2, maxLength: 240 }
+        organization_website_url:
+          { type: string, format: uri, pattern: "^https://" }
+        domains:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/DomainSlug" }
+        languages:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          default: [uz]
+          items: { $ref: "#/components/schemas/LanguageCode" }
+        confirmed_official: { type: boolean, const: true }
+        active: { type: boolean }
       additionalProperties: false
     AdminSourceResponse:
       type: object
@@ -2102,6 +2888,7 @@ components:
             - text/plain
         content_base64: { type: string, minLength: 1, maxLength: 14000000 }
         topic: { type: string, minLength: 2, maxLength: 120 }
+        manual_correction: { type: boolean, default: false }
         max_attempts: { type: integer, minimum: 1, maximum: 3, default: 1 }
       additionalProperties: false
     ManualUploadData:
@@ -2110,6 +2897,7 @@ components:
         - source_id
         - filename
         - topic
+        - manual_correction
         - status
         - snapshot_id
         - extraction_artifact_id
@@ -2118,6 +2906,7 @@ components:
         source_id: { type: string, format: uuid }
         filename: { type: string }
         topic: { type: string, minLength: 2, maxLength: 120 }
+        manual_correction: { type: boolean }
         status: { type: string, enum: [changed, unchanged] }
         snapshot_id: { type: [string, "null"], format: uuid }
         extraction_artifact_id: { type: [string, "null"], format: uuid }
@@ -2209,6 +2998,9 @@ components:
         - fetched_at
         - section_count
         - topic
+        - filename
+        - manual_upload
+        - manual_correction
       properties:
         review: { $ref: "#/components/schemas/ReviewItemData" }
         source_id: { type: string, format: uuid }
@@ -2217,6 +3009,9 @@ components:
         fetched_at: { type: string, format: date-time }
         section_count: { type: integer, minimum: 1 }
         topic: { type: [string, "null"], minLength: 2, maxLength: 120 }
+        filename: { type: [string, "null"], minLength: 1, maxLength: 255 }
+        manual_upload: { type: boolean }
+        manual_correction: { type: boolean }
       additionalProperties: false
     ReviewQueueResponse:
       type: object
@@ -2244,6 +3039,9 @@ components:
         - adapter_key
         - media_type
         - topic
+        - filename
+        - manual_upload
+        - manual_correction
         - raw_sha256
         - normalized_sha256
         - extracted_at
@@ -2255,6 +3053,9 @@ components:
         adapter_key: { type: string }
         media_type: { type: string }
         topic: { type: [string, "null"], minLength: 2, maxLength: 120 }
+        filename: { type: [string, "null"], minLength: 1, maxLength: 255 }
+        manual_upload: { type: boolean }
+        manual_correction: { type: boolean }
         raw_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
         normalized_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
         extracted_at: { type: string, format: date-time }
@@ -2557,7 +3358,15 @@ components:
         model_key: { type: string }
         status:
           type: string
-          enum: [queued, running, retry_scheduled, succeeded, dead_lettered, cancelled]
+          enum:
+            [
+              queued,
+              running,
+              retry_scheduled,
+              succeeded,
+              dead_lettered,
+              cancelled,
+            ]
         attempt_count: { type: integer, minimum: 0 }
         max_attempts: { type: integer, minimum: 1 }
         scheduled_at: { type: string, format: date-time }

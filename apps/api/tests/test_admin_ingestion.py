@@ -13,6 +13,8 @@ from app.ingestion.admin import (
     ManualUploadRequest,
     PreparedCrawlJob,
     QueueCrawlRequest,
+    SourceDatabaseState,
+    UpdateAdminSourceRequest,
 )
 from app.ingestion.models import SourceRegistry, SourceRegistryEntry
 from app.ingestion.types import ChangeStatus, IngestionOutcome
@@ -60,7 +62,15 @@ class MemoryAdminRepository:
         self.created: dict[str, tuple[str, SourceRegistryEntry]] = {}
 
     def source_states(self):
-        return ()
+        return tuple(
+            SourceDatabaseState(
+                id=source.id,
+                active=True,
+                last_verified_at=source.reviewed_at,
+                latest_job_status=None,
+            )
+            for source in self.managed
+        )
 
     def managed_sources(self):
         return tuple(self.managed)
@@ -109,6 +119,34 @@ class MemoryAdminRepository:
         self.managed.append(source)
         self.created[idempotency_key] = (request.sha256, source)
         return source
+
+    def update_managed_source(
+        self,
+        current,
+        request,
+        principal,
+        *,
+        updated_at,
+    ):
+        del principal
+        current = next(source for source in self.managed if source.id == current.id)
+        updated = current.model_copy(
+            update={
+                "title": request.title,
+                "url": request.url,
+                "domains": request.domains,
+                "languages": request.languages,
+                "reviewed_at": updated_at,
+                "organization": current.organization.model_copy(
+                    update={
+                        "name": request.organization_name,
+                        "website_url": request.organization_website_url,
+                    }
+                ),
+            }
+        )
+        self.managed[self.managed.index(current)] = updated
+        return updated
 
     def list_jobs(self, *, limit: int):
         return tuple(list(self.jobs.values())[:limit])
@@ -165,8 +203,20 @@ class StubIngestionService:
         idempotency_key,
         max_attempts,
         topic,
+        filename,
+        manual_correction,
     ):
-        self.calls.append((source, response, idempotency_key, max_attempts, topic))
+        self.calls.append(
+            (
+                source,
+                response,
+                idempotency_key,
+                max_attempts,
+                topic,
+                filename,
+                manual_correction,
+            )
+        )
         return IngestionOutcome(
             status=ChangeStatus.CHANGED,
             source_id=source.id,
@@ -258,6 +308,46 @@ def test_admin_creates_manual_only_source_idempotently_without_expanding_crawler
     assert any(source.id == created.id for source in service.list_sources(actor))
 
 
+def test_admin_updates_managed_source_metadata() -> None:
+    service, _, _, _, _ = admin_service()
+    actor = principal("admin")
+    created = service.create_source(
+        actor,
+        CreateAdminSourceRequest(
+            title="Official tourism handbook",
+            url="https://tourism.gov.uz/handbook",
+            organization_name="Tourism Committee",
+            organization_website_url="https://gov.uz",
+            domains=["tourism"],
+            languages=["uz"],
+            confirmed_official=True,
+        ),
+        idempotency_key="create-source-update-test",
+        created_at=NOW,
+    )
+
+    updated = service.update_source(
+        actor,
+        created.id,
+        UpdateAdminSourceRequest(
+            title="Updated tourism handbook",
+            url="https://tourism.gov.uz/updated-handbook",
+            organization_name="Tourism Committee of Uzbekistan",
+            organization_website_url="https://gov.uz",
+            domains=["tourism", "everyday-living"],
+            languages=["uz", "en"],
+            confirmed_official=True,
+            active=True,
+        ),
+        updated_at=NOW,
+    )
+
+    assert updated.title == "Updated tourism handbook"
+    assert updated.organization == "Tourism Committee of Uzbekistan"
+    assert str(updated.organization_website_url) == "https://gov.uz/"
+    assert updated.editable is True
+
+
 def test_source_creation_requires_matching_public_https_organization_domain() -> None:
     with pytest.raises(ValueError, match="official organization website domain"):
         CreateAdminSourceRequest(
@@ -333,6 +423,7 @@ def test_admin_upload_decodes_content_and_runs_manual_ingestion() -> None:
         content_type="text/html",
         content_base64=b64encode(document).decode("ascii"),
         topic="Entry requirements",
+        manual_correction=True,
     )
 
     result = service.upload(
@@ -345,13 +436,16 @@ def test_admin_upload_decodes_content_and_runs_manual_ingestion() -> None:
 
     assert result.status == "changed"
     assert result.review_item_id is not None
-    _, response, key, attempts, topic = ingestion.calls[0]
+    _, response, key, attempts, topic, filename, manual_correction = ingestion.calls[0]
     assert response.body == document
     assert response.headers["X-Uzbekistan-OS-Filename"] == request.filename
     assert key == "upload-guidance-v1"
     assert attempts == 1
     assert topic == "Entry requirements"
+    assert filename == "official-guidance.html"
+    assert manual_correction is True
     assert result.topic == "Entry requirements"
+    assert result.manual_correction is True
 
 
 def test_upload_rejects_invalid_base64_and_file_paths() -> None:

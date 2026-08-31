@@ -67,6 +67,10 @@ class SqlAlchemyPublicationRepository:
             snapshot_sha256=snapshot.sha256,
             artifact_storage_key=artifact.storage_key,
             artifact_sha256=artifact.sha256,
+            manual_upload=bool(
+                artifact.details.get("manual_upload") or artifact.details.get("topic")
+            ),
+            manual_correction=bool(artifact.details.get("manual_correction")),
             existing_publication=existing,
         )
 
@@ -266,6 +270,9 @@ class SqlAlchemyPublicationRepository:
             "slug": candidate.slug,
             "domain": candidate.domain,
             "topic": candidate.topic,
+            "manual_upload": lineage.manual_upload,
+            "manual_correction": lineage.manual_correction,
+            "authority_priority": 100 if lineage.manual_correction else 0,
             "language": candidate.language,
             "status": "published",
             "version": candidate.version.model_dump(mode="json"),

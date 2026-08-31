@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 const OFFICIAL_E_VISA_URL = "https://www.e-visa.gov.uz/";
@@ -402,10 +403,13 @@ export default function HomePage() {
         >
           Uzbekistan OS
         </a>
-        <a className="pill pill-dark pill-compact" href="/signup">
-          <span>Sign up</span>
-          <Arrow variant="light" />
-        </a>
+        <nav className="landing-header-nav" aria-label="Main navigation">
+          <Link href="/blog">Guides</Link>
+          <a className="pill pill-dark pill-compact" href="/signup">
+            <span>Sign up</span>
+            <Arrow variant="light" />
+          </a>
+        </nav>
       </header>
 
       <main className="landing-main" id="top">
@@ -861,6 +865,7 @@ export default function HomePage() {
         </div>
         <div className="footer-navigation">
           <nav className="footer-legal" aria-label="Legal">
+            <Link href="/blog">Guides</Link>
             <a href="/privacy">Privacy Policy</a>
             <a href="/terms">Terms of Use</a>
           </nav>

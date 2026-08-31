@@ -63,6 +63,8 @@ class IngestionService:
         idempotency_key: str,
         max_attempts: int = 1,
         topic: str | None = None,
+        filename: str | None = None,
+        manual_correction: bool = False,
     ) -> IngestionOutcome:
         if not source.manual_ingestion_eligible:
             raise SourceNotEligibleError
@@ -76,6 +78,8 @@ class IngestionService:
                 self.repository.latest_snapshot(source.id),
                 manual_upload=True,
                 topic=topic,
+                filename=filename,
+                manual_correction=manual_correction,
             ),
         )
 
@@ -139,6 +143,8 @@ class IngestionService:
         *,
         manual_upload: bool = False,
         topic: str | None = None,
+        filename: str | None = None,
+        manual_correction: bool = False,
     ) -> IngestionOutcome:
 
         if response.url != str(source.url):
@@ -209,6 +215,9 @@ class IngestionService:
             normalized,
             adapter_key=adapter_key,
             topic=topic,
+            filename=filename,
+            manual_upload=manual_upload,
+            manual_correction=manual_correction,
         )
         artifact_id = uuid4()
         artifact_bytes = artifact.canonical_bytes()
@@ -222,6 +231,12 @@ class IngestionService:
         }
         if topic:
             artifact_details["topic"] = topic
+        if manual_upload:
+            artifact_details["manual_upload"] = True
+        if filename:
+            artifact_details["filename"] = filename
+        if manual_correction:
+            artifact_details["manual_correction"] = True
         if normalized_storage_key:
             artifact_details["normalized_storage_key"] = normalized_storage_key
         review_item_id = uuid4()
@@ -259,7 +274,7 @@ class IngestionService:
             ReviewItemMetadata(
                 id=review_item_id,
                 extraction_artifact_id=artifact_id,
-                priority=50,
+                priority=100 if manual_correction else 50,
             )
         )
         return IngestionOutcome(

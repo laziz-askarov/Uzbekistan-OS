@@ -93,6 +93,9 @@ def extract_artifact(
     *,
     adapter_key: str | None = None,
     topic: str | None = None,
+    filename: str | None = None,
+    manual_upload: bool = False,
+    manual_correction: bool = False,
 ) -> ExtractionArtifact:
     media_type = normalized_content.media_type
     if normalized_content.sections:
@@ -129,6 +132,9 @@ def extract_artifact(
         adapter_key=adapter_key or source.adapter_key,
         media_type=media_type,
         topic=topic,
+        filename=filename,
+        manual_upload=manual_upload,
+        manual_correction=manual_correction,
         raw_sha256=snapshot.sha256,
         normalized_sha256=normalized_content.sha256,
         extracted_at=snapshot.fetched_at,

@@ -421,7 +421,9 @@ def test_generated_knowledge_content_matches_canonical_schema() -> None:
             ),
         }
     )
-    lineage = repository.lineage
+    lineage = repository.lineage.model_copy(
+        update={"manual_upload": True, "manual_correction": True}
+    )
     document_id = uuid4()
     snapshot = SimpleNamespace(
         fetched_at=datetime(2026, 7, 31, 12, tzinfo=UTC),
@@ -447,6 +449,9 @@ def test_generated_knowledge_content_matches_canonical_schema() -> None:
     assert content["applicability"]["nationalities"] == ["US"]
     assert content["requirements"][0]["id"] == "passport"
     assert content["fees"][0]["currency"] == "UZS"
+    assert content["manual_upload"] is True
+    assert content["manual_correction"] is True
+    assert content["authority_priority"] == 100
     assert content["published_at"] == "2026-07-31T13:00:00+00:00"
 
 

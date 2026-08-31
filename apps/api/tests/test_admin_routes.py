@@ -238,6 +238,7 @@ class StubAdminIngestionService:
                 id=self.source_id,
                 slug="official-entry-guidance",
                 organization="Government Example",
+                organization_website_url="https://government.example",
                 title="Official entry guidance",
                 url="https://government.example/entry",
                 source_type="html",
@@ -254,6 +255,7 @@ class StubAdminIngestionService:
                 schedule_interval_minutes=60,
                 last_verified_at=None,
                 latest_job_status="queued",
+                editable=True,
             ),
         )
 
@@ -296,6 +298,23 @@ class StubAdminIngestionService:
             }
         )
 
+    def update_source(self, principal, source_id, payload, *, updated_at):
+        del principal, updated_at
+        assert source_id == self.source_id
+        base = self.list_sources(None)[0].model_dump(mode="json")
+        return AdminSourceRecord.model_validate(
+            {
+                **base,
+                "title": payload.title,
+                "url": str(payload.url),
+                "organization": payload.organization_name,
+                "organization_website_url": str(payload.organization_website_url),
+                "domains": list(payload.domains),
+                "languages": list(payload.languages),
+                "active": payload.active,
+            }
+        )
+
     def queue_crawl(self, principal, payload, *, idempotency_key, enqueued_at):
         del principal, enqueued_at
         assert payload.source_id == self.source_id
@@ -318,6 +337,7 @@ class StubAdminIngestionService:
             source_id=source_id,
             filename=payload.filename,
             topic=payload.topic,
+            manual_correction=payload.manual_correction,
             status="changed",
             snapshot_id=uuid4(),
             extraction_artifact_id=uuid4(),
@@ -624,6 +644,20 @@ def test_admin_can_create_list_sources_queue_crawl_and_upload_through_http() -> 
             "confirmed_official": True,
         },
     )
+    updated_source = client.put(
+        f"/api/v1/admin/sources/{SOURCE_ID}",
+        headers=auth_headers(),
+        json={
+            "title": "Updated entry guidance",
+            "url": "https://government.example/updated-entry",
+            "organization_name": "Government Example",
+            "organization_website_url": "https://government.example",
+            "domains": ["immigration"],
+            "languages": ["en"],
+            "confirmed_official": True,
+            "active": True,
+        },
+    )
     jobs = client.get("/api/v1/admin/ingestion/jobs?limit=25", headers=auth_headers())
     topics = client.get("/api/v1/admin/ingestion/topics", headers=auth_headers())
     crawl = client.post(
@@ -639,11 +673,15 @@ def test_admin_can_create_list_sources_queue_crawl_and_upload_through_http() -> 
             "content_type": "text/html",
             "content_base64": "PGgxPk9mZmljaWFsPC9oMT4=",
             "topic": "Entry requirements",
+            "manual_correction": True,
         },
     )
 
     assert sources.status_code == 200
     assert sources.json()["data"][0]["automatic_fetch_eligible"] is True
+    assert sources.json()["data"][0]["editable"] is True
+    assert updated_source.status_code == 200
+    assert updated_source.json()["data"]["title"] == "Updated entry guidance"
     assert jobs.status_code == 200
     assert jobs.json()["data"][0]["status"] == "queued"
     assert topics.json()["data"] == ["Entry requirements"]
@@ -652,6 +690,7 @@ def test_admin_can_create_list_sources_queue_crawl_and_upload_through_http() -> 
     assert upload.status_code == 200
     assert upload.json()["data"]["review_item_id"]
     assert upload.json()["data"]["topic"] == "Entry requirements"
+    assert upload.json()["data"]["manual_correction"] is True
     assert created_source.status_code == 201
     assert created_source.json()["data"]["crawl_policy"] == "manual_only"
     assert created_source.json()["data"]["automatic_fetch_eligible"] is False

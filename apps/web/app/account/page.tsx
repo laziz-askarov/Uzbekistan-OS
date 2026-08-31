@@ -80,9 +80,14 @@ export default async function AccountPage() {
             </p>
             <div className="account-admin-actions">
               {staffIdentity?.role === "admin" ? (
-                <Link className="pill pill-light" href="/admin">
-                  Ingestion operations
-                </Link>
+                <>
+                  <Link className="pill pill-light" href="/admin">
+                    Ingestion operations
+                  </Link>
+                  <Link className="pill pill-light" href="/admin/content">
+                    Editorial studio
+                  </Link>
+                </>
               ) : null}
               <Link className="pill pill-light" href="/admin/reviews">
                 Review queue

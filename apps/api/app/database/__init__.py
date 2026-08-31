@@ -2,6 +2,16 @@
 
 from app.database.base import Base
 from app.database.models.audit import AuditEvent
+from app.database.models.content import (
+    ContentAuthor,
+    ContentMediaAsset,
+    ContentPost,
+    ContentPostRelation,
+    ContentPostSource,
+    ContentPostVersion,
+    ContentPublicationRecord,
+    ContentRagChunk,
+)
 from app.database.models.geography import Country, Language
 from app.database.models.identity import Principal, PrincipalRole, Role
 from app.database.models.ingestion import (
@@ -30,6 +40,14 @@ __all__ = [
     "AuditEvent",
     "Base",
     "Chunk",
+    "ContentAuthor",
+    "ContentMediaAsset",
+    "ContentPost",
+    "ContentPostRelation",
+    "ContentPostSource",
+    "ContentPostVersion",
+    "ContentPublicationRecord",
+    "ContentRagChunk",
     "Country",
     "CrawlJob",
     "Document",

@@ -59,6 +59,16 @@ a:focus-visible {
 .landing-brand::after {
   inset: -6px 0;
 }
+.landing-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.landing-header-nav > a:first-child:hover {
+  color: #2563eb;
+}
 
 .pill {
   min-height: 52px;

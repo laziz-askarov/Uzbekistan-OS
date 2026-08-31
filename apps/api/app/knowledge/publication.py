@@ -280,6 +280,8 @@ class ReviewedLineage(BaseModel):
     snapshot_sha256: str
     artifact_storage_key: str
     artifact_sha256: str
+    manual_upload: bool = False
+    manual_correction: bool = False
     existing_publication: PublicationResult | None = None
 
 

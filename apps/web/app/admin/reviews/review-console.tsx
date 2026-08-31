@@ -609,6 +609,9 @@ export default function ReviewConsole() {
           <Link className={styles.workspaceLink} href="/admin">
             Ingestion
           </Link>
+          <Link className={styles.workspaceLink} href="/admin/content">
+            Content
+          </Link>
           {principal ? (
             <span className={styles.identity} title={principal.id}>
               Reviewer {compactId(principal.id)}

@@ -2,7 +2,7 @@ from sqlalchemy import CheckConstraint, ForeignKeyConstraint, UniqueConstraint
 
 from app.database import Base
 
-EXPECTED_SCHEMAS = {"identity", "geography", "knowledge", "ingestion", "audit"}
+EXPECTED_SCHEMAS = {"identity", "geography", "knowledge", "ingestion", "audit", "content"}
 EXPECTED_TABLES = {
     "identity.principals",
     "identity.roles",
@@ -27,6 +27,14 @@ EXPECTED_TABLES = {
     "ingestion.extraction_artifacts",
     "ingestion.review_items",
     "audit.events",
+    "content.authors",
+    "content.posts",
+    "content.post_versions",
+    "content.rag_chunks",
+    "content.post_sources",
+    "content.post_relations",
+    "content.media_assets",
+    "content.publication_records",
 }
 
 
@@ -71,6 +79,34 @@ def test_current_version_foreign_key_is_deferred_to_break_the_creation_cycle() -
 
     assert current_version_fk.use_alter is True
     assert current_version_fk.ondelete == "SET NULL"
+
+
+def test_editorial_content_has_version_and_publication_constraints() -> None:
+    posts = Base.metadata.tables["content.posts"]
+    versions = Base.metadata.tables["content.post_versions"]
+
+    post_checks = {
+        constraint.name
+        for constraint in posts.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+    version_checks = {
+        constraint.name
+        for constraint in versions.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+
+    assert "ck_posts_content_type_allowed" in post_checks
+    assert "ck_posts_status_allowed" in post_checks
+    assert "ck_post_versions_submission_fields_consistent" in version_checks
+    assert "ck_post_versions_review_fields_consistent" in version_checks
+    assert "ck_post_versions_publication_fields_consistent" in version_checks
+    assert versions.c.include_in_rag.server_default is not None
+
+    rag_chunks = Base.metadata.tables["content.rag_chunks"]
+    assert {"post_version_id", "section_id", "ordinal", "content_hash", "token_count"} <= set(
+        rag_chunks.c.keys()
+    )
 
 
 def test_embeddings_are_model_keyed_without_a_premature_fixed_dimension() -> None:

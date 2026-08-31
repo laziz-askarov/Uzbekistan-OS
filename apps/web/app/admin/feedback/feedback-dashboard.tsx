@@ -280,6 +280,9 @@ export default function FeedbackDashboard({
           <span className={styles.workspaceLabel}>Feedback review</span>
         </div>
         <div className={styles.identity}>
+          {identity.role === "admin" ? (
+            <Link href="/admin/content">Content</Link>
+          ) : null}
           <span>{identity.email || identity.userId.slice(0, 8)}</span>
           <span className={styles.role}>{identity.role}</span>
           <Link href="/account">Account</Link>

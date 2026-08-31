@@ -11,6 +11,8 @@ from app.ai.gateway import ModelGateway
 from app.ai.openai_provider import OpenAIResponsesProvider
 from app.ai.orchestration import GroundedAnswerOrchestrator
 from app.assistant.service import GroundedAssistantService
+from app.content.editorial import EditorialService
+from app.content.editorial_repositories import SqlAlchemyEditorialRepository
 from app.database.session import get_database_session
 from app.identity.authentication import (
     AuthenticationError,
@@ -181,6 +183,12 @@ def get_knowledge_lifecycle_service(
     session: Annotated[Session, Depends(get_database_session)],
 ) -> KnowledgeLifecycleService:
     return KnowledgeLifecycleService(SqlAlchemyKnowledgeLifecycleRepository(session))
+
+
+def get_editorial_service(
+    session: Annotated[Session, Depends(get_database_session)],
+) -> EditorialService:
+    return EditorialService(SqlAlchemyEditorialRepository(session))
 
 
 def get_grounded_assistant_service(

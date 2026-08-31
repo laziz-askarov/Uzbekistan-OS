@@ -36,6 +36,10 @@ class RetrievalCandidate(BaseModel):
     language: str
     risk_level: str
     source_trust_tier: int = Field(ge=1, le=3)
+    authority_priority: int = Field(default=0, ge=0, le=100)
+    manual_correction: bool = False
+    topic: str | None = None
+    source_ids: list[UUID] = Field(default_factory=list)
     title: str
     summary: str
     section_id: str
@@ -137,6 +141,7 @@ class HybridRetrievalService:
 
         fused = self._fuse(lexical, vector)
         filtered = [item for item in fused if self._matches_plan(item.candidate, plan)]
+        filtered = self._prefer_manual_corrections(filtered)
         selected = filtered[:limit]
         return RetrievalResult(
             plan_fingerprint=plan.fingerprint,
@@ -179,11 +184,30 @@ class HybridRetrievalService:
                 for chunk_id, candidate in candidates.items()
             ),
             key=lambda item: (
+                -item.candidate.authority_priority,
                 -item.retrieval_score,
                 item.candidate.ordinal,
                 str(item.candidate.chunk_id),
             ),
         )
+
+    @staticmethod
+    def _prefer_manual_corrections(items: list[RetrievedChunk]) -> list[RetrievedChunk]:
+        """Suppress stale evidence when a reviewed correction targets the same source."""
+        corrected_source_ids = {
+            source_id
+            for item in items
+            if item.candidate.manual_correction
+            for source_id in item.candidate.source_ids
+        }
+        if not corrected_source_ids:
+            return items
+        return [
+            item
+            for item in items
+            if item.candidate.manual_correction
+            or corrected_source_ids.isdisjoint(item.candidate.source_ids)
+        ]
 
     @staticmethod
     def _remember(

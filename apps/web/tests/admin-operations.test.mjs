@@ -128,11 +128,15 @@ test("admins can add official websites without expanding crawler scope", async (
   assert.match(dashboard, /id="official-websites"/);
   assert.match(dashboard, /Add an official website/);
   assert.match(dashboard, /\+ Add official website/);
-  assert.match(dashboard, /request<AdminSource>\("\/admin\/sources"/);
+  assert.match(
+    dashboard,
+    /request<AdminSource>\([\s\S]*\? `\/admin\/sources\/\$\{editingSourceId\}`[\s\S]*: "\/admin\/sources"/,
+  );
   assert.match(dashboard, /confirmed_official: sourceDraft\.confirmedOfficial/);
   assert.match(dashboard, /Knowledge domains/);
   assert.match(dashboard, /Document languages/);
   assert.match(dashboard, /controlled by the named official/);
   assert.match(dashboard, /New websites remain\s+manual-only/);
-  assert.match(dashboard, /setUploadSource\(created\)/);
+  assert.match(dashboard, /setUploadSource\(saved\)/);
+  assert.match(dashboard, /method: editingSourceId \? "PUT" : "POST"/);
 });

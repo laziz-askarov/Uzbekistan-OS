@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 from app.retrieval.planning import QueryRequest, RetrievalPlanner
 from app.retrieval.repositories import (
+    EDITORIAL_LEXICAL_SEARCH_SQL,
     LEXICAL_SEARCH_SQL,
     VECTOR_SEARCH_SQL,
     SqlAlchemyRetrievalRepository,
@@ -19,12 +20,29 @@ def test_retrieval_queries_use_eligibility_view_and_current_source_policy() -> N
         assert "domain.slug" in statement
         assert "source_catalog" in statement
         assert "source.last_verified_at" in statement
+        assert "authority_priority" in statement
+        assert "manual_correction" in statement
 
     assert "websearch_to_tsquery" in LEXICAL_SEARCH_SQL
     assert "CAST(:text_search_config AS regconfig)" in LEXICAL_SEARCH_SQL
     assert "version.content ->> 'topic'" in LEXICAL_SEARCH_SQL
     assert "embedding.model_key = :model_key" in VECTOR_SEARCH_SQL
     assert "<=> CAST(:query_vector AS vector)" in VECTOR_SEARCH_SQL
+
+
+def test_editorial_retrieval_is_opt_in_current_published_and_officially_cited() -> None:
+    sql = EDITORIAL_LEXICAL_SEARCH_SQL
+
+    assert "FROM content.rag_chunks AS chunk" in sql
+    assert "post.published_version_id = version.id" in sql
+    assert "version.include_in_rag = true" in sql
+    assert "version.review_due_at >= now()" in sql
+    assert "language.is_active = true" in sql
+    assert "eligible_source.is_active = true" in sql
+    assert "eligible_org.is_official = true" in sql
+    assert "NOT EXISTS" in sql
+    assert "source_link.locator" in sql
+    assert "source.last_verified_at" in sql
 
 
 def test_vector_literal_is_deterministic_and_not_sql_syntax() -> None:
@@ -46,6 +64,7 @@ def test_lexical_search_uses_meaningful_query_terms() -> None:
     parameters = session.execute.call_args.args[1]
     assert parameters["query"] == "overstay OR penalties"
     assert parameters["text_search_config"] == "english"
+    assert session.execute.call_count == 2
 
 
 def test_repository_enriches_citations_with_current_official_source_metadata() -> None:

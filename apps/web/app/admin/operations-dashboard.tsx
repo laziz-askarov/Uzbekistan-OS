@@ -27,6 +27,7 @@ type DomainSlug = (typeof DOMAIN_OPTIONS)[number]["value"];
 type LanguageCode = (typeof LANGUAGE_OPTIONS)[number]["value"];
 
 type NewSourceDraft = {
+  active: boolean;
   confirmedOfficial: boolean;
   domains: DomainSlug[];
   languages: LanguageCode[];
@@ -38,6 +39,7 @@ type NewSourceDraft = {
 
 function newSourceDraft(): NewSourceDraft {
   return {
+    active: true,
     confirmedOfficial: false,
     domains: [],
     languages: ["uz"],
@@ -54,6 +56,7 @@ type AdminSource = {
   id: string;
   slug: string;
   organization: string;
+  organization_website_url: string;
   title: string;
   url: string;
   source_type: "html" | "pdf" | "feed" | "manual";
@@ -70,6 +73,7 @@ type AdminSource = {
   schedule_interval_minutes: number | null;
   last_verified_at: string | null;
   latest_job_status: JobStatus | null;
+  editable: boolean;
 };
 
 type JobStatus =
@@ -99,10 +103,48 @@ type UploadResult = {
   source_id: string;
   filename: string;
   topic: string;
+  manual_correction: boolean;
   status: "changed" | "unchanged";
   snapshot_id: string | null;
   extraction_artifact_id: string | null;
   review_item_id: string | null;
+};
+
+type ReviewQueueItem = {
+  review: {
+    id: string;
+    extraction_artifact_id: string;
+    status: "pending" | "in_review" | "approved" | "rejected" | "cancelled";
+    updated_at: string;
+  };
+  source_id: string;
+  source_title: string;
+  fetched_at: string;
+  topic: string | null;
+  filename: string | null;
+  manual_upload: boolean;
+  manual_correction: boolean;
+};
+
+type ArtifactSection = { id: string; heading: string; body: string };
+type ArtifactDetail = {
+  id: string;
+  source_id: string;
+  topic: string | null;
+  filename: string | null;
+  manual_upload: boolean;
+  manual_correction: boolean;
+  sections: ArtifactSection[];
+};
+
+type DocumentEditDraft = {
+  reviewItemId: string;
+  sourceId: string;
+  sourceTitle: string;
+  topic: string;
+  filename: string;
+  manualCorrection: boolean;
+  sections: ArtifactSection[];
 };
 
 type Envelope<T> = { data: T; meta: { request_id: string } };
@@ -195,6 +237,29 @@ function fileAsBase64(file: File): Promise<string> {
   });
 }
 
+function sourceDraftFrom(source: AdminSource): NewSourceDraft {
+  return {
+    active: source.active,
+    confirmedOfficial: true,
+    domains: source.domains as DomainSlug[],
+    languages: source.languages as LanguageCode[],
+    organizationName: source.organization,
+    organizationWebsiteUrl: source.organization_website_url,
+    title: source.title,
+    url: source.url,
+  };
+}
+
+function safeFilename(value: string) {
+  const slug = value
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/[\s_]+/g, "-")
+    .toLowerCase();
+  return `${slug || "manual-evidence"}.json`;
+}
+
 export default function OperationsDashboard() {
   const adminSession = useAdminApiSession();
   const token = adminSession.accessToken ?? "";
@@ -202,13 +267,20 @@ export default function OperationsDashboard() {
   const [sources, setSources] = useState<AdminSource[]>([]);
   const [jobs, setJobs] = useState<IngestionJob[]>([]);
   const [topics, setTopics] = useState<string[]>([]);
+  const [manualDocuments, setManualDocuments] = useState<ReviewQueueItem[]>([]);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [uploadSource, setUploadSource] = useState<AdminSource | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadTopic, setUploadTopic] = useState("");
-  const [sourceDraft, setSourceDraft] = useState<NewSourceDraft>(newSourceDraft);
+  const [uploadIsCorrection, setUploadIsCorrection] = useState(false);
+  const [sourceDraft, setSourceDraft] =
+    useState<NewSourceDraft>(newSourceDraft);
+  const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
+  const [documentDraft, setDocumentDraft] = useState<DocumentEditDraft | null>(
+    null,
+  );
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [systemChecks, setSystemChecks] = useState<SystemCheck[]>([]);
@@ -328,20 +400,22 @@ export default function OperationsDashboard() {
     setError("");
     const healthRequest = loadSystemHealth();
     try {
-      const [identity, nextSources, nextJobs, nextTopics] = await Promise.all([
-        request<Principal>("/auth/me", undefined, bearerToken),
-        request<AdminSource[]>("/admin/sources", undefined, bearerToken),
-        request<IngestionJob[]>(
-          "/admin/ingestion/jobs?limit=50",
-          undefined,
-          bearerToken,
-        ),
-        request<string[]>(
-          "/admin/ingestion/topics",
-          undefined,
-          bearerToken,
-        ),
-      ]);
+      const [identity, nextSources, nextJobs, nextTopics, nextReviews] =
+        await Promise.all([
+          request<Principal>("/auth/me", undefined, bearerToken),
+          request<AdminSource[]>("/admin/sources", undefined, bearerToken),
+          request<IngestionJob[]>(
+            "/admin/ingestion/jobs?limit=50",
+            undefined,
+            bearerToken,
+          ),
+          request<string[]>("/admin/ingestion/topics", undefined, bearerToken),
+          request<ReviewQueueItem[]>(
+            "/admin/reviews?limit=100",
+            undefined,
+            bearerToken,
+          ),
+        ]);
       if (!identity.roles.includes("admin")) {
         throw new Error("This dashboard requires the administrator role.");
       }
@@ -349,16 +423,27 @@ export default function OperationsDashboard() {
       setSources(nextSources);
       setJobs(nextJobs);
       setTopics(nextTopics);
+      setManualDocuments(
+        nextReviews
+          .filter((item) => item.manual_upload)
+          .toSorted(
+            (left, right) =>
+              new Date(right.fetched_at).getTime() -
+              new Date(left.fetched_at).getTime(),
+          ),
+      );
       setUploadSource((current) =>
         current && nextSources.some((source) => source.id === current.id)
           ? current
-          : (nextSources.find((source) => source.manual_upload_eligible) ?? null),
+          : (nextSources.find((source) => source.manual_upload_eligible) ??
+            null),
       );
     } catch (caught) {
       setPrincipal(null);
       setSources([]);
       setJobs([]);
       setTopics([]);
+      setManualDocuments([]);
       setError(errorMessage(caught));
     } finally {
       await healthRequest;
@@ -411,12 +496,25 @@ export default function OperationsDashboard() {
     setUploadSource(source);
     setUploadFile(null);
     setUploadTopic("");
+    setUploadIsCorrection(false);
     setError("");
     setMessage("");
     window.requestAnimationFrame(() => {
       document
         .getElementById("manual-upload")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  function startSourceEdit(source: AdminSource) {
+    setEditingSourceId(source.id);
+    setSourceDraft(sourceDraftFrom(source));
+    setError("");
+    setMessage("");
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("official-websites")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 
@@ -438,7 +536,7 @@ export default function OperationsDashboard() {
     }));
   }
 
-  async function createSource(event: FormEvent<HTMLFormElement>) {
+  async function saveSource(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
       !sourceDraft.confirmedOfficial ||
@@ -447,39 +545,54 @@ export default function OperationsDashboard() {
     ) {
       return;
     }
-    setActiveAction("create-source");
+    setActiveAction(
+      editingSourceId ? `edit-source:${editingSourceId}` : "create-source",
+    );
     setError("");
     setMessage("");
     try {
-      const created = await request<AdminSource>("/admin/sources", {
-        method: "POST",
-        headers: { "Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({
-          title: sourceDraft.title.trim(),
-          url: sourceDraft.url.trim(),
-          organization_name: sourceDraft.organizationName.trim(),
-          organization_website_url:
-            sourceDraft.organizationWebsiteUrl.trim(),
-          domains: sourceDraft.domains,
-          languages: sourceDraft.languages,
-          confirmed_official: sourceDraft.confirmedOfficial,
-        }),
-      });
+      const saved = await request<AdminSource>(
+        editingSourceId
+          ? `/admin/sources/${editingSourceId}`
+          : "/admin/sources",
+        {
+          method: editingSourceId ? "PUT" : "POST",
+          headers: editingSourceId
+            ? undefined
+            : { "Idempotency-Key": crypto.randomUUID() },
+          body: JSON.stringify({
+            title: sourceDraft.title.trim(),
+            url: sourceDraft.url.trim(),
+            organization_name: sourceDraft.organizationName.trim(),
+            organization_website_url: sourceDraft.organizationWebsiteUrl.trim(),
+            domains: sourceDraft.domains,
+            languages: sourceDraft.languages,
+            confirmed_official: sourceDraft.confirmedOfficial,
+            ...(editingSourceId ? { active: sourceDraft.active } : {}),
+          }),
+        },
+      );
       setSources((current) =>
-        [...current.filter((source) => source.id !== created.id), created].toSorted(
+        [...current.filter((source) => source.id !== saved.id), saved].toSorted(
           (left, right) => left.title.localeCompare(right.title),
         ),
       );
-      setUploadSource(created);
+      setUploadSource(saved);
       setSourceDraft(newSourceDraft());
+      const wasEditing = Boolean(editingSourceId);
+      setEditingSourceId(null);
       setMessage(
-        `${created.title} was added as an audited official website source. You can attach evidence now.`,
+        wasEditing
+          ? `${saved.title} was updated and the change was added to the audit log.`
+          : `${saved.title} was added as an audited official website source. You can attach evidence now.`,
       );
-      window.requestAnimationFrame(() => {
-        document
-          .getElementById("manual-upload")
-          ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
+      if (!wasEditing) {
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("manual-upload")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -511,6 +624,7 @@ export default function OperationsDashboard() {
             content_type: contentType,
             content_base64: contentBase64,
             topic,
+            manual_correction: uploadIsCorrection,
             max_attempts: 1,
           }),
         },
@@ -521,7 +635,9 @@ export default function OperationsDashboard() {
           : `${result.filename} matches the latest source snapshot; no duplicate review was created.`,
       );
       setTopics((current) =>
-        current.some((item) => item.toLowerCase() === result.topic.toLowerCase())
+        current.some(
+          (item) => item.toLowerCase() === result.topic.toLowerCase(),
+        )
           ? current
           : [...current, result.topic].toSorted((left, right) =>
               left.localeCompare(right),
@@ -530,10 +646,134 @@ export default function OperationsDashboard() {
       setUploadSource(null);
       setUploadFile(null);
       setUploadTopic("");
-      const nextJobs = await request<IngestionJob[]>(
-        "/admin/ingestion/jobs?limit=50",
+      setUploadIsCorrection(false);
+      await loadOperations();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setActiveAction(null);
+    }
+  }
+
+  async function startDocumentEdit(item: ReviewQueueItem) {
+    setActiveAction(`load-document:${item.review.id}`);
+    setError("");
+    setMessage("");
+    try {
+      const artifact = await request<ArtifactDetail>(
+        `/admin/artifacts/${item.review.extraction_artifact_id}`,
       );
-      setJobs(nextJobs);
+      setDocumentDraft({
+        reviewItemId: item.review.id,
+        sourceId: item.source_id,
+        sourceTitle: item.source_title,
+        topic: artifact.topic ?? item.topic ?? "Manual correction",
+        filename:
+          artifact.filename ??
+          item.filename ??
+          safeFilename(item.topic ?? "manual-evidence"),
+        manualCorrection: artifact.manual_correction || item.manual_correction,
+        sections: artifact.sections,
+      });
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById("document-editor")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setActiveAction(null);
+    }
+  }
+
+  function updateDocumentSection(
+    index: number,
+    field: "heading" | "body",
+    value: string,
+  ) {
+    setDocumentDraft((current) =>
+      current
+        ? {
+            ...current,
+            sections: current.sections.map((section, sectionIndex) =>
+              sectionIndex === index ? { ...section, [field]: value } : section,
+            ),
+          }
+        : current,
+    );
+  }
+
+  function addDocumentSection() {
+    setDocumentDraft((current) =>
+      current
+        ? {
+            ...current,
+            sections: [
+              ...current.sections,
+              {
+                id: `section-${current.sections.length + 1}`,
+                heading: "",
+                body: "",
+              },
+            ],
+          }
+        : current,
+    );
+  }
+
+  function removeDocumentSection(index: number) {
+    setDocumentDraft((current) =>
+      current && current.sections.length > 1
+        ? {
+            ...current,
+            sections: current.sections.filter(
+              (_, sectionIndex) => sectionIndex !== index,
+            ),
+          }
+        : current,
+    );
+  }
+
+  async function submitDocumentRevision(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!documentDraft) return;
+    const sections = documentDraft.sections
+      .map((section, index) => ({
+        id: section.id || `section-${index + 1}`,
+        heading: section.heading.trim(),
+        body: section.body.trim(),
+      }))
+      .filter((section) => section.heading && section.body);
+    if (!sections.length || documentDraft.topic.trim().length < 2) return;
+    setActiveAction(`revise-document:${documentDraft.reviewItemId}`);
+    setError("");
+    setMessage("");
+    try {
+      const filename = safeFilename(documentDraft.topic);
+      const file = new File([JSON.stringify({ sections }, null, 2)], filename, {
+        type: "application/json",
+      });
+      const result = await request<UploadResult>(
+        `/admin/sources/${documentDraft.sourceId}/uploads`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: JSON.stringify({
+            filename,
+            content_type: "application/json",
+            content_base64: await fileAsBase64(file),
+            topic: documentDraft.topic.trim(),
+            manual_correction: documentDraft.manualCorrection,
+            max_attempts: 1,
+          }),
+        },
+      );
+      setMessage(
+        `${result.filename} was saved as a new revision and sent to the review queue.`,
+      );
+      setDocumentDraft(null);
+      await loadOperations();
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -662,6 +902,7 @@ export default function OperationsDashboard() {
         <nav className={styles.topActions} aria-label="Admin utilities">
           <a href="#analytics">Analytics</a>
           <a href="#official-websites">Official websites</a>
+          <Link href="/admin/content">Content</Link>
           <Link href="/admin/reviews">Review queue</Link>
           <Link href="/admin/feedback">Feedback</Link>
           <ThemeToggle className={styles.themeButton} />
@@ -863,167 +1104,192 @@ export default function OperationsDashboard() {
           id="official-websites"
           aria-labelledby="official-websites-heading"
         >
-            <div className={styles.createSourceIntro}>
-              <p className={styles.eyebrow}>Official websites</p>
-              <h2 id="official-websites-heading">Add an official website</h2>
-              <p>
-                Register a verified Uzbekistan government or public-institution
-                website as an approved evidence source. New websites remain
-                manual-only until their crawler configuration is separately
-                reviewed and deployed. Uploaded content still requires review
-                and publication before the assistant can retrieve it.
-              </p>
-            </div>
-            <form className={styles.createSourceForm} onSubmit={createSource}>
-              <label className={styles.sourceSelect} htmlFor="source-title">
-                Website or page title
-                <input
-                  id="source-title"
-                  maxLength={500}
-                  onChange={(event) =>
-                    setSourceDraft((current) => ({
-                      ...current,
-                      title: event.target.value,
-                    }))
-                  }
-                  placeholder="Official tourism portal"
-                  required
-                  value={sourceDraft.title}
-                />
-              </label>
-              <label className={styles.sourceSelect} htmlFor="source-url">
-                Official page URL
-                <input
-                  autoComplete="url"
-                  id="source-url"
-                  onChange={(event) =>
-                    setSourceDraft((current) => ({
-                      ...current,
-                      url: event.target.value,
-                    }))
-                  }
-                  placeholder="https://agency.gov.uz/service"
-                  required
-                  type="url"
-                  value={sourceDraft.url}
-                />
-              </label>
-              <label
-                className={styles.sourceSelect}
-                htmlFor="source-organization"
-              >
-                Organization name
-                <input
-                  autoComplete="organization"
-                  id="source-organization"
-                  maxLength={240}
-                  onChange={(event) =>
-                    setSourceDraft((current) => ({
-                      ...current,
-                      organizationName: event.target.value,
-                    }))
-                  }
-                  placeholder="Government agency"
-                  required
-                  value={sourceDraft.organizationName}
-                />
-              </label>
-              <label
-                className={styles.sourceSelect}
-                htmlFor="source-organization-url"
-              >
-                Organization website
-                <input
-                  autoComplete="url"
-                  id="source-organization-url"
-                  onChange={(event) =>
-                    setSourceDraft((current) => ({
-                      ...current,
-                      organizationWebsiteUrl: event.target.value,
-                    }))
-                  }
-                  placeholder="https://agency.gov.uz"
-                  required
-                  type="url"
-                  value={sourceDraft.organizationWebsiteUrl}
-                />
-                <small>
-                  The source must use this domain or one of its subdomains.
-                </small>
-              </label>
-              <fieldset className={styles.optionGroup}>
-                <legend>Knowledge domains</legend>
-                <div>
-                  {DOMAIN_OPTIONS.map((option) => (
-                    <label key={option.value}>
-                      <input
-                        checked={sourceDraft.domains.includes(option.value)}
-                        onChange={() => toggleSourceDomain(option.value)}
-                        type="checkbox"
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <fieldset className={styles.optionGroup}>
-                <legend>Document languages</legend>
-                <div>
-                  {LANGUAGE_OPTIONS.map((option) => (
-                    <label key={option.value}>
-                      <input
-                        checked={sourceDraft.languages.includes(option.value)}
-                        onChange={() => toggleSourceLanguage(option.value)}
-                        type="checkbox"
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+          <div className={styles.createSourceIntro}>
+            <p className={styles.eyebrow}>Official websites</p>
+            <h2 id="official-websites-heading">
+              {editingSourceId
+                ? "Edit an official source"
+                : "Add an official website"}
+            </h2>
+            <p>
+              {editingSourceId
+                ? "Update the audited title, URL, organization, scope, or availability. Adapter and crawler settings remain protected in the reviewed registry."
+                : "Register a verified Uzbekistan government or public-institution website as an approved evidence source. New websites remain manual-only until their crawler configuration is separately reviewed and deployed. Uploaded content still requires review and publication before the assistant can retrieve it."}
+            </p>
+          </div>
+          <form className={styles.createSourceForm} onSubmit={saveSource}>
+            <label className={styles.sourceSelect} htmlFor="source-title">
+              Website or page title
+              <input
+                id="source-title"
+                maxLength={500}
+                onChange={(event) =>
+                  setSourceDraft((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
+                }
+                placeholder="Official tourism portal"
+                required
+                value={sourceDraft.title}
+              />
+            </label>
+            <label className={styles.sourceSelect} htmlFor="source-url">
+              Official page URL
+              <input
+                autoComplete="url"
+                id="source-url"
+                onChange={(event) =>
+                  setSourceDraft((current) => ({
+                    ...current,
+                    url: event.target.value,
+                  }))
+                }
+                placeholder="https://agency.gov.uz/service"
+                required
+                type="url"
+                value={sourceDraft.url}
+              />
+            </label>
+            <label
+              className={styles.sourceSelect}
+              htmlFor="source-organization"
+            >
+              Organization name
+              <input
+                autoComplete="organization"
+                id="source-organization"
+                maxLength={240}
+                onChange={(event) =>
+                  setSourceDraft((current) => ({
+                    ...current,
+                    organizationName: event.target.value,
+                  }))
+                }
+                placeholder="Government agency"
+                required
+                value={sourceDraft.organizationName}
+              />
+            </label>
+            <label
+              className={styles.sourceSelect}
+              htmlFor="source-organization-url"
+            >
+              Organization website
+              <input
+                autoComplete="url"
+                id="source-organization-url"
+                onChange={(event) =>
+                  setSourceDraft((current) => ({
+                    ...current,
+                    organizationWebsiteUrl: event.target.value,
+                  }))
+                }
+                placeholder="https://agency.gov.uz"
+                required
+                type="url"
+                value={sourceDraft.organizationWebsiteUrl}
+              />
+              <small>
+                The source must use this domain or one of its subdomains.
+              </small>
+            </label>
+            <fieldset className={styles.optionGroup}>
+              <legend>Knowledge domains</legend>
+              <div>
+                {DOMAIN_OPTIONS.map((option) => (
+                  <label key={option.value}>
+                    <input
+                      checked={sourceDraft.domains.includes(option.value)}
+                      onChange={() => toggleSourceDomain(option.value)}
+                      type="checkbox"
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className={styles.optionGroup}>
+              <legend>Document languages</legend>
+              <div>
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <label key={option.value}>
+                    <input
+                      checked={sourceDraft.languages.includes(option.value)}
+                      onChange={() => toggleSourceLanguage(option.value)}
+                      type="checkbox"
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <label className={styles.officialConfirmation}>
+              <input
+                checked={sourceDraft.confirmedOfficial}
+                onChange={(event) =>
+                  setSourceDraft((current) => ({
+                    ...current,
+                    confirmedOfficial: event.target.checked,
+                  }))
+                }
+                required
+                type="checkbox"
+              />
+              <span>
+                I confirm this URL is controlled by the named official
+                organization.
+              </span>
+            </label>
+            {editingSourceId ? (
               <label className={styles.officialConfirmation}>
                 <input
-                  checked={sourceDraft.confirmedOfficial}
+                  checked={sourceDraft.active}
                   onChange={(event) =>
                     setSourceDraft((current) => ({
                       ...current,
-                      confirmedOfficial: event.target.checked,
+                      active: event.target.checked,
                     }))
                   }
-                  required
                   type="checkbox"
                 />
                 <span>
-                  I confirm this URL is controlled by the named official
-                  organization.
+                  Keep this source active for publication and retrieval. Turn
+                  this off to immediately exclude its evidence.
                 </span>
               </label>
-              <div className={styles.formActions}>
-                <button
-                  className={styles.quietButton}
-                  onClick={() => {
-                    setSourceDraft(newSourceDraft());
-                  }}
-                  type="button"
-                >
-                  Clear
-                </button>
-                <button
-                  className={styles.primaryButton}
-                  disabled={
-                    activeAction !== null ||
-                    !sourceDraft.confirmedOfficial ||
-                    !sourceDraft.domains.length ||
-                    !sourceDraft.languages.length
-                  }
-                  type="submit"
-                >
-                  {activeAction === "create-source"
+            ) : null}
+            <div className={styles.formActions}>
+              <button
+                className={styles.quietButton}
+                onClick={() => {
+                  setSourceDraft(newSourceDraft());
+                  setEditingSourceId(null);
+                }}
+                type="button"
+              >
+                Clear
+              </button>
+              <button
+                className={styles.primaryButton}
+                disabled={
+                  activeAction !== null ||
+                  !sourceDraft.confirmedOfficial ||
+                  !sourceDraft.domains.length ||
+                  !sourceDraft.languages.length
+                }
+                type="submit"
+              >
+                {activeAction?.startsWith("edit-source:")
+                  ? "Saving changes…"
+                  : activeAction === "create-source"
                     ? "Adding website…"
-                    : "Add official website"}
-                </button>
-              </div>
-            </form>
+                    : editingSourceId
+                      ? "Save source changes"
+                      : "Add official website"}
+              </button>
+            </div>
+          </form>
         </section>
 
         <section
@@ -1031,115 +1297,132 @@ export default function OperationsDashboard() {
           id="manual-upload"
           aria-labelledby="upload-heading"
         >
-            <div>
-              <p className={styles.eyebrow}>Manual evidence</p>
-              <h2 id="upload-heading">Upload PDF or JSON evidence</h2>
-              <p>
-                Attach the file to an approved official source and choose an
-                existing topic or type a new one. Readable PDFs are converted to
-                Markdown page by page; JSON is normalized into the same review
-                format. Nothing reaches the assistant until a reviewer approves
-                and publishes it. Encrypted or image-only PDFs are rejected
-                because OCR is not enabled.
-              </p>
-              <a
-                className={styles.secondaryButton}
-                href="#official-websites"
-              >
-                + Add official website
-              </a>
-            </div>
-            <form onSubmit={uploadEvidence}>
-              <label className={styles.sourceSelect} htmlFor="upload-source">
-                Approved source
-                <select
-                  id="upload-source"
-                  value={uploadSource?.id ?? ""}
-                  onChange={(event) =>
-                    setUploadSource(
-                      sources.find((source) => source.id === event.target.value) ??
-                        null,
-                    )
-                  }
-                >
-                  <option value="">Select a source</option>
-                  {sources
-                    .filter((source) => source.manual_upload_eligible)
-                    .map((source) => (
-                      <option key={source.id} value={source.id}>
-                        {source.title}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label className={styles.sourceSelect} htmlFor="upload-topic">
-                Topic
-                <input
-                  autoComplete="off"
-                  id="upload-topic"
-                  list="knowledge-topics"
-                  maxLength={120}
-                  onChange={(event) => setUploadTopic(event.target.value)}
-                  placeholder="Choose or create a topic"
-                  required
-                  value={uploadTopic}
-                />
-                <small>
-                  Select a previous topic or type a new name to create it with
-                  this upload.
-                </small>
-              </label>
-              <datalist id="knowledge-topics">
-                {topics.map((topic) => (
-                  <option key={topic} value={topic} />
-                ))}
-              </datalist>
-              <label className={styles.filePicker} htmlFor="evidence-file">
-                <span>
-                  {uploadFile ? uploadFile.name : "Choose official document"}
-                </span>
-                <small>
-                  {uploadFile
-                    ? `${Math.ceil(uploadFile.size / 1024)} KB`
-                    : "PDF or JSON · maximum 10 MB"}
-                </small>
-              </label>
-              <input
-                accept=".pdf,.json,application/pdf,application/json"
-                className={styles.visuallyHidden}
-                id="evidence-file"
+          <div>
+            <p className={styles.eyebrow}>Manual evidence</p>
+            <h2 id="upload-heading">Upload PDF or JSON evidence</h2>
+            <p>
+              Attach the file to an approved official source and choose an
+              existing topic or type a new one. Readable PDFs are converted to
+              Markdown page by page; JSON is normalized into the same review
+              format. Nothing reaches the assistant until a reviewer approves
+              and publishes it. Encrypted or image-only PDFs are rejected
+              because OCR is not enabled.
+            </p>
+            <a className={styles.secondaryButton} href="#official-websites">
+              + Add official website
+            </a>
+          </div>
+          <form onSubmit={uploadEvidence}>
+            <label className={styles.sourceSelect} htmlFor="upload-source">
+              Approved source
+              <select
+                id="upload-source"
+                value={uploadSource?.id ?? ""}
                 onChange={(event) =>
-                  setUploadFile(event.target.files?.[0] ?? null)
+                  setUploadSource(
+                    sources.find(
+                      (source) => source.id === event.target.value,
+                    ) ?? null,
+                  )
                 }
-                type="file"
+              >
+                <option value="">Select a source</option>
+                {sources
+                  .filter((source) => source.manual_upload_eligible)
+                  .map((source) => (
+                    <option key={source.id} value={source.id}>
+                      {source.title}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className={styles.sourceSelect} htmlFor="upload-topic">
+              Topic
+              <input
+                autoComplete="off"
+                id="upload-topic"
+                list="knowledge-topics"
+                maxLength={120}
+                onChange={(event) => setUploadTopic(event.target.value)}
+                placeholder="Choose or create a topic"
+                required
+                value={uploadTopic}
               />
-              <div className={styles.formActions}>
-                <button
-                  className={styles.quietButton}
-                  onClick={() => {
-                    setUploadFile(null);
-                    setUploadTopic("");
-                  }}
-                  type="button"
-                >
-                  Cancel
-                </button>
-                <button
-                  className={styles.primaryButton}
-                  disabled={
-                    !uploadFile ||
-                    !uploadSource ||
-                    uploadTopic.trim().length < 2 ||
-                    activeAction !== null
-                  }
-                  type="submit"
-                >
-                  {activeAction?.startsWith("upload:")
-                    ? "Extracting evidence…"
-                    : "Upload and create review"}
-                </button>
-              </div>
-            </form>
+              <small>
+                Select a previous topic or type a new name to create it with
+                this upload.
+              </small>
+            </label>
+            <datalist id="knowledge-topics">
+              {topics.map((topic) => (
+                <option key={topic} value={topic} />
+              ))}
+            </datalist>
+            <label className={styles.correctionToggle}>
+              <input
+                checked={uploadIsCorrection}
+                onChange={(event) =>
+                  setUploadIsCorrection(event.target.checked)
+                }
+                type="checkbox"
+              />
+              <span>
+                <strong>
+                  This corrects outdated official website information
+                </strong>
+                <small>
+                  After review and publication, this correction takes priority
+                  over conflicting content from the selected website.
+                </small>
+              </span>
+            </label>
+            <label className={styles.filePicker} htmlFor="evidence-file">
+              <span>
+                {uploadFile ? uploadFile.name : "Choose official document"}
+              </span>
+              <small>
+                {uploadFile
+                  ? `${Math.ceil(uploadFile.size / 1024)} KB`
+                  : "PDF or JSON · maximum 10 MB"}
+              </small>
+            </label>
+            <input
+              accept=".pdf,.json,application/pdf,application/json"
+              className={styles.visuallyHidden}
+              id="evidence-file"
+              onChange={(event) =>
+                setUploadFile(event.target.files?.[0] ?? null)
+              }
+              type="file"
+            />
+            <div className={styles.formActions}>
+              <button
+                className={styles.quietButton}
+                onClick={() => {
+                  setUploadFile(null);
+                  setUploadTopic("");
+                  setUploadIsCorrection(false);
+                }}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.primaryButton}
+                disabled={
+                  !uploadFile ||
+                  !uploadSource ||
+                  uploadTopic.trim().length < 2 ||
+                  activeAction !== null
+                }
+                type="submit"
+              >
+                {activeAction?.startsWith("upload:")
+                  ? "Extracting evidence…"
+                  : "Upload and create review"}
+              </button>
+            </div>
+          </form>
         </section>
 
         <section className={styles.section} aria-labelledby="sources-heading">
@@ -1221,6 +1504,19 @@ export default function OperationsDashboard() {
                 <div className={styles.cardActions}>
                   <button
                     className={styles.secondaryButton}
+                    disabled={!source.editable}
+                    onClick={() => startSourceEdit(source)}
+                    title={
+                      source.editable
+                        ? "Edit audited source metadata"
+                        : "Source must be synchronized before editing"
+                    }
+                    type="button"
+                  >
+                    Edit source
+                  </button>
+                  <button
+                    className={styles.secondaryButton}
                     disabled={!source.manual_upload_eligible}
                     onClick={() => startUpload(source)}
                     title={
@@ -1264,9 +1560,202 @@ export default function OperationsDashboard() {
           ) : null}
           <p className={styles.registryNote}>
             Crawler approval, adapter, and schedules remain version-controlled.
-            Admin-added sources are manual-only, audit logged, and review-gated.
+            Source metadata edits are audit logged. Admin-added sources are
+            manual-only and every document revision remains review-gated.
           </p>
         </section>
+
+        <section className={styles.section} aria-labelledby="documents-heading">
+          <div className={styles.sectionHeading}>
+            <div>
+              <p className={styles.eyebrow}>Manual evidence library</p>
+              <h2 id="documents-heading">Uploaded documents</h2>
+            </div>
+            <span className={styles.jobCount}>
+              {manualDocuments.length} shown
+            </span>
+          </div>
+          <div className={styles.documentGrid}>
+            {manualDocuments.map((item) => (
+              <article className={styles.documentCard} key={item.review.id}>
+                <div className={styles.pills}>
+                  <span
+                    data-tone={
+                      item.review.status === "approved" ? "success" : "neutral"
+                    }
+                  >
+                    {item.review.status.replace("_", " ")}
+                  </span>
+                  {item.manual_correction ? (
+                    <span>Priority correction</span>
+                  ) : null}
+                </div>
+                <h3>{item.topic ?? item.filename ?? "Manual evidence"}</h3>
+                <p>{item.source_title}</p>
+                <dl className={styles.sourceMeta}>
+                  <div>
+                    <dt>File</dt>
+                    <dd>{item.filename ?? "Legacy manual upload"}</dd>
+                  </div>
+                  <div>
+                    <dt>Updated</dt>
+                    <dd>{formatDate(item.fetched_at)}</dd>
+                  </div>
+                </dl>
+                <button
+                  className={styles.secondaryButton}
+                  disabled={activeAction === `load-document:${item.review.id}`}
+                  onClick={() => void startDocumentEdit(item)}
+                  type="button"
+                >
+                  {activeAction === `load-document:${item.review.id}`
+                    ? "Loading…"
+                    : "Edit and create revision"}
+                </button>
+              </article>
+            ))}
+          </div>
+          {!manualDocuments.length ? (
+            <div className={styles.emptyState}>
+              <strong>No manual documents yet</strong>
+              <span>Uploaded PDF and JSON evidence will appear here.</span>
+            </div>
+          ) : null}
+        </section>
+
+        {documentDraft ? (
+          <section
+            className={styles.documentEditor}
+            id="document-editor"
+            aria-labelledby="document-editor-heading"
+          >
+            <div className={styles.createSourceIntro}>
+              <p className={styles.eyebrow}>Review-gated revision</p>
+              <h2 id="document-editor-heading">Edit uploaded evidence</h2>
+              <p>
+                Editing creates a new immutable revision for{" "}
+                {documentDraft.sourceTitle}. The existing published version
+                stays live until the revision is reviewed and published.
+              </p>
+              <p>Original file: {documentDraft.filename}</p>
+            </div>
+            <form
+              className={styles.documentEditorForm}
+              onSubmit={submitDocumentRevision}
+            >
+              <label className={styles.sourceSelect} htmlFor="document-topic">
+                Topic
+                <input
+                  id="document-topic"
+                  maxLength={120}
+                  onChange={(event) =>
+                    setDocumentDraft((current) =>
+                      current
+                        ? { ...current, topic: event.target.value }
+                        : current,
+                    )
+                  }
+                  required
+                  value={documentDraft.topic}
+                />
+              </label>
+              <label className={styles.correctionToggle}>
+                <input
+                  checked={documentDraft.manualCorrection}
+                  onChange={(event) =>
+                    setDocumentDraft((current) =>
+                      current
+                        ? { ...current, manualCorrection: event.target.checked }
+                        : current,
+                    )
+                  }
+                  type="checkbox"
+                />
+                <span>
+                  <strong>Priority correction</strong>
+                  <small>
+                    Supersede conflicting evidence from this official source.
+                  </small>
+                </span>
+              </label>
+              <div className={styles.sectionEditors}>
+                {documentDraft.sections.map((section, index) => (
+                  <fieldset
+                    className={styles.sectionEditor}
+                    key={`${section.id}-${index}`}
+                  >
+                    <legend>
+                      <span>Section {index + 1}</span>
+                      <button
+                        className={styles.sectionRemoveButton}
+                        disabled={documentDraft.sections.length === 1}
+                        onClick={() => removeDocumentSection(index)}
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                    </legend>
+                    <label className={styles.sourceSelect}>
+                      Heading
+                      <input
+                        maxLength={500}
+                        onChange={(event) =>
+                          updateDocumentSection(
+                            index,
+                            "heading",
+                            event.target.value,
+                          )
+                        }
+                        required
+                        value={section.heading}
+                      />
+                    </label>
+                    <label className={styles.sourceSelect}>
+                      Guidance
+                      <textarea
+                        onChange={(event) =>
+                          updateDocumentSection(
+                            index,
+                            "body",
+                            event.target.value,
+                          )
+                        }
+                        required
+                        rows={8}
+                        value={section.body}
+                      />
+                    </label>
+                  </fieldset>
+                ))}
+                <button
+                  className={styles.secondaryButton}
+                  onClick={addDocumentSection}
+                  type="button"
+                >
+                  Add section
+                </button>
+              </div>
+              <div className={styles.formActions}>
+                <button
+                  className={styles.quietButton}
+                  onClick={() => setDocumentDraft(null)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.primaryButton}
+                  disabled={activeAction?.startsWith("revise-document:")}
+                  type="submit"
+                >
+                  {activeAction?.startsWith("revise-document:")
+                    ? "Creating revision…"
+                    : "Create review revision"}
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : null}
 
         <section className={styles.section} aria-labelledby="jobs-heading">
           <div className={styles.sectionHeading}>

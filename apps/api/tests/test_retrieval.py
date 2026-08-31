@@ -24,6 +24,9 @@ def candidate(
     trust_tier: int = 1,
     nationalities: list[str] | None = None,
     citations: bool = True,
+    manual_correction: bool = False,
+    authority_priority: int = 0,
+    source_ids: list[UUID] | None = None,
 ) -> RetrievalCandidate:
     return RetrievalCandidate(
         chunk_id=chunk_id or uuid4(),
@@ -44,6 +47,9 @@ def candidate(
         citations=([{"source_id": SOURCE_ID, "locator": "Overview section"}] if citations else []),
         audiences=["international-visitor"],
         nationalities=nationalities or [],
+        manual_correction=manual_correction,
+        authority_priority=authority_priority,
+        source_ids=source_ids or [SOURCE_ID],
     )
 
 
@@ -121,6 +127,31 @@ def test_language_and_domain_mismatches_are_excluded() -> None:
 
     assert result.status == "insufficient"
     assert result.items == []
+
+
+def test_approved_manual_correction_suppresses_older_evidence_from_same_source() -> None:
+    stale = candidate("The outdated official website rule.")
+    correction = candidate(
+        "The reviewed manual correction.",
+        manual_correction=True,
+        authority_priority=100,
+    )
+    unrelated_source = uuid4()
+    independent = candidate(
+        "Independent corroborating official evidence.",
+        source_ids=[unrelated_source],
+    )
+    repository = MemoryRetrievalRepository(
+        lexical=(ranked(stale, 2.0), ranked(independent, 1.5), ranked(correction, 0.5)),
+    )
+
+    result = HybridRetrievalService(repository).retrieve(visa_plan())
+
+    assert [item.candidate.chunk_id for item in result.items] == [
+        correction.chunk_id,
+        independent.chunk_id,
+    ]
+    assert stale.chunk_id not in {item.candidate.chunk_id for item in result.items}
 
 
 def test_vector_request_requires_finite_vector_and_model_key() -> None:

@@ -49,6 +49,7 @@ class AdminSourceRecord(BaseModel):
     id: UUID
     slug: str
     organization: str
+    organization_website_url: AnyHttpUrl
     title: str
     url: AnyHttpUrl
     source_type: str
@@ -65,6 +66,7 @@ class AdminSourceRecord(BaseModel):
     schedule_interval_minutes: int | None
     last_verified_at: datetime | None
     latest_job_status: str | None
+    editable: bool
 
 
 class IngestionJobRecord(BaseModel):
@@ -158,6 +160,12 @@ class CreateAdminSourceRequest(BaseModel):
         return sha256(canonical).hexdigest()
 
 
+class UpdateAdminSourceRequest(CreateAdminSourceRequest):
+    """Update audited source metadata without changing crawler implementation details."""
+
+    active: bool = True
+
+
 class ManualUploadRequest(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -171,6 +179,7 @@ class ManualUploadRequest(BaseModel):
     ]
     content_base64: str = Field(min_length=1, max_length=14_000_000)
     topic: str = Field(min_length=2, max_length=120)
+    manual_correction: bool = False
     max_attempts: int = Field(default=1, ge=1, le=3)
 
     @field_validator("topic")
@@ -243,6 +252,7 @@ class ManualUploadResult(BaseModel):
     source_id: UUID
     filename: str
     topic: str
+    manual_correction: bool
     status: str
     snapshot_id: UUID | None
     extraction_artifact_id: UUID | None
@@ -253,12 +263,14 @@ class ManualUploadResult(BaseModel):
         cls,
         filename: str,
         topic: str,
+        manual_correction: bool,
         outcome: IngestionOutcome,
     ) -> "ManualUploadResult":
         return cls(
             source_id=outcome.source_id,
             filename=filename,
             topic=topic,
+            manual_correction=manual_correction,
             status=outcome.status.value,
             snapshot_id=outcome.snapshot_id,
             extraction_artifact_id=outcome.extraction_artifact_id,
@@ -285,6 +297,15 @@ class AdminIngestionRepository(Protocol):
         *,
         idempotency_key: str,
         created_at: datetime,
+    ) -> SourceRegistryEntry: ...
+
+    def update_managed_source(
+        self,
+        current: SourceRegistryEntry,
+        request: UpdateAdminSourceRequest,
+        principal: AuthenticatedPrincipal,
+        *,
+        updated_at: datetime,
     ) -> SourceRegistryEntry: ...
 
     def list_jobs(self, *, limit: int) -> tuple[IngestionJobRecord, ...]: ...
@@ -338,6 +359,28 @@ class AdminIngestionService:
             principal,
             idempotency_key=idempotency_key,
             created_at=created_at,
+        )
+        state = next(
+            (item for item in self.repository.source_states() if item.id == source.id),
+            None,
+        )
+        return self._source_record(source, state)
+
+    def update_source(
+        self,
+        principal: AuthenticatedPrincipal,
+        source_id: UUID,
+        request: UpdateAdminSourceRequest,
+        *,
+        updated_at: datetime,
+    ) -> AdminSourceRecord:
+        self._authorize(principal)
+        current = self._source(source_id)
+        source = self.repository.update_managed_source(
+            current,
+            request,
+            principal,
+            updated_at=updated_at,
         )
         state = next(
             (item for item in self.repository.source_states() if item.id == source.id),
@@ -432,8 +475,15 @@ class AdminIngestionService:
             idempotency_key=idempotency_key,
             max_attempts=request.max_attempts,
             topic=request.topic,
+            filename=request.filename,
+            manual_correction=request.manual_correction,
         )
-        return ManualUploadResult.from_outcome(request.filename, request.topic, outcome)
+        return ManualUploadResult.from_outcome(
+            request.filename,
+            request.topic,
+            request.manual_correction,
+            outcome,
+        )
 
     def _source(self, source_id: UUID):
         source = next((item for item in self._configured_sources() if item.id == source_id), None)
@@ -445,14 +495,12 @@ class AdminIngestionService:
         return source
 
     def _configured_sources(self) -> tuple[SourceRegistryEntry, ...]:
-        registered = tuple(self.registry.sources)
-        registered_ids = {source.id for source in registered}
-        managed = tuple(
-            source
-            for source in self.repository.managed_sources()
-            if source.id not in registered_ids
-        )
-        return (*registered, *managed)
+        sources = {source.id: source for source in self.registry.sources}
+        # Database-managed metadata intentionally wins over the static registry.
+        # Adapter keys and crawl policy remain copied from the reviewed registry,
+        # while audited source metadata can be corrected without a code deploy.
+        sources.update({source.id: source for source in self.repository.managed_sources()})
+        return tuple(sorted(sources.values(), key=lambda source: (source.title, str(source.id))))
 
     @staticmethod
     def _source_record(
@@ -463,6 +511,7 @@ class AdminIngestionService:
             id=source.id,
             slug=source.slug,
             organization=source.organization.name,
+            organization_website_url=source.organization.website_url,
             title=source.title,
             url=source.url,
             source_type=source.source_type.value,
@@ -481,6 +530,7 @@ class AdminIngestionService:
             ),
             last_verified_at=state.last_verified_at if state else None,
             latest_job_status=state.latest_job_status if state else None,
+            editable=state is not None,
         )
 
     @staticmethod

@@ -13,6 +13,8 @@ from app.observability import configure_logging
 from app.routes.admin import router as admin_router
 from app.routes.assistant import router as assistant_router
 from app.routes.auth import router as auth_router
+from app.routes.content_admin import router as content_admin_router
+from app.routes.content_public import router as content_public_router
 from app.routes.health import get_health, get_readiness
 from app.routes.health import router as health_router
 
@@ -80,6 +82,8 @@ def create_app() -> FastAPI:
     application.include_router(auth_router, prefix="/api/v1")
     application.include_router(assistant_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
+    application.include_router(content_admin_router, prefix="/api/v1")
+    application.include_router(content_public_router, prefix="/api/v1")
     return application
 
 

@@ -32,6 +32,20 @@
       ]
     },
     "topic": { "type": ["string", "null"], "minLength": 2, "maxLength": 120 },
+    "manual_upload": {
+      "type": "boolean",
+      "description": "Whether this version originated from a reviewed manual upload."
+    },
+    "manual_correction": {
+      "type": "boolean",
+      "description": "Whether this reviewed version explicitly corrects outdated official website evidence."
+    },
+    "authority_priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Deterministic retrieval priority assigned by the publication service."
+    },
     "language": { "type": "string", "enum": ["en", "uz", "ru"] },
     "status": {
       "type": "string",

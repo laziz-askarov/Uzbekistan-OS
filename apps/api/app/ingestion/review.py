@@ -68,6 +68,9 @@ class ReviewQueueRecord:
     fetched_at: datetime
     section_count: int
     topic: str | None = None
+    filename: str | None = None
+    manual_upload: bool = False
+    manual_correction: bool = False
 
 
 @dataclass(frozen=True, slots=True)

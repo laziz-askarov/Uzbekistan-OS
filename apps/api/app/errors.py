@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.assistant.service import AssistantError
+from app.content.editorial import EditorialError
 from app.identity.authentication import AuthenticationError
 from app.ingestion.admin import AdminIngestionError
 from app.ingestion.errors import IngestionError
@@ -100,6 +101,36 @@ def install_exception_handlers(application: FastAPI) -> None:
         elif error.code in {"review_not_found", "artifact_not_found"}:
             status_code = 404
         elif error.code == "invalid_decision_reason":
+            status_code = 422
+        else:
+            status_code = 409
+        return _error_response(
+            request,
+            status_code=status_code,
+            code=error.code,
+            message=str(error),
+        )
+
+    @application.exception_handler(EditorialError)
+    async def editorial_error_handler(
+        request: Request,
+        error: EditorialError,
+    ) -> JSONResponse:
+        if error.code == "editorial_forbidden":
+            status_code = 403
+        elif error.code in {
+            "editorial_author_not_found",
+            "editorial_post_not_found",
+            "editorial_publication_not_found",
+            "editorial_revision_not_found",
+        }:
+            status_code = 404
+        elif error.code in {
+            "invalid_editorial_limit",
+            "invalid_editorial_decision_reason",
+            "editorial_domain_not_found",
+            "editorial_language_not_found",
+        }:
             status_code = 422
         else:
             status_code = 409

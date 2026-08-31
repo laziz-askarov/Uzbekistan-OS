@@ -22,6 +22,15 @@ IMPLEMENTED_OPERATIONS = {
     "/admin/publications": "post",
     "/admin/documents/{document_id}/expire": "post",
     "/admin/documents/{document_id}/reindex": "post",
+    "/admin/content/authors": ("get", "post"),
+    "/admin/content/posts": ("get", "post"),
+    "/admin/content/posts/{post_id}/revisions": "post",
+    "/admin/content/revisions/{revision_id}": ("get", "put"),
+    "/admin/content/revisions/{revision_id}/submit": "post",
+    "/admin/content/revisions/{revision_id}/decision": "post",
+    "/admin/content/revisions/{revision_id}/publish": "post",
+    "/content/posts": "get",
+    "/content/posts/{slug}": "get",
 }
 
 IMPLEMENTED_AUTHORIZATION = {
@@ -63,6 +72,45 @@ IMPLEMENTED_AUTHORIZATION = {
         "mode": "role-gated",
         "roles": ["knowledge_publisher", "admin"],
     },
+    "/admin/content/authors": {
+        "get": {
+            "mode": "role-gated",
+            "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
+        },
+        "post": {"mode": "role-gated", "roles": ["content_author", "admin"]},
+    },
+    "/admin/content/posts": {
+        "get": {
+            "mode": "role-gated",
+            "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
+        },
+        "post": {"mode": "role-gated", "roles": ["content_author", "admin"]},
+    },
+    "/admin/content/posts/{post_id}/revisions": {
+        "mode": "role-gated",
+        "roles": ["content_author", "admin"],
+    },
+    "/admin/content/revisions/{revision_id}": {
+        "get": {
+            "mode": "role-gated",
+            "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
+        },
+        "put": {"mode": "role-gated", "roles": ["content_author", "admin"]},
+    },
+    "/admin/content/revisions/{revision_id}/submit": {
+        "mode": "role-gated",
+        "roles": ["content_author", "admin"],
+    },
+    "/admin/content/revisions/{revision_id}/decision": {
+        "mode": "role-gated",
+        "roles": ["content_reviewer", "admin"],
+    },
+    "/admin/content/revisions/{revision_id}/publish": {
+        "mode": "role-gated",
+        "roles": ["knowledge_publisher", "admin"],
+    },
+    "/content/posts": {"mode": "public"},
+    "/content/posts/{slug}": {"mode": "public"},
 }
 
 
@@ -80,9 +128,14 @@ def test_checked_in_admin_contract_matches_runtime_paths_and_security() -> None:
             contract_operation = contract["paths"][path][method]
 
             assert contract_operation["operationId"] == runtime_operation["operationId"]
-            assert contract_operation["security"] == [{"BearerAuth": []}]
-            assert runtime_operation["security"] == [{"BearerAuth": []}]
-            assert contract_operation["x-authorization"] == IMPLEMENTED_AUTHORIZATION[path]
+            authorization = IMPLEMENTED_AUTHORIZATION[path]
+            expected_authorization = authorization.get(method, authorization)
+            expected_security = (
+                [] if expected_authorization["mode"] == "public" else [{"BearerAuth": []}]
+            )
+            assert contract_operation["security"] == expected_security
+            assert runtime_operation.get("security", []) == expected_security
+            assert contract_operation["x-authorization"] == expected_authorization
 
     assert contract["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"
     assert runtime["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"

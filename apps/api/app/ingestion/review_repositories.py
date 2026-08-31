@@ -51,6 +51,18 @@ class SqlAlchemyReviewRepository:
                 fetched_at=snapshot.fetched_at,
                 section_count=artifact.section_count,
                 topic=(str(artifact.details["topic"]) if artifact.details.get("topic") else None),
+                filename=(
+                    str(artifact.details["filename"])
+                    if artifact.details.get("filename")
+                    else None
+                ),
+                # Topic was only set by the manual-ingestion path before the
+                # explicit provenance flag was introduced, so it is a safe
+                # compatibility signal for existing uploads.
+                manual_upload=bool(
+                    artifact.details.get("manual_upload") or artifact.details.get("topic")
+                ),
+                manual_correction=bool(artifact.details.get("manual_correction")),
             )
             for review_item, artifact, snapshot, source in rows
         )
@@ -98,6 +110,11 @@ class SqlAlchemyReviewRepository:
         current_snapshot = self.session.get(SourceSnapshot, current.source_snapshot_id)
         if current_snapshot is None:
             return None
+        current_topic = current.details.get("topic")
+        topic_value = ExtractionArtifact.details["topic"].as_string()
+        topic_condition = (
+            topic_value == str(current_topic) if current_topic else topic_value.is_(None)
+        )
 
         previous = self.session.scalar(
             select(ExtractionArtifact)
@@ -113,6 +130,7 @@ class SqlAlchemyReviewRepository:
                 SourceSnapshot.source_id == current_snapshot.source_id,
                 ExtractionArtifact.id != current.id,
                 ReviewItem.status == ReviewStatus.APPROVED,
+                topic_condition,
                 or_(
                     SourceSnapshot.fetched_at < current_snapshot.fetched_at,
                     and_(

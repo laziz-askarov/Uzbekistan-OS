@@ -17,6 +17,7 @@ from app.ingestion.admin import (
     IngestionJobRecord,
     PreparedCrawlJob,
     SourceDatabaseState,
+    UpdateAdminSourceRequest,
 )
 from app.ingestion.models import (
     CrawlPolicy,
@@ -179,6 +180,136 @@ class SqlAlchemyAdminIngestionRepository:
                     "crawl_policy": CrawlPolicy.MANUAL_ONLY.value,
                 },
                 occurred_at=created_at,
+            )
+        )
+        self.session.flush()
+        return self._managed_source_entry(config, source, organization, country)
+
+    def update_managed_source(
+        self,
+        current: SourceRegistryEntry,
+        request: UpdateAdminSourceRequest,
+        principal: AuthenticatedPrincipal,
+        *,
+        updated_at: datetime,
+    ) -> SourceRegistryEntry:
+        source = self.session.scalar(
+            select(Source).where(Source.id == current.id).with_for_update()
+        )
+        if source is None:
+            raise AdminIngestionError(
+                "source_not_synchronized",
+                "source must be synchronized before its metadata can be edited",
+            )
+        conflicting_source = self.session.scalar(
+            select(Source).where(
+                Source.url == str(request.url),
+                Source.id != source.id,
+            )
+        )
+        if conflicting_source is not None:
+            raise AdminIngestionError(
+                "source_url_conflict",
+                "another ingestion source already uses this official URL",
+            )
+
+        country = self.session.scalar(select(Country).where(Country.iso2 == "UZ"))
+        if country is None or not country.is_active:
+            raise AdminIngestionError(
+                "source_country_unavailable",
+                "Uzbekistan must be present in the active country registry",
+            )
+        organization = self.session.scalar(
+            select(SourceOrganization)
+            .where(SourceOrganization.website_url == str(request.organization_website_url))
+            .with_for_update()
+        )
+        if organization is not None and not organization.is_official:
+            raise AdminIngestionError(
+                "source_organization_not_official",
+                "the matching organization is not approved as an official source",
+            )
+        if organization is None:
+            organization_id = uuid4()
+            organization = SourceOrganization(
+                id=organization_id,
+                country_id=country.id,
+                slug=self._available_organization_slug(request.organization_name, organization_id),
+                name=request.organization_name,
+                website_url=str(request.organization_website_url),
+                is_official=True,
+                is_active=True,
+            )
+            self.session.add(organization)
+            self.session.flush()
+        else:
+            organization.name = request.organization_name
+            organization.is_active = True
+
+        previous = {
+            "title": source.title,
+            "url": source.url,
+            "organization_id": str(source.organization_id),
+            "active": source.is_active,
+            "domains": list(current.domains),
+            "languages": list(current.languages),
+        }
+        source.organization_id = organization.id
+        source.title = request.title
+        if source.url != str(request.url):
+            # A changed URL has not been re-fetched or reviewed yet. Metadata
+            # editing must never make website evidence look fresher than it is.
+            source.last_verified_at = None
+        source.url = str(request.url)
+        source.is_active = request.active
+
+        config = self.session.scalar(
+            select(ManagedSourceConfig)
+            .where(ManagedSourceConfig.source_id == source.id)
+            .with_for_update()
+        )
+        if config is None:
+            config = ManagedSourceConfig(
+                source_id=source.id,
+                slug=self._available_source_slug(current.slug, source.id),
+                domains=list(request.domains),
+                languages=list(request.languages),
+                adapter_key=current.adapter_key,
+                registry_status=current.status.value,
+                production_eligible=current.production_eligible,
+                created_by_principal_id=principal.id,
+                idempotency_key=f"source-metadata-{source.id}",
+                request_sha256=request.sha256,
+                created_at=updated_at,
+                updated_at=updated_at,
+            )
+            self.session.add(config)
+        else:
+            config.domains = list(request.domains)
+            config.languages = list(request.languages)
+            config.request_sha256 = request.sha256
+            config.updated_at = updated_at
+
+        self.session.add(
+            AuditEvent(
+                id=uuid4(),
+                actor_user_id=principal.id,
+                action="ingestion.source_updated",
+                entity_type="knowledge.source",
+                entity_id=source.id,
+                request_id=principal.request_id,
+                payload={
+                    "before": previous,
+                    "after": {
+                        "title": request.title,
+                        "url": str(request.url),
+                        "organization_id": str(organization.id),
+                        "active": request.active,
+                        "domains": list(request.domains),
+                        "languages": list(request.languages),
+                    },
+                },
+                occurred_at=updated_at,
             )
         )
         self.session.flush()

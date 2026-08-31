@@ -23,6 +23,7 @@ from app.ingestion.admin import (
     ManualUploadRequest,
     ManualUploadResult,
     QueueCrawlRequest,
+    UpdateAdminSourceRequest,
 )
 from app.ingestion.review import (
     ArtifactComparison,
@@ -91,6 +92,30 @@ def create_admin_source(
             payload,
             idempotency_key=idempotency_key,
             created_at=datetime.now(UTC),
+        ),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.put(
+    "/sources/{source_id}",
+    response_model=SuccessResponse[AdminSourceRecord],
+    operation_id="updateAdminSource",
+    summary="Update audited official source metadata",
+)
+def update_admin_source(
+    source_id: UUID,
+    payload: UpdateAdminSourceRequest,
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[AdminIngestionService, Depends(get_admin_ingestion_query_service)],
+) -> SuccessResponse[AdminSourceRecord]:
+    return SuccessResponse(
+        data=service.update_source(
+            principal,
+            source_id,
+            payload,
+            updated_at=datetime.now(UTC),
         ),
         meta=ResponseMeta(request_id=request.state.request_id),
     )
@@ -244,6 +269,9 @@ class ReviewQueueItemData(BaseModel):
     fetched_at: datetime
     section_count: int = Field(ge=1)
     topic: str | None = None
+    filename: str | None = None
+    manual_upload: bool = False
+    manual_correction: bool = False
 
     @classmethod
     def from_record(cls, record: ReviewQueueRecord) -> "ReviewQueueItemData":
@@ -255,6 +283,9 @@ class ReviewQueueItemData(BaseModel):
             fetched_at=record.fetched_at,
             section_count=record.section_count,
             topic=record.topic,
+            filename=record.filename,
+            manual_upload=record.manual_upload,
+            manual_correction=record.manual_correction,
         )
 
 
@@ -275,6 +306,9 @@ class ArtifactDetailData(BaseModel):
     adapter_key: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
     media_type: str
     topic: str | None = None
+    filename: str | None = None
+    manual_upload: bool = False
+    manual_correction: bool = False
     raw_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     normalized_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     extracted_at: datetime
@@ -405,6 +439,9 @@ def get_extraction_artifact(
             adapter_key=artifact.adapter_key,
             media_type=artifact.media_type,
             topic=artifact.topic,
+            filename=artifact.filename,
+            manual_upload=artifact.manual_upload,
+            manual_correction=artifact.manual_correction,
             raw_sha256=artifact.raw_sha256,
             normalized_sha256=artifact.normalized_sha256,
             extracted_at=artifact.extracted_at,
