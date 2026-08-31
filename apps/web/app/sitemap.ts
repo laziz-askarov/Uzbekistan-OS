@@ -44,16 +44,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   try {
     const posts = await listPublishedPosts({ limit: 100 });
+    const translationGroups = new Map<string, typeof posts>();
+    for (const post of posts) {
+      const group = translationGroups.get(post.translation_group_id) ?? [];
+      group.push(post);
+      translationGroups.set(post.translation_group_id, group);
+    }
     return [
       ...staticPages,
       ...posts.map((post) => {
         const image = sitemapImage(post.hero_image_url);
+        const translations =
+          translationGroups.get(post.translation_group_id) ?? [];
+        const defaultTranslation =
+          translations.find(
+            (translation) => translation.language_code === "en",
+          ) ?? translations[0];
+        const languageAlternates = Object.fromEntries([
+          ...translations.map((translation) => [
+            translation.language_code,
+            publicPostUrl(translation.slug),
+          ]),
+          ...(defaultTranslation
+            ? [["x-default", publicPostUrl(defaultTranslation.slug)] as const]
+            : []),
+        ]);
         return {
           url: publicPostUrl(post.slug),
           lastModified: post.updated_at,
           changeFrequency: "weekly" as const,
           priority: 0.8,
           ...(image ? { images: [image] } : {}),
+          ...(Object.keys(languageAlternates).length
+            ? { alternates: { languages: languageAlternates } }
+            : {}),
         };
       }),
     ];

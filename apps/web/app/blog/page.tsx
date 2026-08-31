@@ -40,9 +40,15 @@ const domains = [
   ["everyday-living", "Living"],
   ["healthcare", "Healthcare"],
 ] as const;
+const languages = [
+  ["", "All languages"],
+  ["uz", "O‘zbekcha"],
+  ["en", "English"],
+  ["ru", "Русский"],
+] as const;
 
 type BlogIndexProps = {
-  searchParams: Promise<{ domain?: string }>;
+  searchParams: Promise<{ domain?: string; language?: string }>;
 };
 
 function displayDomain(value: string | null) {
@@ -50,14 +56,26 @@ function displayDomain(value: string | null) {
 }
 
 export default async function BlogIndex({ searchParams }: BlogIndexProps) {
-  const { domain } = await searchParams;
+  const { domain, language } = await searchParams;
   const selectedDomain = domains.some(([value]) => value === domain)
     ? domain
     : undefined;
+  const selectedLanguage = languages.some(([value]) => value === language)
+    ? language
+    : undefined;
   const posts = await listPublishedPosts({
     domain: selectedDomain || undefined,
+    language: selectedLanguage || undefined,
     limit: 100,
   });
+
+  function filterHref(nextDomain: string, nextLanguage: string) {
+    const parameters = new URLSearchParams();
+    if (nextDomain) parameters.set("domain", nextDomain);
+    if (nextLanguage) parameters.set("language", nextLanguage);
+    const query = parameters.toString();
+    return query ? `/blog?${query}` : "/blog";
+  }
 
   return (
     <>
@@ -75,8 +93,23 @@ export default async function BlogIndex({ searchParams }: BlogIndexProps) {
         {domains.map(([value, label]) => (
           <Link
             aria-current={(selectedDomain ?? "") === value ? "page" : undefined}
-            href={value ? `/blog?domain=${value}` : "/blog"}
+            href={filterHref(value, selectedLanguage ?? "")}
             key={value || "all"}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      <nav className={styles.filters} aria-label="Filter guides by language">
+        {languages.map(([value, label]) => (
+          <Link
+            aria-current={
+              (selectedLanguage ?? "") === value ? "page" : undefined
+            }
+            href={filterHref(selectedDomain ?? "", value)}
+            hrefLang={value || undefined}
+            key={value || "all-languages"}
           >
             {label}
           </Link>
@@ -97,7 +130,7 @@ export default async function BlogIndex({ searchParams }: BlogIndexProps) {
                 </span>
                 <span>{post.language_code.toUpperCase()}</span>
                 <time dateTime={post.published_at}>
-                  {new Intl.DateTimeFormat("en", {
+                  {new Intl.DateTimeFormat(post.language_code, {
                     dateStyle: "medium",
                   }).format(new Date(post.published_at))}
                 </time>

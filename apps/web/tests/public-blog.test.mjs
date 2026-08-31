@@ -17,6 +17,7 @@ test("the blog is server rendered from published-only API endpoints", async () =
 
   assert.match(data, /GROUNDED_API_BASE_URL/);
   assert.match(data, /\/content\/posts\?/);
+  assert.match(data, /translation_group_id: string/);
   assert.match(data, /\/content\/posts\/\$\{encodeURIComponent\(slug\)\}/);
   assert.match(
     data,
@@ -32,6 +33,8 @@ test("articles expose canonical, language, social, author, and source metadata",
 
   assert.match(article, /generateMetadata/);
   assert.match(article, /languages: languageAlternates/);
+  assert.match(article, /languageAlternates\["x-default"\]/);
+  assert.match(article, /hrefLang=\{translation\.language_code\}/);
   assert.match(article, /"text\/markdown"/);
   assert.match(article, /type: "article"/);
   assert.match(article, /"@type": "BlogPosting"/);
@@ -39,6 +42,8 @@ test("articles expose canonical, language, social, author, and source metadata",
   assert.match(article, /"@type": "FAQPage"/);
   assert.match(article, /citation: post\.sources\.map/);
   assert.match(article, /Sources and review trail/);
+  assert.match(article, /Reviewed knowledge:/);
+  assert.match(article, /Knowledge reviewed/);
   assert.match(article, /About the author/);
   assert.match(article, /replace\(\s*\/</);
 });
@@ -54,6 +59,9 @@ test("crawler and LLM discovery surfaces include only published article links", 
   ]);
 
   assert.match(sitemap, /listPublishedPosts/);
+  assert.match(sitemap, /alternates: \{ languages: languageAlternates \}/);
+  assert.match(sitemap, /translationGroups = new Map/);
+  assert.doesNotMatch(sitemap, /getPublishedPost/);
   assert.match(sitemap, /publicPostUrl/);
   assert.match(robots, /\/admin\//);
   assert.match(robots, /sitemap\.xml/);
@@ -62,6 +70,8 @@ test("crawler and LLM discovery surfaces include only published article links", 
   assert.match(full, /complete published guide corpus/);
   assert.match(markdown, /text\/markdown; charset=utf-8/);
   assert.match(markdown, /Reviewed sources/);
+  assert.match(markdown, /reviewed knowledge:/);
+  assert.match(full, /reviewed knowledge:/);
   assert.match(rss, /listPublishedPosts/);
   assert.match(rss, /dynamic = "force-dynamic"/);
   assert.match(rss, /application\/rss\+xml; charset=utf-8/);

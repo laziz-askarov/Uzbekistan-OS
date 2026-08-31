@@ -43,17 +43,28 @@ type Author = {
   profile_url: string | null;
   is_active: boolean;
 };
-type Source = {
-  id: string;
-  title: string;
+type ReviewedSource = {
+  source_id: string;
+  document_id: string;
+  document_version_id: string;
+  document_slug: string;
+  document_title: string;
+  document_summary: string;
+  domain_slug: string;
+  language_code: string;
+  version_label: string;
+  source_title: string;
   organization: string;
-  url: string;
-  active: boolean;
-  registry_status: string;
+  source_url: string;
+  source_locator: string;
+  reviewed_at: string;
+  published_at: string;
+  effective_until: string | null;
 };
 type PostSummary = {
   id: string;
   slug: string;
+  translation_group_id: string;
   content_type: ContentType;
   domain_slug: string | null;
   language_code: string;
@@ -88,6 +99,7 @@ type RevisionDetail = {
   slug: string;
   domain_slug: string | null;
   language_code: string;
+  translation_group_id: string;
   title: string;
   summary: string;
   body_markdown: string;
@@ -115,6 +127,7 @@ type EditorDraft = {
   heroImageUrl: string;
   includeInRag: boolean;
   languageCode: string;
+  translationGroupId: string | null;
   seoDescription: string;
   seoTitle: string;
   slug: string;
@@ -135,6 +148,7 @@ function emptyDraft(authorId = ""): EditorDraft {
     heroImageUrl: "",
     includeInRag: false,
     languageCode: "en",
+    translationGroupId: null,
     seoDescription: "",
     seoTitle: "",
     slug: "",
@@ -156,6 +170,7 @@ function draftFromDetail(detail: RevisionDetail): EditorDraft {
     heroImageUrl: detail.hero_image_url ?? "",
     includeInRag: detail.include_in_rag,
     languageCode: detail.language_code,
+    translationGroupId: detail.translation_group_id,
     seoDescription: detail.seo_description ?? "",
     seoTitle: detail.seo_title ?? "",
     slug: detail.slug,
@@ -185,6 +200,18 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function reviewedSourceKey(sourceId: string, documentVersionId: string) {
+  return `${sourceId}:${documentVersionId}`;
+}
+
+function citationSourceKey(citation: Citation) {
+  return citation.document_version_id
+    ? reviewedSourceKey(citation.source_id, citation.document_version_id)
+    : citation.source_id
+      ? `legacy:${citation.source_id}`
+      : "";
+}
+
 function messageFrom(error: unknown) {
   return error instanceof Error
     ? error.message
@@ -196,7 +223,7 @@ export default function ContentStudio() {
   const token = adminSession.accessToken ?? "";
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [authors, setAuthors] = useState<Author[]>([]);
-  const [sources, setSources] = useState<Source[]>([]);
+  const [reviewedSources, setReviewedSources] = useState<ReviewedSource[]>([]);
   const [posts, setPosts] = useState<PostSummary[]>([]);
   const [filter, setFilter] = useState<(typeof statusFilters)[number]>("all");
   const [selectedPost, setSelectedPost] = useState<PostSummary | null>(null);
@@ -211,6 +238,7 @@ export default function ContentStudio() {
   const [decisionReason, setDecisionReason] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [authorBio, setAuthorBio] = useState("");
+  const [translationSourceTitle, setTranslationSourceTitle] = useState("");
 
   const ownAuthor = useMemo(
     () =>
@@ -218,12 +246,29 @@ export default function ContentStudio() {
     [authors, principal?.id],
   );
   const editable = creating || detail?.revision.status === "draft";
-  const eligibleSources = useMemo(
+  const relevantReviewedSources = useMemo(
     () =>
-      sources.filter(
-        (source) => source.active && source.registry_status === "approved",
+      reviewedSources.filter(
+        (source) =>
+          source.domain_slug === draft.domainSlug &&
+          source.language_code === draft.languageCode,
       ),
-    [sources],
+    [draft.domainSlug, draft.languageCode, reviewedSources],
+  );
+  const translationGroupPosts = useMemo(
+    () =>
+      draft.translationGroupId
+        ? posts.filter(
+            (post) => post.translation_group_id === draft.translationGroupId,
+          )
+        : [],
+    [draft.translationGroupId, posts],
+  );
+  const availableTranslationLanguages = languageOptions.filter(
+    ([languageCode]) =>
+      !translationGroupPosts.some(
+        (post) => post.language_code === languageCode,
+      ),
   );
 
   async function request<T>(
@@ -255,7 +300,7 @@ export default function ContentStudio() {
     setLoading(true);
     setError("");
     try {
-      const [nextPrincipal, nextAuthors, nextPosts, nextSources] =
+      const [nextPrincipal, nextAuthors, nextPosts, nextReviewedSources] =
         await Promise.all([
           request<Principal>("/auth/me", undefined, bearerToken),
           request<Author[]>("/admin/content/authors", undefined, bearerToken),
@@ -264,7 +309,11 @@ export default function ContentStudio() {
             undefined,
             bearerToken,
           ),
-          request<Source[]>("/admin/sources", undefined, bearerToken),
+          request<ReviewedSource[]>(
+            "/admin/content/reviewed-sources?limit=200",
+            undefined,
+            bearerToken,
+          ),
         ]);
       if (!nextPrincipal.roles.includes("admin")) {
         throw new Error(
@@ -274,7 +323,7 @@ export default function ContentStudio() {
       setPrincipal(nextPrincipal);
       setAuthors(nextAuthors);
       setPosts(nextPosts);
-      setSources(nextSources);
+      setReviewedSources(nextReviewedSources);
       if (!selectedPost && nextPosts.length > 0) {
         await selectPost(nextPosts[0], bearerToken);
       }
@@ -301,6 +350,7 @@ export default function ContentStudio() {
     setDetailLoading(true);
     setError("");
     setNotice("");
+    setTranslationSourceTitle("");
     try {
       const nextDetail = await request<RevisionDetail>(
         `/admin/content/revisions/${post.latest_revision_id}`,
@@ -325,6 +375,31 @@ export default function ContentStudio() {
     setDecisionReason("");
     setError("");
     setNotice("");
+    setTranslationSourceTitle("");
+  }
+
+  function startTranslation() {
+    if (!detail) return;
+    const nextLanguage = availableTranslationLanguages[0];
+    if (!nextLanguage) {
+      setNotice("Uzbek, English, and Russian translations already exist.");
+      return;
+    }
+    setCreating(true);
+    setSelectedPost(null);
+    setTranslationSourceTitle(detail.title);
+    setDraft({
+      ...emptyDraft(ownAuthor?.id ?? authors[0]?.id ?? ""),
+      contentType: detail.revision.content_type,
+      domainSlug: detail.domain_slug ?? "",
+      heroImageUrl: detail.hero_image_url ?? "",
+      languageCode: nextLanguage[0],
+      translationGroupId: detail.translation_group_id,
+    });
+    setDetail(null);
+    setDecisionReason("");
+    setError("");
+    setNotice("");
   }
 
   function updateDraft<K extends keyof EditorDraft>(
@@ -335,12 +410,13 @@ export default function ContentStudio() {
   }
 
   function addCitation() {
+    const source = relevantReviewedSources[0];
     updateDraft("citations", [
       ...draft.citations,
       {
-        source_id: eligibleSources[0]?.id ?? "",
-        document_version_id: null,
-        locator: "",
+        source_id: source?.source_id ?? "",
+        document_version_id: source?.document_version_id ?? null,
+        locator: source?.source_locator ?? "",
         quote: null,
       },
     ]);
@@ -353,6 +429,23 @@ export default function ContentStudio() {
         citationIndex === index ? { ...citation, ...patch } : citation,
       ),
     );
+  }
+
+  function selectReviewedSource(index: number, value: string) {
+    const selected = reviewedSources.find(
+      (source) =>
+        reviewedSourceKey(source.source_id, source.document_version_id) ===
+        value,
+    );
+    if (!selected) return;
+    const current = draft.citations[index];
+    updateCitation(index, {
+      source_id: selected.source_id,
+      document_version_id: selected.document_version_id,
+      locator: current?.locator.trim()
+        ? current.locator
+        : selected.source_locator,
+    });
   }
 
   function removeCitation(index: number) {
@@ -387,10 +480,15 @@ export default function ContentStudio() {
     }
     if (
       draft.citations.some(
-        (citation) => !citation.source_id || !citation.locator.trim(),
+        (citation) =>
+          !citation.source_id ||
+          !citation.document_version_id ||
+          !citation.locator.trim(),
       )
     ) {
-      throw new Error("Every source needs a source selection and locator.");
+      throw new Error(
+        "Every citation must select a current reviewed knowledge publication and locator.",
+      );
     }
     return {
       author_id: draft.authorId,
@@ -429,6 +527,7 @@ export default function ContentStudio() {
             content_type: draft.contentType,
             domain_slug: draft.domainSlug || null,
             language_code: draft.languageCode,
+            translation_group_id: draft.translationGroupId,
           }),
         });
       } else if (detail) {
@@ -734,6 +833,18 @@ export default function ContentStudio() {
                     </p>
                   </div>
                   <div className={styles.headingActions}>
+                    {!creating &&
+                    detail &&
+                    availableTranslationLanguages.length ? (
+                      <button
+                        className={styles.secondaryButton}
+                        disabled={Boolean(action)}
+                        onClick={startTranslation}
+                        type="button"
+                      >
+                        Add translation
+                      </button>
+                    ) : null}
                     {!creating && detail?.revision.status === "published" ? (
                       <button
                         className={styles.secondaryButton}
@@ -770,6 +881,13 @@ export default function ContentStudio() {
                 {creating ? (
                   <fieldset className={styles.identityFields}>
                     <legend>Post identity</legend>
+                    {draft.translationGroupId ? (
+                      <p className={styles.translationNotice}>
+                        Creating a localized edition of {translationSourceTitle}
+                        . It will receive its own review and publication
+                        decision.
+                      </p>
+                    ) : null}
                     <label>
                       URL slug
                       <input
@@ -786,7 +904,9 @@ export default function ContentStudio() {
                     <label>
                       Content type
                       <select
-                        disabled={!editable}
+                        disabled={
+                          !editable || Boolean(draft.translationGroupId)
+                        }
                         onChange={(event) =>
                           updateDraft(
                             "contentType",
@@ -804,7 +924,9 @@ export default function ContentStudio() {
                     <label>
                       Topic
                       <select
-                        disabled={!editable}
+                        disabled={
+                          !editable || Boolean(draft.translationGroupId)
+                        }
                         onChange={(event) =>
                           updateDraft("domainSlug", event.target.value)
                         }
@@ -827,13 +949,44 @@ export default function ContentStudio() {
                         value={draft.languageCode}
                       >
                         {languageOptions.map(([value, label]) => (
-                          <option key={value} value={value}>
+                          <option
+                            disabled={
+                              Boolean(draft.translationGroupId) &&
+                              translationGroupPosts.some(
+                                (post) => post.language_code === value,
+                              )
+                            }
+                            key={value}
+                            value={value}
+                          >
                             {label}
                           </option>
                         ))}
                       </select>
                     </label>
                   </fieldset>
+                ) : null}
+
+                {!creating && translationGroupPosts.length ? (
+                  <nav
+                    className={styles.translationLinks}
+                    aria-label="Editorial translations"
+                  >
+                    <strong>Language editions</strong>
+                    {translationGroupPosts.map((post) => (
+                      <button
+                        aria-current={
+                          selectedPost?.id === post.id ? "page" : undefined
+                        }
+                        key={post.id}
+                        onClick={() => void selectPost(post)}
+                        type="button"
+                      >
+                        {post.language_code.toUpperCase()} ·{" "}
+                        {formatStatus(post.latest_revision_status)}
+                      </button>
+                    ))}
+                  </nav>
                 ) : null}
 
                 <div className={styles.formGrid}>
@@ -1002,10 +1155,11 @@ export default function ContentStudio() {
                   <div className={styles.sectionHeading}>
                     <div>
                       <p className={styles.eyebrow}>Trust layer</p>
-                      <h3>Official sources</h3>
+                      <h3>Reviewed knowledge sources</h3>
                       <p>
-                        Cite factual claims precisely. Guides cannot enter
-                        review without an active official source.
+                        Pin claims to a current, published knowledge version.
+                        The article remains separate from RAG unless assistant
+                        retrieval is explicitly enabled.
                       </p>
                     </div>
                     {editable ? (
@@ -1025,25 +1179,50 @@ export default function ContentStudio() {
                         key={`${index}-${citation.source_id}`}
                       >
                         <label>
-                          Approved source
+                          Reviewed publication
                           <select
                             disabled={!editable}
                             onChange={(event) =>
-                              updateCitation(index, {
-                                source_id: event.target.value,
-                              })
+                              selectReviewedSource(index, event.target.value)
                             }
                             required
-                            value={citation.source_id}
+                            value={citationSourceKey(citation)}
                           >
-                            <option value="">Choose source</option>
-                            {eligibleSources.map((source) => (
-                              <option key={source.id} value={source.id}>
-                                {source.organization} · {source.title}
+                            <option value="">
+                              Choose reviewed publication
+                            </option>
+                            {!citation.document_version_id &&
+                            citation.source_id ? (
+                              <option
+                                disabled
+                                value={`legacy:${citation.source_id}`}
+                              >
+                                Legacy source — select a reviewed version
+                              </option>
+                            ) : null}
+                            {relevantReviewedSources.map((source) => (
+                              <option
+                                key={reviewedSourceKey(
+                                  source.source_id,
+                                  source.document_version_id,
+                                )}
+                                value={reviewedSourceKey(
+                                  source.source_id,
+                                  source.document_version_id,
+                                )}
+                              >
+                                {source.document_title} · {source.organization}{" "}
+                                · v{source.version_label}
                               </option>
                             ))}
                           </select>
                         </label>
+                        {citation.document_version_id ? (
+                          <p className={styles.reviewedSourceMeta}>
+                            Reviewed publication pinned to this editorial
+                            revision.
+                          </p>
+                        ) : null}
                         <label>
                           Locator
                           <input
@@ -1084,7 +1263,8 @@ export default function ContentStudio() {
                     ))}
                     {draft.citations.length === 0 ? (
                       <p className={styles.emptyCitations}>
-                        No sources added yet.
+                        No reviewed sources added yet. Publish evidence through
+                        the review queue before connecting it to an article.
                       </p>
                     ) : null}
                   </div>

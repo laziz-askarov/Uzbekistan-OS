@@ -23,6 +23,7 @@ class MemoryEditorialRepository:
         self.records: dict[UUID, EditorialRevisionRecord] = {}
         self.audits = []
         self.eligible_sources = True
+        self.current_source_links = True
 
     def create_post(self, draft, principal, *, created_at):
         record = EditorialRevisionRecord(
@@ -60,6 +61,10 @@ class MemoryEditorialRepository:
     def sources_are_eligible(self, revision_id):
         del revision_id
         return self.eligible_sources
+
+    def source_links_are_current(self, revision_id):
+        del revision_id
+        return self.current_source_links
 
     def save(self, record):
         self.records[record.id] = record
@@ -163,6 +168,19 @@ def test_guide_cannot_submit_when_official_source_is_no_longer_eligible() -> Non
     repository.eligible_sources = False
 
     with pytest.raises(EditorialError, match="official organization"):
+        service.submit(author, draft.id)
+
+    assert repository.records[draft.id].status is EditorialStatus.DRAFT
+
+
+def test_post_cannot_submit_with_stale_reviewed_source_lineage() -> None:
+    repository = MemoryEditorialRepository()
+    service = EditorialService(repository)
+    author = principal("content_author")
+    draft = service.create_post(author, post_draft())
+    repository.current_source_links = False
+
+    with pytest.raises(EditorialError, match="current reviewed knowledge publications"):
         service.submit(author, draft.id)
 
     assert repository.records[draft.id].status is EditorialStatus.DRAFT

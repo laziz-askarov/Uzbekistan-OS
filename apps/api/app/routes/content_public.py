@@ -37,6 +37,10 @@ class PublishedSourceData(BaseModel):
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
     source_id: UUID
+    document_version_id: UUID | None
+    document_slug: str | None
+    document_title: str | None
+    reviewed_at: datetime | None
     title: str
     organization: str
     url: str
@@ -55,9 +59,7 @@ class PublishedTranslationData(BaseModel):
     title: str
 
     @classmethod
-    def from_record(
-        cls, record: PublishedEditorialTranslationRecord
-    ) -> "PublishedTranslationData":
+    def from_record(cls, record: PublishedEditorialTranslationRecord) -> "PublishedTranslationData":
         return cls.model_validate(record)
 
 
@@ -66,6 +68,7 @@ class PublishedPostSummaryData(BaseModel):
 
     id: UUID
     slug: str
+    translation_group_id: UUID
     content_type: str
     domain_slug: str | None
     language_code: str

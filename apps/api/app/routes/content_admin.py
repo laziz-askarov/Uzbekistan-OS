@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -17,6 +17,7 @@ from app.content.editorial import (
     EditorialService,
     EditorialSourceReference,
     EditorialStatus,
+    ReviewedKnowledgeSourceRecord,
 )
 from app.dependencies import get_authenticated_principal, get_editorial_service
 from app.identity.service import AuthenticatedPrincipal
@@ -71,6 +72,7 @@ class EditorialPostSummaryData(BaseModel):
 
     id: UUID
     slug: str
+    translation_group_id: UUID
     content_type: str
     domain_slug: str | None
     language_code: str
@@ -84,6 +86,31 @@ class EditorialPostSummaryData(BaseModel):
 
     @classmethod
     def from_record(cls, record: EditorialPostSummaryRecord) -> "EditorialPostSummaryData":
+        return cls.model_validate(record)
+
+
+class ReviewedKnowledgeSourceData(BaseModel):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+    source_id: UUID
+    document_id: UUID
+    document_version_id: UUID
+    document_slug: str
+    document_title: str
+    document_summary: str
+    domain_slug: str
+    language_code: str
+    version_label: str
+    source_title: str
+    organization: str
+    source_url: str
+    source_locator: str
+    reviewed_at: datetime
+    published_at: datetime
+    effective_until: date | None
+
+    @classmethod
+    def from_record(cls, record: ReviewedKnowledgeSourceRecord) -> "ReviewedKnowledgeSourceData":
         return cls.model_validate(record)
 
 
@@ -171,6 +198,38 @@ def create_editorial_author(
     record = service.create_author(principal, payload, created_at=datetime.now(UTC))
     return SuccessResponse(
         data=EditorialAuthorData.from_record(record),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.get(
+    "/reviewed-sources",
+    response_model=SuccessResponse[list[ReviewedKnowledgeSourceData]],
+    operation_id="listReviewedEditorialSources",
+    summary="List current reviewed knowledge publications available for editorial citation",
+)
+def list_reviewed_editorial_sources(
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[EditorialService, Depends(get_editorial_service)],
+    domain: Annotated[
+        str | None,
+        Query(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$"),
+    ] = None,
+    language: Annotated[
+        str | None,
+        Query(pattern=r"^[a-z]{2,3}(?:-[A-Z]{2})?$"),
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 200,
+) -> SuccessResponse[list[ReviewedKnowledgeSourceData]]:
+    records = service.list_reviewed_sources(
+        principal,
+        domain_slug=domain,
+        language_code=language,
+        limit=limit,
+    )
+    return SuccessResponse(
+        data=[ReviewedKnowledgeSourceData.from_record(record) for record in records],
         meta=ResponseMeta(request_id=request.state.request_id),
     )
 

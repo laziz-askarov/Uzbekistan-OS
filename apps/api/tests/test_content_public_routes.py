@@ -31,6 +31,10 @@ class StubPublicEditorialService:
         )
         self.source = PublishedEditorialSourceRecord(
             source_id=uuid4(),
+            document_version_id=uuid4(),
+            document_slug="tourism-entry-guidance",
+            document_title="Tourism entry guidance",
+            reviewed_at=self.published_at,
             title="Official tourism portal",
             organization="Uzbekistan Travel",
             url="https://uzbekistan.travel/",
@@ -45,6 +49,7 @@ class StubPublicEditorialService:
             PublishedEditorialSummaryRecord(
                 id=uuid4(),
                 slug="best-time-to-visit-uzbekistan",
+                translation_group_id=uuid4(),
                 content_type=ContentType.ARTICLE,
                 domain_slug="tourism",
                 language_code="en",
@@ -112,6 +117,7 @@ def test_public_posts_are_readable_without_customer_authentication() -> None:
 
     assert response.status_code == 200
     assert response.json()["data"][0]["slug"] == "best-time-to-visit-uzbekistan"
+    assert response.json()["data"][0]["translation_group_id"] is not None
     assert response.json()["meta"]["request_id"] == "public-blog-list"
 
 
@@ -127,6 +133,8 @@ def test_public_post_includes_author_source_lineage_and_machine_readable_content
     assert data["body_markdown"].startswith("# Seasons")
     assert data["author"]["name"] == "Uzbekistan OS Editorial"
     assert data["sources"][0]["organization"] == "Uzbekistan Travel"
+    assert data["sources"][0]["document_title"] == "Tourism entry guidance"
+    assert data["sources"][0]["document_version_id"] is not None
     assert data["translations"][0]["language_code"] == "en"
 
 

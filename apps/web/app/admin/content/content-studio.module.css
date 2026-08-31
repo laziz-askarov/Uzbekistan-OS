@@ -348,6 +348,53 @@
   color: #35415a;
 }
 
+.translationNotice {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  border-radius: 10px;
+  background: var(--color-primary-soft);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.translationLinks {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.translationLinks strong {
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+.translationLinks button {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.translationLinks button[aria-current="page"] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
 .formGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.8fr) minmax(290px, 0.8fr);
@@ -501,6 +548,14 @@
   border: 1px solid var(--color-border);
   border-radius: 13px;
   background: var(--color-surface-muted);
+}
+
+.reviewedSourceMeta {
+  align-self: end;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .quoteField {

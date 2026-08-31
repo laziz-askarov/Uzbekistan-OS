@@ -23,6 +23,7 @@ IMPLEMENTED_OPERATIONS = {
     "/admin/documents/{document_id}/expire": "post",
     "/admin/documents/{document_id}/reindex": "post",
     "/admin/content/authors": ("get", "post"),
+    "/admin/content/reviewed-sources": "get",
     "/admin/content/posts": ("get", "post"),
     "/admin/content/posts/{post_id}/revisions": "post",
     "/admin/content/revisions/{revision_id}": ("get", "put"),
@@ -78,6 +79,10 @@ IMPLEMENTED_AUTHORIZATION = {
             "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
         },
         "post": {"mode": "role-gated", "roles": ["content_author", "admin"]},
+    },
+    "/admin/content/reviewed-sources": {
+        "mode": "role-gated",
+        "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
     },
     "/admin/content/posts": {
         "get": {

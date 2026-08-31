@@ -1,5 +1,5 @@
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from hashlib import sha256
 from json import dumps
@@ -185,6 +185,7 @@ class EditorialAuthorRecord:
 class EditorialPostSummaryRecord:
     id: UUID
     slug: str
+    translation_group_id: UUID
     content_type: ContentType
     domain_slug: str | None
     language_code: str
@@ -195,6 +196,26 @@ class EditorialPostSummaryRecord:
     latest_revision_status: EditorialStatus
     latest_title: str
     updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewedKnowledgeSourceRecord:
+    source_id: UUID
+    document_id: UUID
+    document_version_id: UUID
+    document_slug: str
+    document_title: str
+    document_summary: str
+    domain_slug: str
+    language_code: str
+    version_label: str
+    source_title: str
+    organization: str
+    source_url: str
+    source_locator: str
+    reviewed_at: datetime
+    published_at: datetime
+    effective_until: date | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -221,6 +242,10 @@ class EditorialRevisionDetailRecord:
 @dataclass(frozen=True, slots=True)
 class PublishedEditorialSourceRecord:
     source_id: UUID
+    document_version_id: UUID | None
+    document_slug: str | None
+    document_title: str | None
+    reviewed_at: datetime | None
     title: str
     organization: str
     url: str
@@ -238,6 +263,7 @@ class PublishedEditorialTranslationRecord:
 class PublishedEditorialSummaryRecord:
     id: UUID
     slug: str
+    translation_group_id: UUID
     content_type: ContentType
     domain_slug: str | None
     language_code: str
@@ -315,6 +341,14 @@ class EditorialRepository(Protocol):
         limit: int,
     ) -> tuple[EditorialPostSummaryRecord, ...]: ...
 
+    def list_reviewed_sources(
+        self,
+        *,
+        domain_slug: str | None,
+        language_code: str | None,
+        limit: int,
+    ) -> tuple[ReviewedKnowledgeSourceRecord, ...]: ...
+
     def get_detail(self, revision_id: UUID) -> EditorialRevisionDetailRecord | None: ...
 
     def create_post(
@@ -337,6 +371,8 @@ class EditorialRepository(Protocol):
     def get_for_update(self, revision_id: UUID) -> EditorialRevisionRecord | None: ...
 
     def sources_are_eligible(self, revision_id: UUID) -> bool: ...
+
+    def source_links_are_current(self, revision_id: UUID) -> bool: ...
 
     def update_draft(
         self,
@@ -430,6 +466,26 @@ class EditorialService:
             )
         return self.repository.list_posts(status=status, limit=limit)
 
+    def list_reviewed_sources(
+        self,
+        principal: AuthenticatedPrincipal,
+        *,
+        domain_slug: str | None = None,
+        language_code: str | None = None,
+        limit: int = 200,
+    ) -> tuple[ReviewedKnowledgeSourceRecord, ...]:
+        self._authorize(principal, AUTHOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff")
+        if not 1 <= limit <= 200:
+            raise EditorialError(
+                "invalid_editorial_source_limit",
+                "reviewed source limit must be between 1 and 200",
+            )
+        return self.repository.list_reviewed_sources(
+            domain_slug=domain_slug,
+            language_code=language_code,
+            limit=limit,
+        )
+
     def get_revision(
         self, principal: AuthenticatedPrincipal, revision_id: UUID
     ) -> EditorialRevisionDetailRecord:
@@ -513,6 +569,11 @@ class EditorialService:
             raise EditorialError(
                 "invalid_editorial_transition",
                 f"cannot submit a revision in {record.status} status",
+            )
+        if not self.repository.source_links_are_current(record.id):
+            raise EditorialError(
+                "editorial_source_lineage_stale",
+                "all editorial citations must reference current reviewed knowledge publications",
             )
         if (record.content_type is ContentType.GUIDE or record.include_in_rag) and not (
             self.repository.sources_are_eligible(record.id)
@@ -598,6 +659,11 @@ class EditorialService:
             raise EditorialError(
                 "invalid_editorial_transition",
                 f"cannot publish a revision in {record.status} status",
+            )
+        if not self.repository.source_links_are_current(record.id):
+            raise EditorialError(
+                "editorial_source_lineage_stale",
+                "editorial citation lineage changed after review",
             )
         if (record.content_type is ContentType.GUIDE or record.include_in_rag) and not (
             self.repository.sources_are_eligible(record.id)

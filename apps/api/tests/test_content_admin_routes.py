@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
@@ -13,6 +13,7 @@ from app.content.editorial import (
     EditorialRevisionRecord,
     EditorialSourceReference,
     EditorialStatus,
+    ReviewedKnowledgeSourceRecord,
 )
 from app.dependencies import (
     get_editorial_service,
@@ -50,6 +51,7 @@ class StubEditorialService:
             is_active=True,
         )
         self.post_id = uuid4()
+        self.translation_group_id = uuid4()
         self.revision = EditorialRevisionRecord(
             id=uuid4(),
             post_id=self.post_id,
@@ -60,6 +62,24 @@ class StubEditorialService:
             created_by_principal_id=principal_id,
             updated_at=datetime(2026, 8, 31, 12, tzinfo=UTC),
         )
+        self.reviewed_source = ReviewedKnowledgeSourceRecord(
+            source_id=uuid4(),
+            document_id=uuid4(),
+            document_version_id=uuid4(),
+            document_slug="uzbekistan-entry-requirements",
+            document_title="Uzbekistan entry requirements",
+            document_summary="Current reviewed entry requirements.",
+            domain_slug="immigration",
+            language_code="en",
+            version_label="1.2.0",
+            source_title="Official entry portal",
+            organization="Ministry of Foreign Affairs",
+            source_url="https://e-visa.gov.uz/",
+            source_locator="Entry requirements",
+            reviewed_at=datetime(2026, 8, 30, 12, tzinfo=UTC),
+            published_at=datetime(2026, 8, 31, 12, tzinfo=UTC),
+            effective_until=date(2027, 2, 28),
+        )
 
     def _detail(self) -> EditorialRevisionDetailRecord:
         return EditorialRevisionDetailRecord(
@@ -67,7 +87,7 @@ class StubEditorialService:
             slug="uzbekistan-entry-guide",
             domain_slug="immigration",
             language_code="en",
-            translation_group_id=uuid4(),
+            translation_group_id=self.translation_group_id,
             title="Uzbekistan entry guide",
             summary="Reviewed visitor guidance.",
             body_markdown="# Entry guide",
@@ -96,6 +116,7 @@ class StubEditorialService:
             EditorialPostSummaryRecord(
                 id=self.post_id,
                 slug="uzbekistan-entry-guide",
+                translation_group_id=self.translation_group_id,
                 content_type=ContentType.GUIDE,
                 domain_slug="immigration",
                 language_code="en",
@@ -108,6 +129,13 @@ class StubEditorialService:
                 updated_at=datetime(2026, 8, 31, 12, tzinfo=UTC),
             ),
         )
+
+    def list_reviewed_sources(self, principal, *, domain_slug, language_code, limit):
+        del principal
+        assert domain_slug == "immigration"
+        assert language_code == "en"
+        assert limit == 10
+        return (self.reviewed_source,)
 
     def create_post(self, principal, payload, *, created_at):
         del principal, payload, created_at
@@ -196,6 +224,10 @@ def test_editorial_admin_routes_cover_the_complete_publication_workflow() -> Non
 
     authors = client.get("/api/v1/admin/content/authors", headers=request_headers())
     posts = client.get("/api/v1/admin/content/posts", headers=request_headers())
+    sources = client.get(
+        "/api/v1/admin/content/reviewed-sources?domain=immigration&language=en&limit=10",
+        headers=request_headers(),
+    )
     created = client.post(
         "/api/v1/admin/content/posts",
         headers=request_headers(),
@@ -231,6 +263,11 @@ def test_editorial_admin_routes_cover_the_complete_publication_workflow() -> Non
 
     assert authors.status_code == 200
     assert posts.status_code == 200
+    assert sources.status_code == 200
+    assert sources.json()["data"][0]["version_label"] == "1.2.0"
+    assert sources.json()["data"][0]["document_version_id"] == str(
+        service.reviewed_source.document_version_id
+    )
     assert created.status_code == 201
     assert detail.status_code == 200
     assert detail.json()["data"]["include_in_rag"] is False

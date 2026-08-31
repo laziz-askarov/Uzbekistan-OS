@@ -15,6 +15,7 @@ export const SITE_URL = (
 export type PublishedPostSummary = {
   id: string;
   slug: string;
+  translation_group_id: string;
   content_type: "article" | "guide" | "platform_update" | "interview";
   domain_slug: string | null;
   language_code: string;
@@ -30,6 +31,10 @@ export type PublishedPostSummary = {
 
 export type PublishedSource = {
   source_id: string;
+  document_version_id: string | null;
+  document_slug: string | null;
+  document_title: string | null;
+  reviewed_at: string | null;
   title: string;
   organization: string;
   url: string;

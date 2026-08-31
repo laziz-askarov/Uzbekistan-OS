@@ -34,10 +34,12 @@ export async function GET(
     ? [
         "## Reviewed sources",
         "",
-        ...post.sources.map(
-          (source, index) =>
-            `${index + 1}. [${source.title}](${source.url}) — ${source.organization}; ${source.locator}`,
-        ),
+        ...post.sources.map((source, index) => {
+          const provenance = source.document_title
+            ? `; reviewed knowledge: ${source.document_title}${source.reviewed_at ? ` (reviewed ${source.reviewed_at})` : ""}`
+            : "";
+          return `${index + 1}. [${source.title}](${source.url}) — ${source.organization}; ${source.locator}${provenance}`;
+        }),
         "",
       ]
     : [];

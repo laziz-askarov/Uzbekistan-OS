@@ -52,8 +52,20 @@ test("content drafts carry SEO, structured data, author, and evidence fields", a
   assert.match(studio, /Canonical URL/);
   assert.match(studio, /Hero image alt text/);
   assert.match(studio, /Structured data for search and LLM extraction/);
-  assert.match(studio, /Every source needs a source selection and locator/);
+  assert.match(
+    studio,
+    /Every citation must select a current reviewed knowledge publication and locator/,
+  );
   assert.match(studio, /Guides require at least one approved official source/);
+  assert.match(studio, /\/admin\/content\/reviewed-sources\?limit=200/);
+  assert.match(studio, /document_version_id: selected\.document_version_id/);
+  assert.match(studio, /sources: draft\.citations\.map/);
+  assert.match(studio, /Reviewed knowledge sources/);
+  assert.match(studio, /Add translation/);
+  assert.match(studio, /translation_group_id: draft\.translationGroupId/);
+  assert.match(studio, /Creating a localized edition/);
+  assert.match(studio, /Language editions/);
+  assert.match(studio, /own review and publication\s+decision/);
   assert.match(studio, /Include in assistant retrieval \(RAG\)/);
   assert.match(studio, /include_in_rag: draft\.includeInRag/);
   assert.match(studio, /Default is excluded/);

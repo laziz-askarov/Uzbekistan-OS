@@ -1043,6 +1043,42 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/EditorialAuthorResponse" }
         default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/content/reviewed-sources:
+    get:
+      tags: [editorial-content]
+      operationId: listReviewedEditorialSources
+      summary: List current reviewed knowledge publications available for editorial citation
+      x-authorization:
+        mode: role-gated
+        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: domain
+          in: query
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/DomainSlug"
+              - type: "null"
+        - name: language
+          in: query
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/LanguageCode"
+              - type: "null"
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 200 }
+      responses:
+        "200":
+          description: Current reviewed knowledge publications
+          content:
+            application/json:
+              schema:
+                {
+                  $ref: "#/components/schemas/ReviewedKnowledgeSourceListResponse",
+                }
+        default: { $ref: "#/components/responses/ErrorResponse" }
   /admin/content/posts:
     get:
       tags: [editorial-content]
@@ -1517,6 +1553,7 @@ components:
       required:
         - id
         - slug
+        - translation_group_id
         - content_type
         - domain_slug
         - language_code
@@ -1530,6 +1567,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         slug: { type: string }
+        translation_group_id: { type: string, format: uuid }
         content_type: { $ref: "#/components/schemas/EditorialContentType" }
         domain_slug:
           oneOf:
@@ -1590,6 +1628,43 @@ components:
           type: array
           items: { $ref: "#/components/schemas/EditorialSourceReference" }
       additionalProperties: false
+    ReviewedKnowledgeSourceData:
+      type: object
+      required:
+        - source_id
+        - document_id
+        - document_version_id
+        - document_slug
+        - document_title
+        - document_summary
+        - domain_slug
+        - language_code
+        - version_label
+        - source_title
+        - organization
+        - source_url
+        - source_locator
+        - reviewed_at
+        - published_at
+        - effective_until
+      properties:
+        source_id: { type: string, format: uuid }
+        document_id: { type: string, format: uuid }
+        document_version_id: { type: string, format: uuid }
+        document_slug: { type: string }
+        document_title: { type: string }
+        document_summary: { type: string }
+        domain_slug: { $ref: "#/components/schemas/DomainSlug" }
+        language_code: { $ref: "#/components/schemas/LanguageCode" }
+        version_label: { type: string }
+        source_title: { type: string }
+        organization: { type: string }
+        source_url: { type: string, format: uri }
+        source_locator: { type: string }
+        reviewed_at: { type: string, format: date-time }
+        published_at: { type: string, format: date-time }
+        effective_until: { type: [string, "null"], format: date }
+      additionalProperties: false
     PublishedAuthorData:
       type: object
       required: [slug, name, bio, avatar_url, profile_url]
@@ -1602,9 +1677,24 @@ components:
       additionalProperties: false
     PublishedSourceData:
       type: object
-      required: [source_id, title, organization, url, locator]
+      required:
+        [
+          source_id,
+          document_version_id,
+          document_slug,
+          document_title,
+          reviewed_at,
+          title,
+          organization,
+          url,
+          locator,
+        ]
       properties:
         source_id: { type: string, format: uuid }
+        document_version_id: { type: [string, "null"], format: uuid }
+        document_slug: { type: [string, "null"] }
+        document_title: { type: [string, "null"] }
+        reviewed_at: { type: [string, "null"], format: date-time }
         title: { type: string }
         organization: { type: string }
         url: { type: string, format: uri }
@@ -1623,6 +1713,7 @@ components:
       required:
         - id
         - slug
+        - translation_group_id
         - content_type
         - domain_slug
         - language_code
@@ -1637,6 +1728,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         slug: { type: string }
+        translation_group_id: { type: string, format: uuid }
         content_type: { $ref: "#/components/schemas/EditorialContentType" }
         domain_slug:
           oneOf:
@@ -1731,6 +1823,15 @@ components:
         data:
           type: array
           items: { $ref: "#/components/schemas/EditorialAuthorData" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+      additionalProperties: false
+    ReviewedKnowledgeSourceListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewedKnowledgeSourceData" }
         meta: { $ref: "#/components/schemas/ResponseMeta" }
       additionalProperties: false
     EditorialPostListResponse:

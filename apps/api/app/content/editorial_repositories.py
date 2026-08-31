@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
 from app.content.editorial import (
@@ -21,6 +21,7 @@ from app.content.editorial import (
     PublishedEditorialSourceRecord,
     PublishedEditorialSummaryRecord,
     PublishedEditorialTranslationRecord,
+    ReviewedKnowledgeSourceRecord,
 )
 from app.content.rag import chunk_editorial_markdown
 from app.database.models.audit import AuditEvent
@@ -34,10 +35,15 @@ from app.database.models.content import (
 )
 from app.database.models.geography import Language
 from app.database.models.knowledge import (
+    Document,
     DocumentSource,
+    DocumentVersion,
     Domain,
     Source,
     SourceOrganization,
+)
+from app.database.models.knowledge import (
+    PublicationRecord as KnowledgePublicationRecord,
 )
 from app.identity.service import AuthenticatedPrincipal
 
@@ -93,6 +99,7 @@ class SqlAlchemyEditorialRepository:
             PublishedEditorialSummaryRecord(
                 id=post.id,
                 slug=post.slug,
+                translation_group_id=post.translation_group_id,
                 content_type=ContentType(post.content_type),
                 domain_slug=str(domain) if domain is not None else None,
                 language_code=str(language),
@@ -135,9 +142,20 @@ class SqlAlchemyEditorialRepository:
             return None
         post, version, domain_slug, language_code, author = row
         source_rows = self.session.execute(
-            select(ContentPostSource, Source, SourceOrganization)
+            select(
+                ContentPostSource,
+                Source,
+                SourceOrganization,
+                DocumentVersion,
+                Document,
+            )
             .join(Source, Source.id == ContentPostSource.source_id)
             .join(SourceOrganization, SourceOrganization.id == Source.organization_id)
+            .outerjoin(
+                DocumentVersion,
+                DocumentVersion.id == ContentPostSource.document_version_id,
+            )
+            .outerjoin(Document, Document.id == DocumentVersion.document_id)
             .where(
                 ContentPostSource.post_version_id == version.id,
                 Source.is_active.is_(True),
@@ -180,12 +198,16 @@ class SqlAlchemyEditorialRepository:
             sources=tuple(
                 PublishedEditorialSourceRecord(
                     source_id=reference.source_id,
+                    document_version_id=reference.document_version_id,
+                    document_slug=str(document.slug) if document is not None else None,
+                    document_title=version.title if version is not None else None,
+                    reviewed_at=version.reviewed_at if version is not None else None,
                     title=source.title,
                     organization=organization.name,
                     url=source.url,
                     locator=reference.locator,
                 )
-                for reference, source, organization in source_rows
+                for reference, source, organization, version, document in source_rows
             ),
             translations=tuple(
                 PublishedEditorialTranslationRecord(
@@ -207,6 +229,96 @@ class SqlAlchemyEditorialRepository:
             .order_by(ContentAuthor.name.asc())
         )
         return tuple(self._author_record(author) for author in authors)
+
+    def list_reviewed_sources(
+        self,
+        *,
+        domain_slug: str | None,
+        language_code: str | None,
+        limit: int,
+    ) -> tuple[ReviewedKnowledgeSourceRecord, ...]:
+        statement = (
+            select(
+                Source,
+                SourceOrganization,
+                Document,
+                DocumentVersion,
+                DocumentSource,
+                Domain.slug,
+                Language.code,
+                KnowledgePublicationRecord.published_at,
+            )
+            .join(SourceOrganization, SourceOrganization.id == Source.organization_id)
+            .join(DocumentSource, DocumentSource.source_id == Source.id)
+            .join(DocumentVersion, DocumentVersion.id == DocumentSource.document_version_id)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .join(Domain, Domain.id == Document.domain_id)
+            .join(Language, Language.id == DocumentVersion.language_id)
+            .join(
+                KnowledgePublicationRecord,
+                KnowledgePublicationRecord.document_version_id == DocumentVersion.id,
+            )
+            .where(
+                Document.status == "published",
+                Document.current_version_id == DocumentVersion.id,
+                DocumentVersion.published_at.is_not(None),
+                DocumentVersion.effective_from <= func.current_date(),
+                or_(
+                    DocumentVersion.effective_until.is_(None),
+                    DocumentVersion.effective_until >= func.current_date(),
+                ),
+                Domain.is_active.is_(True),
+                Language.is_active.is_(True),
+                Source.is_active.is_(True),
+                Source.crawl_policy.in_(("allowed", "manual_only")),
+                SourceOrganization.is_active.is_(True),
+                SourceOrganization.is_official.is_(True),
+            )
+            .order_by(
+                Domain.slug.asc(),
+                DocumentVersion.title.asc(),
+                Source.trust_tier.asc(),
+                Source.title.asc(),
+            )
+            .limit(limit)
+        )
+        if domain_slug is not None:
+            statement = statement.where(Domain.slug == domain_slug)
+        if language_code is not None:
+            statement = statement.where(Language.code == language_code)
+        rows = self.session.execute(statement)
+        return tuple(
+            ReviewedKnowledgeSourceRecord(
+                source_id=source.id,
+                document_id=document.id,
+                document_version_id=version.id,
+                document_slug=str(document.slug),
+                document_title=version.title,
+                document_summary=version.summary,
+                domain_slug=str(domain),
+                language_code=str(language),
+                version_label=(
+                    f"{version.version_major}.{version.version_minor}.{version.version_revision}"
+                ),
+                source_title=source.title,
+                organization=organization.name,
+                source_url=source.url,
+                source_locator=lineage.locator,
+                reviewed_at=version.reviewed_at,
+                published_at=published_at,
+                effective_until=version.effective_until,
+            )
+            for (
+                source,
+                organization,
+                document,
+                version,
+                lineage,
+                domain,
+                language,
+                published_at,
+            ) in rows
+        )
 
     def create_author(
         self,
@@ -269,6 +381,7 @@ class SqlAlchemyEditorialRepository:
             EditorialPostSummaryRecord(
                 id=post.id,
                 slug=post.slug,
+                translation_group_id=post.translation_group_id,
                 content_type=ContentType(post.content_type),
                 domain_slug=str(domain_slug) if domain_slug is not None else None,
                 language_code=str(language_code),
@@ -358,6 +471,13 @@ class SqlAlchemyEditorialRepository:
             raise EditorialError("editorial_language_not_found", "content language is not active")
         self._require_author(draft.author_id)
         self._validate_source_references(draft)
+        if draft.translation_group_id is not None:
+            self._validate_translation_group(
+                draft.translation_group_id,
+                language_id=language.id,
+                domain_id=domain_id,
+                content_type=draft.content_type,
+            )
 
         post = ContentPost(
             id=uuid4(),
@@ -435,12 +555,39 @@ class SqlAlchemyEditorialRepository:
         return self._record(version, content_type)
 
     def sources_are_eligible(self, revision_id: UUID) -> bool:
+        total_count, eligible_count = self._source_link_counts(revision_id)
+        return bool(total_count and eligible_count == total_count)
+
+    def source_links_are_current(self, revision_id: UUID) -> bool:
+        total_count, eligible_count = self._source_link_counts(revision_id)
+        return eligible_count == total_count
+
+    def _source_link_counts(self, revision_id: UUID) -> tuple[int, int]:
         eligible_count = self.session.scalar(
             select(func.count(ContentPostSource.id))
             .join(Source, Source.id == ContentPostSource.source_id)
             .join(SourceOrganization, SourceOrganization.id == Source.organization_id)
+            .join(
+                DocumentSource,
+                (DocumentSource.document_version_id == ContentPostSource.document_version_id)
+                & (DocumentSource.source_id == ContentPostSource.source_id),
+            )
+            .join(DocumentVersion, DocumentVersion.id == DocumentSource.document_version_id)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .join(
+                KnowledgePublicationRecord,
+                KnowledgePublicationRecord.document_version_id == DocumentVersion.id,
+            )
             .where(
                 ContentPostSource.post_version_id == revision_id,
+                Document.status == "published",
+                Document.current_version_id == DocumentVersion.id,
+                DocumentVersion.published_at.is_not(None),
+                DocumentVersion.effective_from <= func.current_date(),
+                or_(
+                    DocumentVersion.effective_until.is_(None),
+                    DocumentVersion.effective_until >= func.current_date(),
+                ),
                 Source.is_active.is_(True),
                 Source.crawl_policy.in_(("allowed", "manual_only")),
                 SourceOrganization.is_active.is_(True),
@@ -452,7 +599,7 @@ class SqlAlchemyEditorialRepository:
                 ContentPostSource.post_version_id == revision_id
             )
         )
-        return bool(total_count and eligible_count == total_count)
+        return int(total_count or 0), int(eligible_count or 0)
 
     def update_draft(
         self,
@@ -677,6 +824,39 @@ class SqlAlchemyEditorialRepository:
         if author is None:
             raise EditorialError("editorial_author_not_found", "content author is not active")
 
+    def _validate_translation_group(
+        self,
+        translation_group_id: UUID,
+        *,
+        language_id: UUID,
+        domain_id: UUID | None,
+        content_type: ContentType,
+    ) -> None:
+        reference = self.session.scalar(
+            select(ContentPost).where(ContentPost.translation_group_id == translation_group_id)
+        )
+        if reference is None:
+            raise EditorialError(
+                "editorial_translation_group_not_found",
+                "the selected editorial translation group does not exist",
+            )
+        if reference.content_type != content_type.value or reference.domain_id != domain_id:
+            raise EditorialError(
+                "editorial_translation_group_mismatch",
+                "translations must use the same content type and knowledge domain",
+            )
+        existing_language = self.session.scalar(
+            select(ContentPost.id).where(
+                ContentPost.translation_group_id == translation_group_id,
+                ContentPost.language_id == language_id,
+            )
+        )
+        if existing_language is not None:
+            raise EditorialError(
+                "editorial_translation_language_exists",
+                "this translation group already contains a post in the selected language",
+            )
+
     @staticmethod
     def _author_record(author: ContentAuthor) -> EditorialAuthorRecord:
         return EditorialAuthorRecord(
@@ -705,15 +885,34 @@ class SqlAlchemyEditorialRepository:
                 )
             if reference.document_version_id is not None:
                 lineage = self.session.scalar(
-                    select(DocumentSource).where(
+                    select(DocumentSource)
+                    .join(
+                        DocumentVersion,
+                        DocumentVersion.id == DocumentSource.document_version_id,
+                    )
+                    .join(Document, Document.id == DocumentVersion.document_id)
+                    .join(
+                        KnowledgePublicationRecord,
+                        KnowledgePublicationRecord.document_version_id == DocumentVersion.id,
+                    )
+                    .where(
                         DocumentSource.document_version_id == reference.document_version_id,
                         DocumentSource.source_id == reference.source_id,
+                        Document.status == "published",
+                        Document.current_version_id == DocumentVersion.id,
+                        DocumentVersion.published_at.is_not(None),
+                        DocumentVersion.effective_from <= func.current_date(),
+                        or_(
+                            DocumentVersion.effective_until.is_(None),
+                            DocumentVersion.effective_until >= func.current_date(),
+                        ),
                     )
                 )
                 if lineage is None:
                     raise EditorialError(
                         "editorial_source_lineage_invalid",
-                        "cited document version is not linked to the selected source",
+                        "cited knowledge must be the current, effective reviewed publication "
+                        "linked to the selected official source",
                     )
 
     @staticmethod

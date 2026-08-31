@@ -50,6 +50,11 @@ class ContentPost(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "status IN ('draft', 'in_review', 'approved', 'published', 'stale', 'archived')",
             name="status_allowed",
         ),
+        UniqueConstraint(
+            "translation_group_id",
+            "language_id",
+            name="uq_content_posts_translation_language",
+        ),
         Index("ix_content_posts_status_domain", "status", "domain_id"),
         {"schema": "content"},
     )

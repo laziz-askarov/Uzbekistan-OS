@@ -45,6 +45,22 @@ function takeaways(post: PublishedPost) {
     : [];
 }
 
+function formatReviewDate(value: string) {
+  return new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(
+    new Date(value),
+  );
+}
+
+function languageName(languageCode: string) {
+  return (
+    {
+      uz: "O‘zbekcha",
+      en: "English",
+      ru: "Русский",
+    }[languageCode] ?? languageCode.toUpperCase()
+  );
+}
+
 function jsonLd(post: PublishedPost, canonical: string, faqs: FaqItem[]) {
   const authorUrl = safeAbsoluteUrl(
     post.author.profile_url,
@@ -136,6 +152,13 @@ export async function generateMetadata({
       publicPostUrl(translation.slug),
     ]),
   );
+  const defaultTranslation =
+    post.translations.find(
+      (translation) => translation.language_code === "en",
+    ) ?? post.translations[0];
+  if (defaultTranslation) {
+    languageAlternates["x-default"] = publicPostUrl(defaultTranslation.slug);
+  }
   const image = post.hero_image_url
     ? safeAbsoluteUrl(post.hero_image_url, "")
     : "";
@@ -229,9 +252,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             {post.translations.map((translation) => (
               <Link
                 href={`/blog/${translation.slug}`}
+                hrefLang={translation.language_code}
                 key={translation.language_code}
               >
-                {translation.language_code}
+                {languageName(translation.language_code)}
               </Link>
             ))}
           </nav>
@@ -279,6 +303,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 </a>
                 <span>{source.organization}</span>
                 <span>{source.locator}</span>
+                {source.document_title ? (
+                  <span>Reviewed knowledge: {source.document_title}</span>
+                ) : null}
+                {source.reviewed_at ? (
+                  <time dateTime={source.reviewed_at}>
+                    Knowledge reviewed {formatReviewDate(source.reviewed_at)}
+                  </time>
+                ) : null}
               </li>
             ))}
           </ol>

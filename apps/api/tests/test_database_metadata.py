@@ -98,6 +98,12 @@ def test_editorial_content_has_version_and_publication_constraints() -> None:
 
     assert "ck_posts_content_type_allowed" in post_checks
     assert "ck_posts_status_allowed" in post_checks
+    post_uniques = {
+        constraint.name
+        for constraint in posts.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+    assert "uq_content_posts_translation_language" in post_uniques
     assert "ck_post_versions_submission_fields_consistent" in version_checks
     assert "ck_post_versions_review_fields_consistent" in version_checks
     assert "ck_post_versions_publication_fields_consistent" in version_checks

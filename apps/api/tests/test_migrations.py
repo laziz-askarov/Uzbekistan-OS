@@ -14,6 +14,9 @@ SUPABASE_EDITORIAL_CONTENT_MIGRATION = (
     ROOT / "supabase/migrations/202608310013_editorial_content.sql"
 )
 SUPABASE_EDITORIAL_RAG_MIGRATION = ROOT / "supabase/migrations/202608310014_editorial_rag.sql"
+SUPABASE_MULTILINGUAL_EDITORIAL_MIGRATION = (
+    ROOT / "supabase/migrations/202608310015_multilingual_editorial.sql"
+)
 
 
 def test_migration_history_has_one_linear_head() -> None:
@@ -21,7 +24,7 @@ def test_migration_history_has_one_linear_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert script.get_bases() == ["20260731_0001"]
-    assert script.get_heads() == ["20260831_0011"]
+    assert script.get_heads() == ["20260831_0012"]
 
 
 def test_foundation_migration_compiles_to_postgresql_sql() -> None:
@@ -73,6 +76,7 @@ def test_foundation_migration_compiles_to_postgresql_sql() -> None:
     assert "CREATE TABLE content.publication_records" in sql
     assert "CREATE TABLE content.rag_chunks" in sql
     assert "include_in_rag BOOLEAN DEFAULT false NOT NULL" in sql
+    assert "uq_content_posts_translation_language" in sql
     assert "ENABLE ROW LEVEL SECURITY" in sql
     assert "'anon', 'authenticated', 'service_role'" in sql
     assert "ALTER DEFAULT PRIVILEGES IN SCHEMA content" in sql
@@ -156,3 +160,17 @@ def test_editorial_rag_has_a_sql_editor_safe_companion_migration() -> None:
     assert "array['anon', 'authenticated', 'service_role']" in sql
     assert "set version_num = '20260831_0011'" in sql
     assert "create policy" not in sql
+
+
+def test_multilingual_editorial_has_a_sql_editor_safe_companion_migration() -> None:
+    sql = SUPABASE_MULTILINGUAL_EDITORIAL_MIGRATION.read_text(encoding="utf-8").lower()
+
+    assert sql.startswith("-- enforce one editorial post per language")
+    assert "begin;" in sql
+    assert sql.rstrip().endswith("commit;")
+    assert "expected alembic revision 20260831_0011" in sql
+    assert "group by translation_group_id, language_id" in sql
+    assert "having count(*) > 1" in sql
+    assert "add constraint uq_content_posts_translation_language" in sql
+    assert "unique (translation_group_id, language_id)" in sql
+    assert "set version_num = '20260831_0012'" in sql
