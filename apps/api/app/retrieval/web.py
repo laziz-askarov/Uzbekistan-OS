@@ -556,7 +556,8 @@ class _VisibleTextExtractor(HTMLParser):
     @property
     def text(self) -> str:
         return "\n".join(
-            line for line in (" ".join(part.split()) for part in " ".join(self._parts).split("\n"))
+            line
+            for line in (" ".join(part.split()) for part in " ".join(self._parts).split("\n"))
             if line
         )
 
@@ -662,7 +663,7 @@ def _charset(content_type: str | None) -> str:
     if content_type:
         match = re.search(r"charset=([^;\s]+)", content_type, flags=re.IGNORECASE)
         if match:
-            return match.group(1).strip('"\'')
+            return match.group(1).strip("\"'")
     return "utf-8"
 
 
