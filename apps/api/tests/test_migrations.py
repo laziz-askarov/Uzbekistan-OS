@@ -24,7 +24,7 @@ def test_migration_history_has_one_linear_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert script.get_bases() == ["20260731_0001"]
-    assert script.get_heads() == ["20260831_0012"]
+    assert script.get_heads() == ["20261027_0013"]
 
 
 def test_foundation_migration_compiles_to_postgresql_sql() -> None:

@@ -13,6 +13,7 @@ from app.observability import configure_logging
 from app.routes.admin import router as admin_router
 from app.routes.assistant import router as assistant_router
 from app.routes.auth import router as auth_router
+from app.routes.blog_permissions import router as blog_permissions_router
 from app.routes.content_admin import router as content_admin_router
 from app.routes.content_public import router as content_public_router
 from app.routes.health import get_health, get_readiness
@@ -44,7 +45,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
         allow_headers=[
             "authorization",
             "content-type",
@@ -83,6 +84,7 @@ def create_app() -> FastAPI:
     application.include_router(assistant_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
     application.include_router(content_admin_router, prefix="/api/v1")
+    application.include_router(blog_permissions_router, prefix="/api/v1")
     application.include_router(content_public_router, prefix="/api/v1")
     return application
 

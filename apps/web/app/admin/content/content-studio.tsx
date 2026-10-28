@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAdminApiSession } from "@/lib/admin-api-session";
 import { ThemeToggle } from "../../design-system/theme-toggle";
 import styles from "./content-studio.module.css";
+import DiscoveryFields from "./discovery-fields";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
@@ -230,6 +231,8 @@ export default function ContentStudio() {
   const [detail, setDetail] = useState<RevisionDetail | null>(null);
   const [draft, setDraft] = useState<EditorDraft>(emptyDraft());
   const [creating, setCreating] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageAlt, setImageAlt] = useState("");
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [action, setAction] = useState<string | null>(null);
@@ -245,7 +248,17 @@ export default function ContentStudio() {
       authors.find((author) => author.principal_id === principal?.id) ?? null,
     [authors, principal?.id],
   );
-  const editable = creating || detail?.revision.status === "draft";
+  const hasRole = (...roles: string[]) =>
+    Boolean(
+      principal?.roles.some((role) => role === "admin" || roles.includes(role)),
+    );
+  const canCreate = hasRole("content_author", "blog_create");
+  const canEdit = hasRole("content_author", "blog_edit");
+  const canReview = hasRole("content_reviewer");
+  const canPublish = hasRole("knowledge_publisher", "blog_publish");
+  const editable = creating
+    ? canCreate
+    : canEdit && detail?.revision.status === "draft";
   const relevantReviewedSources = useMemo(
     () =>
       reviewedSources.filter(
@@ -276,15 +289,29 @@ export default function ContentStudio() {
     init?: RequestInit,
     bearerToken: string = token,
   ): Promise<T> {
-    const response = await fetch(`${API_BASE}${path}`, {
-      ...init,
-      headers: {
-        authorization: `Bearer ${bearerToken}`,
-        "content-type": "application/json",
-        "x-request-id": crypto.randomUUID(),
-        ...init?.headers,
+    const publication = path.match(
+      /^\/admin\/content\/revisions\/([a-f0-9-]+)\/(publish|publish-now)$/i,
+    );
+    const response = await fetch(
+      publication ? "/api/admin/content/publish" : `${API_BASE}${path}`,
+      {
+        ...init,
+        ...(publication
+          ? {
+              body: JSON.stringify({
+                revisionId: publication[1],
+                instant: publication[2] === "publish-now",
+              }),
+            }
+          : {}),
+        headers: {
+          authorization: `Bearer ${bearerToken}`,
+          "content-type": "application/json",
+          "x-request-id": crypto.randomUUID(),
+          ...init?.headers,
+        },
       },
-    });
+    );
     const payload = (await response.json()) as Envelope<T> & ErrorEnvelope;
     if (!response.ok) {
       throw new Error(
@@ -510,7 +537,7 @@ export default function ContentStudio() {
     };
   }
 
-  async function saveDraft(event?: FormEvent): Promise<boolean> {
+  async function saveDraft(event?: FormEvent): Promise<Revision | null> {
     event?.preventDefault();
     setAction("save");
     setError("");
@@ -549,10 +576,68 @@ export default function ContentStudio() {
       );
       if (post) await selectPost(post);
       setNotice("Draft saved with a new audit event.");
-      return true;
+      return revision;
     } catch (nextError) {
       setError(messageFrom(nextError));
-      return false;
+      return null;
+    } finally {
+      setAction(null);
+    }
+  }
+
+  async function uploadImage(file: File, placement: "hero" | "body") {
+    setUploadingImage(true);
+    setError("");
+    try {
+      if (!imageAlt.trim())
+        throw new Error("Describe the image before uploading.");
+      if (file.size > 3 * 1024 * 1024)
+        throw new Error("Images must be 3 MB or smaller.");
+      const response = await fetch("/api/admin/content/images", {
+        method: "POST",
+        headers: {
+          "content-type": file.type,
+          "x-request-id": crypto.randomUUID(),
+        },
+        body: file,
+      });
+      const result = (await response.json()) as {
+        url?: string;
+        error?: string;
+      };
+      if (!response.ok || !result.url)
+        throw new Error(result.error ?? "Image upload failed.");
+      if (placement === "hero") {
+        updateDraft("heroImageUrl", result.url);
+        updateDraft("heroImageAlt", imageAlt.trim());
+      } else {
+        const alt = imageAlt.trim().replace(/[\[\]\n\r]/g, " ");
+        updateDraft(
+          "bodyMarkdown",
+          `${draft.bodyMarkdown}\n\n![${alt}](${result.url})\n`,
+        );
+      }
+      setNotice("Image added. Save your draft to keep this change.");
+    } catch (error) {
+      setError(messageFrom(error));
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function publishNow() {
+    const revision = await saveDraft();
+    if (!revision) return;
+    setAction("publish");
+    try {
+      await request<Revision>(
+        `/admin/content/revisions/${revision.id}/publish-now`,
+        { method: "POST" },
+      );
+      await loadWorkspace();
+      setNotice("Your post is published and available on the public blog.");
+    } catch (error) {
+      setError(messageFrom(error));
     } finally {
       setAction(null);
     }
@@ -719,10 +804,14 @@ export default function ContentStudio() {
             <div className={styles.libraryHeader}>
               <div>
                 <p className={styles.eyebrow}>Content library</p>
-                <h1>Articles & guides</h1>
+                <h1>Blogs & guides</h1>
+                {hasRole("admin") ? (
+                  <a href="/admin/blog-permissions">Manage blog permissions</a>
+                ) : null}
               </div>
               <button
                 className={styles.newButton}
+                disabled={!canCreate}
                 onClick={startNewPost}
                 type="button"
               >
@@ -783,7 +872,7 @@ export default function ContentStudio() {
           </aside>
 
           <section className={styles.editor}>
-            {!ownAuthor ? (
+            {!ownAuthor && canCreate ? (
               <form className={styles.authorSetup} onSubmit={createAuthor}>
                 <div>
                   <p className={styles.eyebrow}>One-time setup</p>
@@ -833,9 +922,23 @@ export default function ContentStudio() {
                     </p>
                   </div>
                   <div className={styles.headingActions}>
+                    {hasRole("admin") &&
+                    (creating || detail?.revision.status === "draft") ? (
+                      <button
+                        className={styles.publishButton}
+                        disabled={Boolean(action) || uploadingImage}
+                        onClick={() => void publishNow()}
+                        type="button"
+                      >
+                        {action === "publish"
+                          ? "Publishing…"
+                          : "Save & publish now"}
+                      </button>
+                    ) : null}
                     {!creating &&
                     detail &&
-                    availableTranslationLanguages.length ? (
+                    availableTranslationLanguages.length &&
+                    canCreate ? (
                       <button
                         className={styles.secondaryButton}
                         disabled={Boolean(action)}
@@ -845,7 +948,9 @@ export default function ContentStudio() {
                         Add translation
                       </button>
                     ) : null}
-                    {!creating && detail?.revision.status === "published" ? (
+                    {!creating &&
+                    detail?.revision.status === "published" &&
+                    canEdit ? (
                       <button
                         className={styles.secondaryButton}
                         disabled={Boolean(action)}
@@ -858,7 +963,7 @@ export default function ContentStudio() {
                     {editable ? (
                       <button
                         className={styles.primaryButton}
-                        disabled={Boolean(action)}
+                        disabled={Boolean(action) || uploadingImage}
                         type="submit"
                       >
                         {action === "save" ? "Saving…" : "Save draft"}
@@ -1042,6 +1147,21 @@ export default function ContentStudio() {
                     <div className={styles.panelHeading}>
                       <p className={styles.eyebrow}>Search & discovery</p>
                       <h3>SEO metadata</h3>
+                      <p>
+                        Titles and descriptions default to your post title and
+                        summary. Published pages include author, dates,
+                        citations, social previews, and structured data for
+                        search and AI discovery.
+                      </p>
+                      <p>Search preview</p>
+                      <strong>
+                        {draft.seoTitle || draft.title || "Your post title"}
+                      </strong>
+                      <p>
+                        {draft.seoDescription ||
+                          draft.summary ||
+                          "Add a clear summary explaining what readers will learn."}
+                      </p>
                     </div>
                     <label>
                       SEO title
@@ -1084,6 +1204,51 @@ export default function ContentStudio() {
                         value={draft.canonicalUrl}
                       />
                     </label>
+                    <fieldset
+                      disabled={!editable || uploadingImage || Boolean(action)}
+                    >
+                      <legend>Add images</legend>
+                      <p>
+                        JPEG, PNG, or WebP up to 3 MB. Uploaded images are
+                        public. Choose a descriptive image relevant to your
+                        article.
+                      </p>
+                      <label>
+                        Image description (alt text)
+                        <input
+                          maxLength={500}
+                          value={imageAlt}
+                          onChange={(event) => setImageAlt(event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Upload cover image
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) void uploadImage(file, "hero");
+                            event.target.value = "";
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Insert image in article
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) void uploadImage(file, "body");
+                            event.target.value = "";
+                          }}
+                        />
+                      </label>
+                      {uploadingImage ? (
+                        <p role="status">Uploading image…</p>
+                      ) : null}
+                    </fieldset>
                     <label>
                       Hero image URL
                       <input
@@ -1095,6 +1260,18 @@ export default function ContentStudio() {
                         value={draft.heroImageUrl}
                       />
                     </label>
+                    {draft.heroImageUrl.startsWith("https://") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={draft.heroImageUrl}
+                        alt={draft.heroImageAlt || "Cover image preview"}
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: 240,
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : null}
                     <label>
                       Hero image alt text
                       <input
@@ -1270,6 +1447,11 @@ export default function ContentStudio() {
                   </div>
                 </section>
 
+                <DiscoveryFields
+                  value={draft.structuredJson}
+                  disabled={!editable}
+                  onChange={(value) => updateDraft("structuredJson", value)}
+                />
                 <details className={styles.structuredPanel}>
                   <summary>
                     Structured data for search and LLM extraction
@@ -1299,7 +1481,7 @@ export default function ContentStudio() {
                         immutable administrative audit log.
                       </p>
                     </div>
-                    {detail.revision.status === "draft" ? (
+                    {detail.revision.status === "draft" && canEdit ? (
                       <button
                         className={styles.primaryButton}
                         disabled={Boolean(action)}
@@ -1311,7 +1493,7 @@ export default function ContentStudio() {
                           : "Save and submit for review"}
                       </button>
                     ) : null}
-                    {detail.revision.status === "in_review" ? (
+                    {detail.revision.status === "in_review" && canReview ? (
                       <div className={styles.decisionControls}>
                         <label>
                           Internal review reason
@@ -1345,10 +1527,10 @@ export default function ContentStudio() {
                         </div>
                       </div>
                     ) : null}
-                    {detail.revision.status === "approved" ? (
+                    {detail.revision.status === "approved" && canPublish ? (
                       <button
                         className={styles.publishButton}
-                        disabled={Boolean(action)}
+                        disabled={Boolean(action) || uploadingImage}
                         onClick={() => void transition("publish")}
                         type="button"
                       >
@@ -1380,6 +1562,7 @@ export default function ContentStudio() {
                 </p>
                 <button
                   className={styles.primaryButton}
+                  disabled={!canCreate}
                   onClick={startNewPost}
                   type="button"
                 >

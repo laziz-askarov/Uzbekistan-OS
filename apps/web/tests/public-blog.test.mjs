@@ -30,6 +30,7 @@ test("the blog is server rendered from published-only API endpoints", async () =
 
 test("articles expose canonical, language, social, author, and source metadata", async () => {
   const article = await webFile("app/blog/[slug]/page.tsx");
+  const labels = await webFile("lib/editorial-locale.ts");
 
   assert.match(article, /generateMetadata/);
   assert.match(article, /languages: languageAlternates/);
@@ -41,10 +42,10 @@ test("articles expose canonical, language, social, author, and source metadata",
   assert.match(article, /"@type": "BreadcrumbList"/);
   assert.match(article, /"@type": "FAQPage"/);
   assert.match(article, /citation: post\.sources\.map/);
-  assert.match(article, /Sources and review trail/);
-  assert.match(article, /Reviewed knowledge:/);
-  assert.match(article, /Knowledge reviewed/);
-  assert.match(article, /About the author/);
+  assert.match(labels, /Sources and review trail/);
+  assert.match(labels, /Reviewed knowledge:/);
+  assert.match(labels, /Knowledge reviewed/);
+  assert.match(labels, /About the author/);
   assert.match(article, /replace\(\s*\/</);
 });
 

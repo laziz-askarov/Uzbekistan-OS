@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import LatestBlogs from "@/components/editorial/latest-blogs";
 
 const OFFICIAL_E_VISA_URL = "https://www.e-visa.gov.uz/";
 const OFFICIAL_VISA_URL =
@@ -452,6 +453,10 @@ export default function HomePage() {
             before booking.
           </p>
         </section>
+
+        <Suspense fallback={null}>
+          <LatestBlogs />
+        </Suspense>
 
         <section
           className="personal-plan"

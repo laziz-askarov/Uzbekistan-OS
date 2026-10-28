@@ -1007,7 +1007,7 @@ paths:
       summary: List active editorial authors
       x-authorization:
         mode: role-gated
-        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+        roles: [content_author, blog_create, blog_edit, content_reviewer, knowledge_publisher, blog_publish, admin]
       security:
         - BearerAuth: []
       responses:
@@ -1024,7 +1024,7 @@ paths:
       summary: Create the current staff member's editorial author profile
       x-authorization:
         mode: role-gated
-        roles: [content_author, admin]
+        roles: [content_author, blog_create, admin]
       x-idempotency:
         mode: natural-key
         replay: principal-author-profile
@@ -1050,7 +1050,7 @@ paths:
       summary: List current reviewed knowledge publications available for editorial citation
       x-authorization:
         mode: role-gated
-        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+        roles: [content_author, blog_create, blog_edit, content_reviewer, knowledge_publisher, blog_publish, admin]
       security:
         - BearerAuth: []
       parameters:
@@ -1086,7 +1086,7 @@ paths:
       summary: List editorial posts by latest revision status
       x-authorization:
         mode: role-gated
-        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+        roles: [content_author, blog_create, blog_edit, content_reviewer, knowledge_publisher, blog_publish, admin]
       security:
         - BearerAuth: []
       parameters:
@@ -1107,7 +1107,7 @@ paths:
       summary: Create a new editorial post draft
       x-authorization:
         mode: role-gated
-        roles: [content_author, admin]
+        roles: [content_author, blog_create, admin]
       x-idempotency:
         mode: natural-key
         replay: post-slug
@@ -1133,7 +1133,7 @@ paths:
       summary: Create a new draft revision for a published post
       x-authorization:
         mode: role-gated
-        roles: [content_author, admin]
+        roles: [content_author, blog_edit, admin]
       x-idempotency:
         mode: deterministic-replay
         replay: existing-open-revision
@@ -1164,7 +1164,7 @@ paths:
       summary: Get an editorial revision and its source citations
       x-authorization:
         mode: role-gated
-        roles: [content_author, content_reviewer, knowledge_publisher, admin]
+        roles: [content_author, blog_create, blog_edit, content_reviewer, knowledge_publisher, blog_publish, admin]
       security:
         - BearerAuth: []
       parameters:
@@ -1186,7 +1186,7 @@ paths:
       summary: Update an editable editorial draft
       x-authorization:
         mode: role-gated
-        roles: [content_author, admin]
+        roles: [content_author, blog_edit, admin]
       x-idempotency:
         mode: deterministic-replay
         replay: revision-checksum
@@ -1218,7 +1218,7 @@ paths:
       summary: Submit an editorial draft for review
       x-authorization:
         mode: role-gated
-        roles: [content_author, admin]
+        roles: [content_author, blog_edit, admin]
       x-idempotency:
         mode: state-transition
         replay: submitted-revision
@@ -1275,7 +1275,7 @@ paths:
       summary: Publish an approved editorial revision
       x-authorization:
         mode: role-gated
-        roles: [knowledge_publisher, admin]
+        roles: [knowledge_publisher, blog_publish, admin]
       x-idempotency:
         mode: state-transition
         replay: publication-record
@@ -1345,6 +1345,114 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PublishedPostResponse" }
         default: { $ref: "#/components/responses/ErrorResponse" }
+  /admin/blog-permissions:
+    get:
+      tags:
+      - editorial content
+      summary: List Blog Permissions
+      operationId: listBlogPermissions
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_list_BlogUserData__'
+      security:
+      - BearerAuth: []
+      x-authorization: &id001
+        mode: role-gated
+        roles:
+        - admin
+    put:
+      tags:
+      - editorial content
+      summary: Set Blog Permissions
+      operationId: setBlogPermissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogGrantRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_BlogUserData_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerAuth: []
+      x-authorization: *id001
+      x-idempotency:
+        mode: deterministic-replay
+  /admin/content/media-access:
+    get:
+      tags:
+      - editorial content
+      summary: Authorize editorial image upload using current API roles
+      operationId: authorizeEditorialMediaUpload
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_dict_str__str__'
+      security:
+      - BearerAuth: []
+      x-authorization:
+        mode: role-gated
+        roles:
+        - content_author
+        - blog_create
+        - blog_edit
+        - admin
+  /admin/content/revisions/{revision_id}/publish-now:
+    post:
+      tags:
+      - editorial content
+      summary: Submit, approve, and publish with all existing permission and evidence
+        checks
+      operationId: publishEditorialRevisionNow
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: revision_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Revision Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_EditorialRevisionData_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-authorization:
+        mode: role-gated
+        roles:
+        - knowledge_publisher
+        - blog_publish
+        - admin
+      x-idempotency:
+        mode: state-guarded
 components:
   securitySchemes:
     BearerAuth:
@@ -1422,6 +1530,137 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    SuccessResponse_EditorialRevisionData_:
+      properties:
+        data:
+          $ref: '#/components/schemas/EditorialRevisionData'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+      type: object
+      required:
+      - data
+      title: SuccessResponse[EditorialRevisionData]
+    SuccessResponse_dict_str__str__:
+      properties:
+        data:
+          additionalProperties:
+            type: string
+          type: object
+          title: Data
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+      type: object
+      required:
+      - data
+      title: SuccessResponse[dict[str, str]]
+    BlogGrantRequest:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          minLength: 3
+          pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+          title: Email
+        permissions:
+          items:
+            type: string
+            enum:
+            - blog_create
+            - blog_edit
+            - blog_publish
+          type: array
+          maxItems: 3
+          title: Permissions
+      additionalProperties: false
+      type: object
+      required:
+      - email
+      - permissions
+      title: BlogGrantRequest
+    BlogUserData:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        permissions:
+          items:
+            type: string
+            enum:
+            - blog_create
+            - blog_edit
+            - blog_publish
+          type: array
+          title: Permissions
+      type: object
+      required:
+      - id
+      - email
+      - permissions
+      title: BlogUserData
+    SuccessResponse_BlogUserData_:
+      properties:
+        data:
+          $ref: '#/components/schemas/BlogUserData'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+      type: object
+      required:
+      - data
+      title: SuccessResponse[BlogUserData]
+    SuccessResponse_list_BlogUserData__:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/BlogUserData'
+          type: array
+          title: Data
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+      type: object
+      required:
+      - data
+      title: SuccessResponse[list[BlogUserData]]
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     LanguageCode:
       type: string
       enum: [en, uz, ru]

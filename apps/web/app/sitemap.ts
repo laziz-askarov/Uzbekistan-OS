@@ -5,7 +5,8 @@ import {
   SITE_URL,
 } from "@/lib/editorial-content";
 
-export const revalidate = 3600;
+// Generate from current publications rather than freezing an empty build-time sitemap.
+export const dynamic = "force-dynamic";
 
 function sitemapImage(value: string | null) {
   if (!value) return null;
