@@ -1,0 +1,29 @@
+.rule {
+  display: flex;
+  gap: 3px;
+  width: min(100% - 2 * var(--gutter, 24px), var(--width, 1200px));
+  margin-inline: auto;
+  padding-block: 4px;
+}
+.rule i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 1.2px;
+  background: #e9e3d7;
+}
+.rule i:nth-child(3n) {
+  background: #ddd5c5;
+}
+.rule i:nth-child(3n + 2) {
+  background: #e2dacb;
+}
+.rule i:nth-child(5n + 1) {
+  rotate: 2deg;
+}
+.rule i:nth-child(7n + 3) {
+  rotate: -2deg;
+}
+.rule i[data-hl] {
+  background: var(--hl, #c8102e);
+}

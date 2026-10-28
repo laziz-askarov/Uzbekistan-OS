@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Fraunces,
   Instrument_Sans,
@@ -61,6 +61,14 @@ export const metadata: Metadata = {
       "application/rss+xml": `${SITE_URL}/blog/rss.xml`,
     },
   },
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   category: "travel",
   creator: OPERATOR_NAME,
   publisher: OPERATOR_NAME,
@@ -94,6 +102,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [`${SITE_URL}/opengraph-image`],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F8F6F1",
 };
 
 export default function RootLayout({

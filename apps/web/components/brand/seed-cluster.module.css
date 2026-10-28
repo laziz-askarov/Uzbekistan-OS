@@ -1,0 +1,19 @@
+.seed {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: 2px 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  rotate: 45deg;
+  scale: 0.82;
+}
+.seed i {
+  border-radius: 2px;
+  background: var(--hl, #c8102e);
+}
+.seed i:nth-child(2),
+.seed i:nth-child(3) {
+  opacity: 0.55;
+}

@@ -8,6 +8,7 @@
     "lint": "eslint . --max-warnings=0",
     "start": "next start",
     "test": "node --test tests/*.test.mjs",
+    "brand:mosaic": "node scripts/generate-mosaic.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
