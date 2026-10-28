@@ -110,7 +110,9 @@
   font-weight: 500;
   color: var(--mg-ink);
   text-decoration: none;
-  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), color 180ms;
+  transition:
+    background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 180ms;
 }
 .btn:hover {
   background: var(--mg-ink);
@@ -165,14 +167,13 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background:
-    linear-gradient(
-      to top,
-      rgb(20 19 26 / 86%) 0%,
-      rgb(20 19 26 / 55%) 38%,
-      rgb(20 19 26 / 12%) 70%,
-      transparent 100%
-    );
+  background: linear-gradient(
+    to top,
+    rgb(20 19 26 / 86%) 0%,
+    rgb(20 19 26 / 55%) 38%,
+    rgb(20 19 26 / 12%) 70%,
+    transparent 100%
+  );
 }
 .coverInner {
   display: grid;
