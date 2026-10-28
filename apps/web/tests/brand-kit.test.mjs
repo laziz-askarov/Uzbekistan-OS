@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import { loadModule, samplePost, webFile } from "./helpers/load-module.mjs";
 
 test("brand sections map guides to the kit's four colours or the neutral planning section", async () => {
@@ -95,19 +96,92 @@ test("the web icons from the kit are installed at the paths the manifest expects
   assert.match(layout, /themeColor:\s*"#F8F6F1"/);
 });
 
-test("the preview page uses the kit: Inter only, the Anor mark, one primary button per screen", async () => {
+test("the preview page uses the kit: Inter only, the Anor mark, photographs with credits", async () => {
   const page = await webFile("app/preview/page.tsx");
   const css = await webFile("app/preview/preview.module.css");
   assert.match(page, /AnorMosaic/);
   assert.match(page, /brand\/anor-horizontal\.svg/);
+  assert.match(
+    page,
+    /brand\/anor-mono-white-horizontal\.svg/,
+    "white mark over the photograph",
+  );
   assert.match(page, /robots: \{ index: false/);
+  assert.match(page, /GuideIndex/);
+  assert.match(page, /PHOTO_LIST/, "the footer prints every photo credit");
   assert.doesNotMatch(css, /instrument|fraunces|georgia/i);
   assert.match(css, /--font-sans: var\(--font-inter\)/);
-  assert.match(css, /--font-inter/);
-  assert.match(css, /#C8102E/i);
-  assert.doesNotMatch(page, /[–—]/, "no dashes in visible copy");
+  assert.match(css, /#c8102e/i);
   assert.doesNotMatch(
     css,
-    /text-transform:\s*uppercase[^}]*\}\s*\.section(Title|Heading)/,
+    /#f8f6f1|#f0ece4|#e6e0d5/i,
+    "neutral ground, not the kit's warm paper",
+  );
+  assert.doesNotMatch(page, /[\u2013\u2014]/, "no dashes in visible copy");
+});
+
+test("every editorial photograph is on disk and credited", async () => {
+  const { PHOTO_LIST } = await loadModule("lib/photos.ts");
+  assert.ok(PHOTO_LIST.length >= 8);
+  for (const photo of PHOTO_LIST) {
+    const file = await readFile(
+      new URL(`../public${photo.src}`, import.meta.url),
+    );
+    assert.ok(file.length > 20_000, `${photo.src} is a real image`);
+    assert.ok(file.length < 900_000, `${photo.src} is under 900 KB`);
+    assert.ok(photo.alt.length > 20, `${photo.src} has descriptive alt text`);
+    assert.match(photo.credit.license, /^(CC|Public domain)/);
+    assert.match(photo.credit.source, /^https:\/\/commons\.wikimedia\.org\//);
+    assert.ok(photo.width >= 1200 && photo.height >= 800);
+  }
+});
+
+test("the guide index shows a photograph for every guide and keeps keyboard access", async () => {
+  const React = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { GuideIndex } = await loadModule("components/brand/guide-index.tsx", {
+    "next/link": {
+      __esModule: true,
+      default: (props) => React.createElement("a", props),
+    },
+  });
+  const html = renderToStaticMarkup(
+    React.createElement(GuideIndex, {
+      groups: [
+        {
+          id: "visas",
+          title: "Visas and documents",
+          description: "Entry rules.",
+          href: "/travel#before-you-go",
+          count: "1 guide",
+          guides: [
+            {
+              slug: "uzbekistan-visa-requirements",
+              href: "/blog/uzbekistan-visa-requirements",
+              title: "Uzbekistan Visa Requirements",
+              verified: "Oct 28, 2026",
+              verifiedAt: "2026-10-28T09:00:00Z",
+              image: "https://images.example/visa.webp",
+              alt: "Shah-i-Zinda",
+            },
+          ],
+        },
+      ],
+    }),
+  );
+  assert.match(html, /data-section="visas"/);
+  assert.match(html, /href="\/blog\/uzbekistan-visa-requirements"/);
+  assert.match(
+    html,
+    /<img[^>]+src="https:\/\/images.example\/visa.webp"[^>]+alt=""/,
+  );
+  assert.match(
+    html,
+    /aria-hidden="true"/,
+    "the floating preview is decorative",
+  );
+  assert.match(
+    html,
+    /<time dateTime="2026-10-28T09:00:00Z">Oct 28, 2026<\/time>/,
   );
 });

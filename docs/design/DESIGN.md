@@ -36,7 +36,20 @@ from the "Last checked" voice rule; (C) the metro map, from Tashkent. A scored 4
 kit already states it ("a calm white wall with one mosaic panel"). From B we keep the
 dateline under the hero and the verified date on every card.
 
-## System
+## Revision 2 (owner feedback, 2026-10-28): image-led, neutral ground
+
+The owner asked for a much more image-focused, sleek page on neutral colours rather than the
+kit's warm paper. The concept stays (a calm wall, one mosaic panel); what changes is the wall:
+white (#FFFFFF) ground, greys (#F3F3F2 sunken, #E4E4E2 line, #6B6B6B muted), near-black ink
+(#141414) and a #0E0E0E night band. The Anor colours remain highlights only. Photographs carry
+the page: a full-bleed hero, a floating photograph beside each hovered guide (the signature
+interaction, inline thumbnails on touch), a filmstrip of the four route cities, a wall of three
+detours, photo cards for the latest guides and a photograph in the service band. The mosaic
+moves to the footer and lays itself when it scrolls into view. Photos come from Wikimedia
+Commons (credits in `apps/web/lib/photos.ts`, printed in the footer) plus the guides' own
+hero images from the editorial library.
+
+## System (revision 1, kept for the record)
 
 Palette (kit tokens, light theme committed; dark theme is in the kit but not built yet):
 paper #F8F6F1 ground, surface #FFFFFF, sunken #F0ECE4, line #E6E0D5, ink #1F1C18, muted

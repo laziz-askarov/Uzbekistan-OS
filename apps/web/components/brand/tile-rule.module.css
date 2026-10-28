@@ -10,13 +10,13 @@
   width: 10px;
   height: 10px;
   border-radius: 1.2px;
-  background: #e9e3d7;
+  background: var(--rule-1, #e9e3d7);
 }
 .rule i:nth-child(3n) {
-  background: #ddd5c5;
+  background: var(--rule-3, #ddd5c5);
 }
 .rule i:nth-child(3n + 2) {
-  background: #e2dacb;
+  background: var(--rule-2, #e2dacb);
 }
 .rule i:nth-child(5n + 1) {
   rotate: 2deg;
