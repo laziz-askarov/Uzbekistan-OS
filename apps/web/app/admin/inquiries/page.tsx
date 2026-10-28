@@ -31,7 +31,8 @@ export default async function AdminInquiriesPage() {
       <h1>Trip inquiries</h1>
       <p>
         Inquiries from the public trip-planning form, newest first. Reply from
-        your mail client; this page is read-only. <Link href="/admin">Back to operations</Link>.
+        your mail client; this page is read-only.{" "}
+        <Link href="/admin">Back to operations</Link>.
       </p>
       {inquiries.length === 0 ? (
         <p className={styles.empty}>No inquiries yet.</p>

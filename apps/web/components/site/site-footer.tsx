@@ -53,7 +53,10 @@ export function SiteFooter() {
           © {new Date().getUTCFullYear()} {OPERATOR_NAME}, {OPERATOR_CITY},
           Uzbekistan
         </span>
-        <span>Guidance, not legal advice. Confirm rules with the official source before you travel.</span>
+        <span>
+          Guidance, not legal advice. Confirm rules with the official source
+          before you travel.
+        </span>
       </div>
     </footer>
   );

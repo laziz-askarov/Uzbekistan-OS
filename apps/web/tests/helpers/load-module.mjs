@@ -23,7 +23,8 @@ export async function loadModule(path, mocks = {}) {
   new Function("require", "module", "exports", output)(
     (name) => {
       if (name in mocks) return mocks[name];
-      if (name.endsWith(".css")) return new Proxy({}, { get: (_, key) => String(key) });
+      if (name.endsWith(".css"))
+        return new Proxy({}, { get: (_, key) => String(key) });
       return require(name);
     },
     loaded,

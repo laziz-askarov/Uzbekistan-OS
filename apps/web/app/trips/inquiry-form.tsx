@@ -64,7 +64,8 @@ export function InquiryForm({ months, sourcePath }: InquiryFormProps) {
     } catch {
       setStatus({
         kind: "error",
-        message: "We could not reach the server. Check your connection and try again.",
+        message:
+          "We could not reach the server. Check your connection and try again.",
       });
     }
   }
@@ -74,9 +75,9 @@ export function InquiryForm({ months, sourcePath }: InquiryFormProps) {
       <div className={styles.done} role="status">
         <h3>Thanks, we have your inquiry.</h3>
         <p>
-          A member of the Kebab Travel team in Tashkent will reply by email
-          with questions or a first plan. Nothing is booked and no payment is
-          taken until you confirm.
+          A member of the Kebab Travel team in Tashkent will reply by email with
+          questions or a first plan. Nothing is booked and no payment is taken
+          until you confirm.
         </p>
       </div>
     );
@@ -114,7 +115,13 @@ export function InquiryForm({ months, sourcePath }: InquiryFormProps) {
       <div className={styles.row}>
         <div className={styles.field}>
           <label htmlFor="inquiry-month">When do you want to travel?</label>
-          <select className={styles.select} id="inquiry-month" name="travelMonth" required defaultValue="">
+          <select
+            className={styles.select}
+            id="inquiry-month"
+            name="travelMonth"
+            required
+            defaultValue=""
+          >
             <option value="" disabled>
               Choose a month
             </option>
@@ -187,7 +194,13 @@ export function InquiryForm({ months, sourcePath }: InquiryFormProps) {
 
       <div className={styles.field}>
         <label htmlFor="inquiry-budget">Budget band</label>
-        <select className={styles.select} id="inquiry-budget" name="budget" defaultValue="not-sure" required>
+        <select
+          className={styles.select}
+          id="inquiry-budget"
+          name="budget"
+          defaultValue="not-sure"
+          required
+        >
           {BUDGET_BANDS.map((band) => (
             <option key={band.value} value={band.value}>
               {band.label}

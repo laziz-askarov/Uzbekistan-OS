@@ -39,7 +39,10 @@ async function loadGuides(): Promise<PublishedPostSummary[]> {
 export default async function TravelHub() {
   const guides = await loadGuides();
   const clusters = groupTravelGuides(guides);
-  const total = clusters.reduce((count, group) => count + group.posts.length, 0);
+  const total = clusters.reduce(
+    (count, group) => count + group.posts.length,
+    0,
+  );
 
   return (
     <div>
@@ -48,10 +51,10 @@ export default async function TravelHub() {
         <section className={styles.intro}>
           <h1>Uzbekistan travel guides</h1>
           <p>
-            Everything that has to work on a trip to Uzbekistan, from the
-            entry rule for your passport to the train you take to Khiva. Each
-            guide shows the date we last verified it and links the official
-            source behind every rule.
+            Everything that has to work on a trip to Uzbekistan, from the entry
+            rule for your passport to the train you take to Khiva. Each guide
+            shows the date we last verified it and links the official source
+            behind every rule.
           </p>
         </section>
 
@@ -75,7 +78,10 @@ export default async function TravelHub() {
             </div>
             <div>
               {group.posts.length ? (
-                <GuideList posts={group.posts} labelledBy={`${group.id}-title`} />
+                <GuideList
+                  posts={group.posts}
+                  labelledBy={`${group.id}-title`}
+                />
               ) : (
                 <p className={styles.empty}>
                   No published guides in this group yet.

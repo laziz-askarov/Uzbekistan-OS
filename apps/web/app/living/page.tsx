@@ -11,7 +11,8 @@ import {
 import { groupLivingGuides, LIVING_DOMAINS } from "@/lib/guide-clusters";
 import styles from "../hub.module.css";
 
-const title = "Living in Uzbekistan: residence, work, business and healthcare | Uzbekistan OS";
+const title =
+  "Living in Uzbekistan: residence, work, business and healthcare | Uzbekistan OS";
 const description =
   "Verified guides to the official procedures foreigners meet when staying longer in Uzbekistan: registration, residence permits, work, starting a company, banking, renting and healthcare.";
 
@@ -58,8 +59,8 @@ export default async function LivingHub() {
         {groups.length === 0 ? (
           <p className={styles.empty}>
             Living guides are being prepared. See{" "}
-            <Link href="/blog">all published guides</Link> for what is
-            available now.
+            <Link href="/blog">all published guides</Link> for what is available
+            now.
           </p>
         ) : null}
 
@@ -78,7 +79,10 @@ export default async function LivingHub() {
               </div>
               <div>
                 {posts.length ? (
-                  <GuideList posts={posts} labelledBy={`${domain.slug}-title`} />
+                  <GuideList
+                    posts={posts}
+                    labelledBy={`${domain.slug}-title`}
+                  />
                 ) : (
                   <p className={styles.empty}>
                     No published guides in this area yet.

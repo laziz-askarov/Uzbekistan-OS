@@ -76,8 +76,8 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
           <h1>{profile.name}</h1>
           <p>
             Writes guides for {SITE_NAME} from {OPERATOR_CITY}. Every guide
-            lists the official source behind each rule and the date it was
-            last verified. Read{" "}
+            lists the official source behind each rule and the date it was last
+            verified. Read{" "}
             <Link href="/about#methodology">how the team verifies guides</Link>.
           </p>
         </section>

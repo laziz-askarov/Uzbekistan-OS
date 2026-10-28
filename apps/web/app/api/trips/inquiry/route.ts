@@ -24,7 +24,10 @@ function responseHeaders(
   context: ReturnType<typeof createRequestContext>,
   additional: Record<string, string> = {},
 ) {
-  return requestHeaders(context, { "cache-control": "no-store", ...additional });
+  return requestHeaders(context, {
+    "cache-control": "no-store",
+    ...additional,
+  });
 }
 
 function reject(
@@ -47,7 +50,13 @@ export async function POST(request: Request) {
 
   try {
     if (!hasTrustedOrigin(request)) {
-      return reject(context, 403, "untrusted_origin", "forbidden", "Forbidden.");
+      return reject(
+        context,
+        403,
+        "untrusted_origin",
+        "forbidden",
+        "Forbidden.",
+      );
     }
     if (!acceptsJson(request)) {
       return reject(
@@ -142,7 +151,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "inquiry_unavailable",
-        message: "We could not record your inquiry. Please try again, or email us directly.",
+        message:
+          "We could not record your inquiry. Please try again, or email us directly.",
       },
       { status: 503, headers: responseHeaders(context) },
     );

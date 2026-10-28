@@ -16,7 +16,8 @@ import {
 } from "@/lib/site";
 import styles from "./about.module.css";
 
-const title = "About Uzbekistan OS and Kebab Travel: who writes the guides and how we verify them";
+const title =
+  "About Uzbekistan OS and Kebab Travel: who writes the guides and how we verify them";
 const description =
   "Uzbekistan OS is published by Kebab Travel, a Tashkent travel company. Learn who writes the guides, how every rule is checked against an official source and dated, and how the guides stay independent of the trips we plan.";
 
@@ -66,9 +67,8 @@ export default async function AboutPage() {
             <p>
               The site started in 2026 as a reference for the official
               procedures foreigners meet in Uzbekistan. It now leads with
-              travel, with the{" "}
-              <Link href="/living">Living in Uzbekistan</Link> guides kept for
-              people who stay longer.
+              travel, with the <Link href="/living">Living in Uzbekistan</Link>{" "}
+              guides kept for people who stay longer.
             </p>
           </div>
         </section>
@@ -77,8 +77,8 @@ export default async function AboutPage() {
           <div className="band-label">
             <h2 id="authors-title">Our authors</h2>
             <p>
-              Each guide carries a named author. Profiles list that author&rsquo;s
-              published guides.
+              Each guide carries a named author. Profiles list that
+              author&rsquo;s published guides.
             </p>
           </div>
           <div>
@@ -105,7 +105,11 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        <section className="band" id="methodology" aria-labelledby="methodology-title">
+        <section
+          className="band"
+          id="methodology"
+          aria-labelledby="methodology-title"
+        >
           <div className="band-label">
             <h2 id="methodology-title">How we verify</h2>
             <p>
@@ -147,7 +151,11 @@ export default async function AboutPage() {
           </ul>
         </section>
 
-        <section className="band" id="independence" aria-labelledby="independence-title">
+        <section
+          className="band"
+          id="independence"
+          aria-labelledby="independence-title"
+        >
           <div className="band-label">
             <h2 id="independence-title">Editorial independence</h2>
           </div>
@@ -160,8 +168,8 @@ export default async function AboutPage() {
             <p>
               The trip service appears only in clearly labelled boxes and on the{" "}
               <Link href="/trips">Plan my trip</Link> page. Hotel, guide and
-              operator recommendations, when we make them, follow the same
-              rule: named, dated and explained.
+              operator recommendations, when we make them, follow the same rule:
+              named, dated and explained.
             </p>
           </div>
         </section>

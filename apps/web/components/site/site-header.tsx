@@ -10,7 +10,11 @@ export function SiteHeader({ current }: SiteHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link className={styles.brand} href="/" aria-label={`${SITE_NAME} home`}>
+        <Link
+          className={styles.brand}
+          href="/"
+          aria-label={`${SITE_NAME} home`}
+        >
           <span className={styles.mark} aria-hidden="true">
             U
           </span>

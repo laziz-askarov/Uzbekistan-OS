@@ -46,7 +46,7 @@ test("root layout bundles the brand typefaces and emits organization structured 
   assert.match(layout, /organizationGraph/);
   assert.match(layout, /<JsonLd/);
   assert.match(layout, /Kebab Travel/);
-  assert.match(layout, /title: "Uzbekistan OS by Kebab Travel/);
+  assert.match(layout, /title:\s*"Uzbekistan OS by Kebab Travel/);
   assert.doesNotMatch(layout, /visa/i);
 });
 
