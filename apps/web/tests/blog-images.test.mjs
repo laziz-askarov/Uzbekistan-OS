@@ -247,7 +247,7 @@ test("sitemap discovers the first publication after an empty launch", async () =
     },
   });
   assert.equal(dynamic, "force-dynamic");
-  assert.equal((await sitemap()).length, 4);
+  assert.equal((await sitemap()).length, 8);
   posts = [
     {
       slug: "first-visit",

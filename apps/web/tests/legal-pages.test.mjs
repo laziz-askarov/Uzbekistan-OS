@@ -4,7 +4,6 @@ import test from "node:test";
 
 const privacyPath = new URL("../app/privacy/page.tsx", import.meta.url);
 const termsPath = new URL("../app/terms/page.tsx", import.meta.url);
-const landingPath = new URL("../app/page.tsx", import.meta.url);
 const authPath = new URL("../app/signup/auth-form.tsx", import.meta.url);
 
 test("privacy policy reflects the services and data flows in production", async () => {
@@ -44,10 +43,16 @@ test("terms state the independent informational and AI limitations", async () =>
 });
 
 test("public footer and account creation disclose both legal documents", async () => {
-  const [landing, auth] = await Promise.all([
-    readFile(landingPath, "utf8"),
-    readFile(authPath, "utf8"),
-  ]);
+  const { createElement } = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { loadModule } = await import("./helpers/load-module.mjs");
+  const footer = await loadModule("components/site/site-footer.tsx", {
+    "next/link": ({ children, href, ...props }) =>
+      createElement("a", { href, ...props }, children),
+    "@/lib/site": await loadModule("lib/site.ts"),
+  });
+  const landing = renderToStaticMarkup(createElement(footer.SiteFooter));
+  const auth = await readFile(authPath, "utf8");
 
   for (const source of [landing, auth]) {
     assert.match(source, /href="\/privacy"/);

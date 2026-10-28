@@ -1,6 +1,6 @@
 .section {
-  width: min(calc(100% - 48px), 1232px);
-  padding: 28px 0;
+  padding: 56px 0;
+  border-top: 1px solid var(--line);
 }
 .heading {
   display: flex;
@@ -11,15 +11,17 @@
 }
 .heading h2 {
   margin: 0;
-  font-size: clamp(32px, 4vw, 52px);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 40px);
+  font-weight: 540;
   line-height: 1.08;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.015em;
   text-wrap: balance;
 }
 .intro {
-  margin: 16px 0 0;
-  color: #596273;
-  font-size: 18px;
+  margin: 12px 0 0;
+  color: var(--ink-2);
+  font-size: 16px;
   line-height: 1.6;
 }
 .allLink {
@@ -28,8 +30,10 @@
   gap: 12px;
   min-height: 44px;
   flex-shrink: 0;
-  font-weight: 650;
-  color: #1d4ed8;
+  font-weight: 600;
+  color: var(--cobalt);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 .grid {
   display: grid;
@@ -44,12 +48,12 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  border: 1px solid #e3e7ed;
-  border-radius: 24px;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper-raised);
 }
 .card:hover {
-  border-color: #93b4ee;
+  border-color: var(--cobalt);
 }
 .card:focus-visible {
   outline-offset: 5px;
@@ -57,7 +61,7 @@
 .media {
   overflow: hidden;
   aspect-ratio: 16 / 10;
-  background: #e9eef5;
+  background: var(--paper-deep);
 }
 .media img {
   display: block;
@@ -78,23 +82,25 @@
   gap: 12px;
   font-size: 13px;
   line-height: 1.5;
-  color: #596273;
+  color: var(--ink-3);
 }
 .meta > span {
-  color: #1d4ed8;
-  font-weight: 700;
+  color: var(--glaze-deep);
+  font-weight: 650;
   text-transform: capitalize;
 }
 .copy h3 {
-  margin: 16px 0 12px;
-  font-size: 25px;
+  margin: 14px 0 10px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 560;
   line-height: 1.2;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.005em;
   text-wrap: balance;
 }
 .summary {
   margin: 0 0 24px;
-  color: #596273;
+  color: var(--ink-2);
   font-size: 16px;
   line-height: 1.65;
 }
@@ -103,8 +109,8 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  font-weight: 650;
-  color: #111827;
+  font-weight: 600;
+  color: var(--cobalt);
 }
 .single .hasImage {
   display: grid;
@@ -121,12 +127,11 @@
   font-size: clamp(26px, 3vw, 36px);
 }
 .empty {
-  color: #596273;
+  color: var(--ink-2);
 }
 @media (max-width: 700px) {
   .section {
-    width: min(calc(100% - 32px), 1232px);
-    padding: 16px 0;
+    padding: 40px 0;
   }
   .heading {
     flex-direction: column;

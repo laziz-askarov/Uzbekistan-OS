@@ -63,6 +63,7 @@ for (const [language, expected, locale] of [
       },
     };
     const page = await load("app/blog/[slug]/page.tsx", {
+      "@/lib/authors": await load("lib/authors.ts"),
       "@/lib/editorial-content": {
         SITE_URL: origin,
         publicPostUrl: (slug) => `${origin}/blog/${slug}`,

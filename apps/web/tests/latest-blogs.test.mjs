@@ -51,7 +51,7 @@ test("homepage blogs render published article links, imagery and dates on the se
     return [post];
   });
   assert.match(html, /aria-labelledby="latest-blogs-title"/);
-  assert.match(html, /<h2 id="latest-blogs-title">Latest from the blog<\/h2>/);
+  assert.match(html, /<h2 id="latest-blogs-title">Latest guides<\/h2>/);
   assert.match(html, /href="\/blog\/visiting-uzbekistan-first-time"/);
   assert.match(
     html,
@@ -61,7 +61,7 @@ test("homepage blogs render published article links, imagery and dates on the se
   assert.match(html, /loading="lazy"/);
   assert.match(html, /dateTime="2026-10-27T21:41:30Z"/);
   assert.match(html, /A seven-day journey/);
-  assert.match(html, /href="\/blog">View all articles/);
+  assert.match(html, /href="\/blog">All guides/);
 });
 
 test("latest blogs supports several publications without duplicating cards", async () => {
@@ -99,18 +99,14 @@ test("cards remain usable without cover imagery and do not render unsafe image U
   }
 });
 
-test("homepage places the blog section after the introduction and before visa tools", async () => {
+test("homepage places the blog section after the planning guides and before the living pillar", async () => {
   const source = await readFile(
     new URL("../app/page.tsx", import.meta.url),
     "utf8",
   );
   assert.ok(
-    source.indexOf("<LatestBlogs />") >
-      source.indexOf('className="hero-content"'),
+    source.indexOf("<LatestBlogs />") > source.indexOf('id="where-to-go"'),
   );
-  assert.ok(
-    source.indexOf("<LatestBlogs />") <
-      source.indexOf('className="personal-plan"'),
-  );
+  assert.ok(source.indexOf("<LatestBlogs />") < source.indexOf('id="living"'));
   assert.match(source, /<Suspense fallback=\{null\}>\s*<LatestBlogs \/>/);
 });

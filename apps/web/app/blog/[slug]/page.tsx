@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MarkdownContent } from "@/components/editorial/markdown-content";
+import { authorPageUrl as resolveAuthorPageUrl } from "@/lib/authors";
 import {
   getPublishedPost,
   publicPostUrl,
@@ -66,11 +67,12 @@ function languageName(languageCode: string) {
   );
 }
 
+function authorPageUrl(author: PublishedPost["author"]) {
+  return resolveAuthorPageUrl(author, SITE_URL);
+}
+
 function jsonLd(post: PublishedPost, canonical: string, faqs: FaqItem[]) {
-  const authorUrl = safeAbsoluteUrl(
-    post.author.profile_url,
-    `${SITE_URL}/blog`,
-  );
+  const authorUrl = authorPageUrl(post.author);
   const imageUrl = post.hero_image_url
     ? safeAbsoluteUrl(post.hero_image_url, "")
     : "";
@@ -386,7 +388,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <section className={styles.authorBox} aria-labelledby="author-heading">
         <h2 id="author-heading">{labels.author}</h2>
         <p>
-          <strong>{post.author.name}</strong>
+          <a href={authorPageUrl(post.author)}>
+            <strong>{post.author.name}</strong>
+          </a>
           {post.author.bio ? ` — ${post.author.bio}` : ""}
         </p>
       </section>

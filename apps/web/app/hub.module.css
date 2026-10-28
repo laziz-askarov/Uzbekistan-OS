@@ -1,0 +1,57 @@
+.intro {
+  max-width: 760px;
+  padding-block: 56px 24px;
+}
+.intro h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5.6vw, 68px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.intro p {
+  margin: 22px 0 0;
+  max-width: 56ch;
+  color: var(--ink-2);
+  font-size: 18px;
+  line-height: 1.6;
+}
+.empty {
+  margin: 0;
+  padding: 20px 0;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.empty a,
+.help a {
+  color: var(--cobalt);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.help {
+  margin-top: 56px;
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: var(--kiln-soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+}
+.help p {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.help strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 560;
+  margin-bottom: 4px;
+}

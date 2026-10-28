@@ -32,14 +32,13 @@ export default async function LatestBlogs() {
     >
       <div className={styles.heading}>
         <div>
-          <p className="section-kicker">Explore Uzbekistan</p>
-          <h2 id="latest-blogs-title">Latest from the blog</h2>
+          <h2 id="latest-blogs-title">Latest guides</h2>
           <p className={styles.intro}>
-            Fresh ideas and practical guides for your time in Uzbekistan.
+            The most recently published or re-verified guides.
           </p>
         </div>
         <Link className={styles.allLink} href="/blog">
-          View all articles <span aria-hidden="true">↗</span>
+          All guides
         </Link>
       </div>
       {posts.length ? (
@@ -83,9 +82,7 @@ export default async function LatestBlogs() {
                     </div>
                     <h3 id={titleId}>{post.title}</h3>
                     <p className={styles.summary}>{post.summary}</p>
-                    <span className={styles.readMore}>
-                      Read article <span aria-hidden="true">→</span>
-                    </span>
+                    <span className={styles.readMore}>Read the guide</span>
                   </div>
                 </Link>
               </article>
@@ -94,8 +91,8 @@ export default async function LatestBlogs() {
         </div>
       ) : (
         <p className={styles.empty}>
-          Explore our blog for travel ideas and practical information about
-          Uzbekistan.
+          Published guides appear here. Browse all guides for travel ideas and
+          practical information about Uzbekistan.
         </p>
       )}
     </section>
