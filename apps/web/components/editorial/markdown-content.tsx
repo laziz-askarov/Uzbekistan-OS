@@ -56,6 +56,7 @@ function inlineMarkdown(value: string): ReactNode[] {
 
 function isBlockStart(line: string) {
   return (
+    /^!\[[^\]]*\]\([^)]+\)\s*$/.test(line) ||
     /^#{1,4}\s/.test(line) ||
     /^>\s?/.test(line) ||
     /^[-*]\s/.test(line) ||
@@ -92,6 +93,26 @@ export function MarkdownContent({ markdown }: { markdown: string }) {
           </code>
         </pre>,
       );
+      continue;
+    }
+
+    const image = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+    if (image) {
+      const src = safeHref(image[2]);
+      if (src && !src.startsWith("//"))
+        blocks.push(
+          <figure key={`image-${index}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={image[1]}
+              loading="lazy"
+              decoding="async"
+              style={{ maxWidth: "100%", height: "auto" }}
+            />
+          </figure>,
+        );
+      index += 1;
       continue;
     }
 

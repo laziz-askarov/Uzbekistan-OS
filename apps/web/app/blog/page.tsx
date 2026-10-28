@@ -40,12 +40,7 @@ const domains = [
   ["everyday-living", "Living"],
   ["healthcare", "Healthcare"],
 ] as const;
-const languages = [
-  ["", "All languages"],
-  ["uz", "O‘zbekcha"],
-  ["en", "English"],
-  ["ru", "Русский"],
-] as const;
+const supportedLanguages = ["en", "uz", "ru"];
 
 type BlogIndexProps = {
   searchParams: Promise<{ domain?: string; language?: string }>;
@@ -55,24 +50,33 @@ function displayDomain(value: string | null) {
   return value?.replaceAll("-", " ") ?? "Uzbekistan";
 }
 
+function featuredImageUrl(value: string | null) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default async function BlogIndex({ searchParams }: BlogIndexProps) {
   const { domain, language } = await searchParams;
   const selectedDomain = domains.some(([value]) => value === domain)
     ? domain
     : undefined;
-  const selectedLanguage = languages.some(([value]) => value === language)
-    ? language
-    : undefined;
+  const selectedLanguage =
+    language && supportedLanguages.includes(language) ? language : "en";
   const posts = await listPublishedPosts({
     domain: selectedDomain || undefined,
-    language: selectedLanguage || undefined,
+    language: selectedLanguage,
     limit: 100,
   });
 
   function filterHref(nextDomain: string, nextLanguage: string) {
     const parameters = new URLSearchParams();
     if (nextDomain) parameters.set("domain", nextDomain);
-    if (nextLanguage) parameters.set("language", nextLanguage);
+    if (nextLanguage !== "en") parameters.set("language", nextLanguage);
     const query = parameters.toString();
     return query ? `/blog?${query}` : "/blog";
   }
@@ -101,45 +105,51 @@ export default async function BlogIndex({ searchParams }: BlogIndexProps) {
         ))}
       </nav>
 
-      <nav className={styles.filters} aria-label="Filter guides by language">
-        {languages.map(([value, label]) => (
-          <Link
-            aria-current={
-              (selectedLanguage ?? "") === value ? "page" : undefined
-            }
-            href={filterHref(selectedDomain ?? "", value)}
-            hrefLang={value || undefined}
-            key={value || "all-languages"}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
-
       {posts.length ? (
         <section className={styles.postGrid} aria-label="Published guides">
-          {posts.map((post) => (
-            <Link
-              className={styles.postCard}
-              href={`/blog/${post.slug}`}
-              key={post.id}
-            >
-              <div className={styles.cardMeta}>
-                <span className={styles.category}>
-                  {displayDomain(post.domain_slug)}
-                </span>
-                <span>{post.language_code.toUpperCase()}</span>
-                <time dateTime={post.published_at}>
-                  {new Intl.DateTimeFormat(post.language_code, {
-                    dateStyle: "medium",
-                  }).format(new Date(post.published_at))}
-                </time>
-              </div>
-              <h2>{post.title}</h2>
-              <p>{post.summary}</p>
-              <span className={styles.readMore}>Read guide →</span>
-            </Link>
-          ))}
+          {posts.map((post) => {
+            const image = featuredImageUrl(post.hero_image_url);
+            const titleId = `blog-title-${post.id}`;
+            return (
+              <Link
+                className={styles.postCard}
+                href={`/blog/${post.slug}`}
+                key={post.id}
+                lang={post.language_code}
+                aria-labelledby={titleId}
+              >
+                {image ? (
+                  <div className={styles.cardImage}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image}
+                      alt={post.hero_image_alt ?? post.title}
+                      width={1600}
+                      height={1000}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                ) : null}
+                <div className={styles.cardCopy}>
+                  <div className={styles.cardMeta}>
+                    <span className={styles.category}>
+                      {displayDomain(post.domain_slug)}
+                    </span>
+                    <time dateTime={post.published_at}>
+                      {new Intl.DateTimeFormat(post.language_code, {
+                        dateStyle: "medium",
+                        timeZone: "UTC",
+                      }).format(new Date(post.published_at))}
+                    </time>
+                  </div>
+                  <h2 id={titleId}>{post.title}</h2>
+                  <p>{post.summary}</p>
+                  <span className={styles.readMore}>Read guide →</span>
+                </div>
+              </Link>
+            );
+          })}
         </section>
       ) : (
         <section className={styles.empty}>

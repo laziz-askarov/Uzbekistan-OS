@@ -5,6 +5,8 @@
 - The MVP domains are Immigration, Tourism, Business Registration, Healthcare, and Everyday Living.
 - Do not add voice, OCR, appointments, payments, native apps, reminders, autonomous agents, direct government API integrations, or user document storage without an approved scope change.
 - Internal storage of official-source snapshots and ingestion evidence is allowed.
+- Tourism is the primary public domain; the other domains form the "Living in Uzbekistan" pillar (ADR 0026).
+- Email trip inquiries (a contact form stored for staff to answer) are in scope; they must not take payments or make bookings.
 
 ## Architecture
 
@@ -26,4 +28,3 @@
 - Web: `pnpm lint && pnpm typecheck && pnpm build`
 - API: from `apps/api`, run `python -m ruff check . && python -m pytest`
 - Contracts: validate `packages/contracts/openapi.yaml` and JSON Schemas before merging contract changes.
-

@@ -401,7 +401,9 @@ export default function ReviewConsole() {
 
   function buildPublicationCandidate(): PublicationCandidateJson {
     if (!selected || !artifact) {
-      throw new Error("Select an approved review with extracted evidence first.");
+      throw new Error(
+        "Select an approved review with extracted evidence first.",
+      );
     }
     return {
       review_item_id: selected.review.id,
@@ -948,8 +950,9 @@ export default function ReviewConsole() {
                                 </button>
                                 <p className={styles.lockedNote}>
                                   Complete the publication fields below first.
-                                  The template includes this review ID, extracted
-                                  sections, citations, and freshness dates.
+                                  The template includes this review ID,
+                                  extracted sections, citations, and freshness
+                                  dates.
                                 </p>
                                 <label htmlFor="publication-json">
                                   Publication candidate JSON

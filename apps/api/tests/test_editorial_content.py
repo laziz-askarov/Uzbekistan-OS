@@ -254,3 +254,93 @@ def test_rag_enabled_article_requires_domain_and_official_source() -> None:
 
     with pytest.raises(ValueError, match="RAG-enabled posts require"):
         EditorialPostDraft.model_validate(payload)
+
+
+def test_blog_permissions_are_independent_and_publication_requires_review() -> None:
+    repository = MemoryEditorialRepository()
+    service = EditorialService(repository)
+    creator = principal("blog_create")
+    editor = principal("blog_edit")
+    publisher = principal("blog_publish")
+    draft = service.create_post(creator, post_draft())
+    with pytest.raises(EditorialError, match="role is required"):
+        service.submit(creator, draft.id)
+    with pytest.raises(EditorialError, match="role is required"):
+        service.create_post(editor, post_draft())
+    with pytest.raises(EditorialError, match="role is required"):
+        service.publish(editor, draft.id)
+    with pytest.raises(EditorialError, match="cannot publish"):
+        service.publish(publisher, draft.id)
+    service.submit(editor, draft.id)
+    with pytest.raises(EditorialError, match="role is required"):
+        service.decide(publisher, draft.id, EditorialDecision.APPROVE, reason="Checked")
+    service.decide(
+        principal("content_reviewer"),
+        draft.id,
+        EditorialDecision.APPROVE,
+        reason="Sources and content checked",
+    )
+    assert service.publish(publisher, draft.id).status is EditorialStatus.PUBLISHED
+    assert repository.audits[-1].actor_user_id == publisher.id
+
+
+def test_revoked_blog_permission_is_denied() -> None:
+    repository = MemoryEditorialRepository()
+    service = EditorialService(repository)
+    user = principal("blog_create")
+    service.create_post(user, post_draft())
+    with pytest.raises(EditorialError, match="role is required"):
+        service.create_post(replace(user, roles=frozenset()), post_draft())
+
+
+def test_admin_can_publish_draft_in_one_action_with_audit_trail():
+    repository = MemoryEditorialRepository()
+    service = EditorialService(repository)
+    admin = principal("admin")
+    draft = service.create_post(admin, post_draft())
+    published = service.publish_now(admin, draft.id)
+    assert published.status is EditorialStatus.PUBLISHED
+    assert [event.action for event in repository.audits] == [
+        "content.post_created",
+        "content.revision_submitted",
+        "content.revision_approved",
+        "content.revision_published",
+    ]
+
+
+def test_publish_now_cannot_bypass_sources_or_self_review():
+    repository = MemoryEditorialRepository()
+    service = EditorialService(repository)
+    admin = principal("admin")
+    draft = service.create_post(admin, post_draft())
+    repository.current_source_links = False
+    with pytest.raises(EditorialError, match="citations"):
+        service.publish_now(admin, draft.id)
+    assert repository.records[draft.id].status is EditorialStatus.DRAFT
+    repository.current_source_links = True
+    author = replace(
+        principal("blog_create"),
+        roles=frozenset(
+            {
+                "blog_create",
+                "blog_edit",
+                "content_reviewer",
+                "blog_publish",
+            }
+        ),
+    )
+    own_draft = service.create_post(author, post_draft())
+    with pytest.raises(EditorialError, match="cannot approve their own"):
+        service.publish_now(author, own_draft.id)
+    assert repository.records[own_draft.id].status is not EditorialStatus.PUBLISHED
+
+
+@pytest.mark.parametrize("role", ["blog_create", "blog_edit", "content_author", "admin"])
+def test_writers_can_upload_editorial_images(role):
+    EditorialService(MemoryEditorialRepository()).authorize_media(principal(role))
+
+
+@pytest.mark.parametrize("role", ["blog_publish", "content_reviewer", "customer"])
+def test_non_writers_cannot_upload_images(role):
+    with pytest.raises(EditorialError, match="role is required"):
+        EditorialService(MemoryEditorialRepository()).authorize_media(principal(role))

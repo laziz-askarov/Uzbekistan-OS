@@ -407,3 +407,40 @@ def publish_editorial_revision(
         data=EditorialRevisionData.from_record(record),
         meta=ResponseMeta(request_id=request.state.request_id),
     )
+
+
+@router.get(
+    "/media-access",
+    response_model=SuccessResponse[dict[str, str]],
+    operation_id="authorizeEditorialMediaUpload",
+    summary="Authorize editorial image upload using current API roles",
+)
+def authorize_editorial_media_upload(
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[EditorialService, Depends(get_editorial_service)],
+) -> SuccessResponse[dict[str, str]]:
+    service.authorize_media(principal)
+    return SuccessResponse(
+        data={"principal_id": str(principal.id)},
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )
+
+
+@router.post(
+    "/revisions/{revision_id}/publish-now",
+    response_model=SuccessResponse[EditorialRevisionData],
+    operation_id="publishEditorialRevisionNow",
+    summary="Submit, approve, and publish with all existing permission and evidence checks",
+)
+def publish_editorial_revision_now(
+    revision_id: UUID,
+    request: Request,
+    principal: Annotated[AuthenticatedPrincipal, Depends(get_authenticated_principal)],
+    service: Annotated[EditorialService, Depends(get_editorial_service)],
+) -> SuccessResponse[EditorialRevisionData]:
+    record = service.publish_now(principal, revision_id)
+    return SuccessResponse(
+        data=EditorialRevisionData.from_record(record),
+        meta=ResponseMeta(request_id=request.state.request_id),
+    )

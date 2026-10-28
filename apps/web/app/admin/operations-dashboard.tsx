@@ -905,6 +905,7 @@ export default function OperationsDashboard() {
           <Link href="/admin/content">Content</Link>
           <Link href="/admin/reviews">Review queue</Link>
           <Link href="/admin/feedback">Feedback</Link>
+          <Link href="/admin/inquiries">Trip inquiries</Link>
           <ThemeToggle className={styles.themeButton} />
           <Link className={styles.quietButton} href="/account">
             Account

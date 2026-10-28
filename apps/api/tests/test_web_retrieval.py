@@ -17,9 +17,7 @@ NOW = datetime(2026, 8, 25, 12, tzinfo=UTC)
 
 
 def overstay_plan():
-    return RetrievalPlanner().plan(
-        QueryRequest(query="What are overstay penalties in Uzbekistan?")
-    )
+    return RetrievalPlanner().plan(QueryRequest(query="What are overstay penalties in Uzbekistan?"))
 
 
 def approved_source(*, trust_tier: int = 1) -> ApprovedWebSource:
@@ -72,9 +70,7 @@ def test_web_search_is_domain_filtered_non_stored_and_discards_unapproved_urls()
     assert [hit.url for hit in hits] == ["https://gov.uz/en/overstay"]
     assert captured["payload"]["store"] is False
     assert captured["payload"]["tool_choice"] == "required"
-    assert captured["payload"]["tools"][0]["filters"] == {
-        "allowed_domains": ["gov.uz"]
-    }
+    assert captured["payload"]["tools"][0]["filters"] == {"allowed_domains": ["gov.uz"]}
     assert captured["request_id"] == "request-1"
 
 
@@ -155,9 +151,12 @@ def test_high_risk_web_fallback_uses_only_tier_one_official_sources() -> None:
             max_page_characters=3_000,
         )
 
-    assert provider(approved_source(trust_tier=2)).retrieve(
-        overstay_plan(), request_id="request-tier-2"
-    ) is None
+    assert (
+        provider(approved_source(trust_tier=2)).retrieve(
+            overstay_plan(), request_id="request-tier-2"
+        )
+        is None
+    )
     evidence = provider(approved_source(trust_tier=1)).retrieve(
         overstay_plan(), request_id="request-tier-1"
     )

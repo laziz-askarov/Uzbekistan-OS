@@ -1,6 +1,6 @@
 # Uzbekistan OS MVP
 
-Evidence-backed, multilingual guidance for navigating official Uzbekistan procedures.
+Uzbekistan OS by Kebab Travel: the verified guide to travelling in and living in Uzbekistan. Evidence-backed, multilingual guides with visible verification dates and official sources, plus an email trip-inquiry form for Kebab Travel's planning service. Brand direction: `docs/strategy/brand-refresh-2026.md` and ADR 0026.
 
 ## Repository status
 

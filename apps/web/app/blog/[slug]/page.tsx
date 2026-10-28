@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MarkdownContent } from "@/components/editorial/markdown-content";
+import { authorPageUrl as resolveAuthorPageUrl } from "@/lib/authors";
 import {
   getPublishedPost,
   publicPostUrl,
@@ -9,6 +10,7 @@ import {
   type PublishedPost,
 } from "@/lib/editorial-content";
 import styles from "../blog.module.css";
+import { editorialLabels } from "@/lib/editorial-locale";
 
 type ArticlePageProps = { params: Promise<{ slug: string }> };
 type FaqItem = { question: string; answer: string };
@@ -41,14 +43,18 @@ function faqItems(post: PublishedPost): FaqItem[] {
 function takeaways(post: PublishedPost) {
   const candidate = post.structured_content.key_takeaways;
   return Array.isArray(candidate)
-    ? candidate.filter((item): item is string => typeof item === "string")
+    ? candidate.filter(
+        (item): item is string =>
+          typeof item === "string" && Boolean(item.trim()),
+      )
     : [];
 }
 
-function formatReviewDate(value: string) {
-  return new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(
-    new Date(value),
-  );
+function formatReviewDate(value: string, language = "en") {
+  return new Intl.DateTimeFormat(language, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(value));
 }
 
 function languageName(languageCode: string) {
@@ -61,11 +67,12 @@ function languageName(languageCode: string) {
   );
 }
 
+function authorPageUrl(author: PublishedPost["author"]) {
+  return resolveAuthorPageUrl(author, SITE_URL);
+}
+
 function jsonLd(post: PublishedPost, canonical: string, faqs: FaqItem[]) {
-  const authorUrl = safeAbsoluteUrl(
-    post.author.profile_url,
-    `${SITE_URL}/blog`,
-  );
+  const authorUrl = authorPageUrl(post.author);
   const imageUrl = post.hero_image_url
     ? safeAbsoluteUrl(post.hero_image_url, "")
     : "";
@@ -109,7 +116,7 @@ function jsonLd(post: PublishedPost, canonical: string, faqs: FaqItem[]) {
         {
           "@type": "ListItem",
           position: 2,
-          name: "Guides",
+          name: editorialLabels(post.language_code).guides,
           item: `${SITE_URL}/blog`,
         },
         {
@@ -176,6 +183,17 @@ export async function generateMetadata({
   return {
     title: `${post.seo_title ?? post.title} | Uzbekistan OS`,
     description: post.seo_description ?? post.summary,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
     alternates: {
       canonical,
       languages: languageAlternates,
@@ -189,7 +207,10 @@ export async function generateMetadata({
       publishedTime: post.published_at,
       modifiedTime: post.updated_at,
       authors: [post.author.name],
-      locale: post.language_code,
+      locale: editorialLabels(post.language_code).locale,
+      alternateLocale: post.translations
+        .filter((item) => item.language_code !== post.language_code)
+        .map((item) => editorialLabels(item.language_code).locale),
       images: socialImages,
     },
     twitter: {
@@ -212,12 +233,15 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   );
   const faqs = faqItems(post);
   const keyTakeaways = takeaways(post);
-  const published = new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(
-    new Date(post.published_at),
-  );
-  const updated = new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(
-    new Date(post.updated_at),
-  );
+  const labels = editorialLabels(post.language_code);
+  const published = new Intl.DateTimeFormat(post.language_code, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(post.published_at));
+  const updated = new Intl.DateTimeFormat(post.language_code, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(post.updated_at));
 
   return (
     <article className={styles.article} lang={post.language_code}>
@@ -225,34 +249,57 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         dangerouslySetInnerHTML={{ __html: jsonLd(post, canonical, faqs) }}
         type="application/ld+json"
       />
-      <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
-        <Link href="/">Home</Link> / <Link href="/blog">Guides</Link> /{" "}
-        <span aria-current="page">{post.title}</span>
+      <nav className={styles.breadcrumbs} aria-label={labels.breadcrumb}>
+        <Link href="/">{labels.home}</Link> /{" "}
+        <Link
+          href={
+            post.language_code === "en"
+              ? "/blog"
+              : `/blog?language=${post.language_code}`
+          }
+        >
+          {labels.guides}
+        </Link>{" "}
+        / <span aria-current="page">{post.title}</span>
       </nav>
 
       <header className={styles.articleHero}>
         <div className={styles.articleMeta}>
           <span className={styles.category}>
-            {post.domain_slug?.replaceAll("-", " ") ?? "Uzbekistan"}
+            {labels.domains[post.domain_slug ?? ""] ?? labels.country}
           </span>
-          <span>{post.content_type.replaceAll("_", " ")}</span>
+          <span>
+            {labels.types[post.content_type] ??
+              post.content_type.replaceAll("_", " ")}
+          </span>
           <span>{post.language_code.toUpperCase()}</span>
         </div>
         <h1>{post.title}</h1>
         <p className={styles.dek}>{post.summary}</p>
         <div className={styles.articleMeta}>
-          <span>By {post.author.name}</span>
-          <time dateTime={post.published_at}>Published {published}</time>
+          <span>
+            {labels.by} {post.author.name}
+          </span>
+          <time dateTime={post.published_at}>
+            {labels.published} {published}
+          </time>
           {post.updated_at !== post.published_at ? (
-            <time dateTime={post.updated_at}>Updated {updated}</time>
+            <time dateTime={post.updated_at}>
+              {labels.updated} {updated}
+            </time>
           ) : null}
         </div>
         {post.translations.length > 1 ? (
-          <nav className={styles.languageLinks} aria-label="Article languages">
+          <nav className={styles.languageLinks} aria-label={labels.languages}>
             {post.translations.map((translation) => (
               <Link
                 href={`/blog/${translation.slug}`}
                 hrefLang={translation.language_code}
+                aria-current={
+                  translation.language_code === post.language_code
+                    ? "page"
+                    : undefined
+                }
                 key={translation.language_code}
               >
                 {languageName(translation.language_code)}
@@ -262,12 +309,24 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         ) : null}
       </header>
 
+      {post.hero_image_url && safeAbsoluteUrl(post.hero_image_url, "") ? (
+        <figure className={styles.coverImage}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={safeAbsoluteUrl(post.hero_image_url, "")}
+            alt={post.hero_image_alt ?? post.title}
+            fetchPriority="high"
+            decoding="async"
+          />
+        </figure>
+      ) : null}
+
       {keyTakeaways.length ? (
         <section
           className={styles.takeaways}
           aria-labelledby="takeaways-heading"
         >
-          <h2 id="takeaways-heading">Key takeaways</h2>
+          <h2 id="takeaways-heading">{labels.takeaways}</h2>
           <ul>
             {keyTakeaways.map((item) => (
               <li key={item}>{item}</li>
@@ -282,7 +341,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {faqs.length ? (
         <section className={styles.faq} aria-labelledby="faq-heading">
-          <h2 id="faq-heading">Frequently asked questions</h2>
+          <h2 id="faq-heading">{labels.faq}</h2>
           {faqs.map((item) => (
             <details key={item.question}>
               <summary>{item.question}</summary>
@@ -294,7 +353,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {post.sources.length ? (
         <section className={styles.sources} aria-labelledby="sources-heading">
-          <h2 id="sources-heading">Sources and review trail</h2>
+          <h2 id="sources-heading">{labels.sources}</h2>
           <ol className={styles.sourceList}>
             {post.sources.map((source) => (
               <li key={`${source.source_id}-${source.locator}`}>
@@ -304,11 +363,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 <span>{source.organization}</span>
                 <span>{source.locator}</span>
                 {source.document_title ? (
-                  <span>Reviewed knowledge: {source.document_title}</span>
+                  <span>
+                    {labels.reviewedKnowledge} {source.document_title}
+                  </span>
                 ) : null}
                 {source.reviewed_at ? (
                   <time dateTime={source.reviewed_at}>
-                    Knowledge reviewed {formatReviewDate(source.reviewed_at)}
+                    {labels.knowledgeReviewed}{" "}
+                    {formatReviewDate(source.reviewed_at, post.language_code)}
                   </time>
                 ) : null}
               </li>
@@ -318,23 +380,23 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             className={styles.machineLink}
             href={`/blog/${post.slug}/markdown`}
           >
-            View machine-readable Markdown →
+            {labels.markdown}
           </Link>
         </section>
       ) : null}
 
       <section className={styles.authorBox} aria-labelledby="author-heading">
-        <h2 id="author-heading">About the author</h2>
+        <h2 id="author-heading">{labels.author}</h2>
         <p>
-          <strong>{post.author.name}</strong>
+          <a href={authorPageUrl(post.author)}>
+            <strong>{post.author.name}</strong>
+          </a>
           {post.author.bio ? ` — ${post.author.bio}` : ""}
         </p>
       </section>
 
       <p className={styles.reviewNote}>
-        Editorial version {post.version_number}. This page is independent
-        informational guidance and links to the sources reviewed for this
-        edition.
+        {labels.version} {post.version_number}. {labels.disclaimer}
       </p>
     </article>
   );

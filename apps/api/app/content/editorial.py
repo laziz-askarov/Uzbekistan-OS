@@ -10,9 +10,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.identity.service import AuthenticatedPrincipal
 
-AUTHOR_ROLES = frozenset({"content_author", "admin"})
+AUTHOR_ROLES = frozenset({"content_author", "blog_create", "admin"})
+EDITOR_ROLES = frozenset({"content_author", "blog_edit", "admin"})
 REVIEWER_ROLES = frozenset({"content_reviewer", "admin"})
-PUBLISHER_ROLES = frozenset({"knowledge_publisher", "admin"})
+PUBLISHER_ROLES = frozenset({"knowledge_publisher", "blog_publish", "admin"})
 
 
 class EditorialStatus(StrEnum):
@@ -427,7 +428,9 @@ class EditorialService:
         return post
 
     def list_authors(self, principal: AuthenticatedPrincipal) -> tuple[EditorialAuthorRecord, ...]:
-        self._authorize(principal, AUTHOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff")
+        self._authorize(
+            principal, AUTHOR_ROLES | EDITOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff"
+        )
         return self.repository.list_authors()
 
     def create_author(
@@ -459,7 +462,9 @@ class EditorialService:
         status: EditorialStatus | None = None,
         limit: int = 100,
     ) -> tuple[EditorialPostSummaryRecord, ...]:
-        self._authorize(principal, AUTHOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff")
+        self._authorize(
+            principal, AUTHOR_ROLES | EDITOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff"
+        )
         if not 1 <= limit <= 100:
             raise EditorialError(
                 "invalid_editorial_limit", "editorial post limit must be between 1 and 100"
@@ -474,7 +479,9 @@ class EditorialService:
         language_code: str | None = None,
         limit: int = 200,
     ) -> tuple[ReviewedKnowledgeSourceRecord, ...]:
-        self._authorize(principal, AUTHOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff")
+        self._authorize(
+            principal, AUTHOR_ROLES | EDITOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff"
+        )
         if not 1 <= limit <= 200:
             raise EditorialError(
                 "invalid_editorial_source_limit",
@@ -489,7 +496,9 @@ class EditorialService:
     def get_revision(
         self, principal: AuthenticatedPrincipal, revision_id: UUID
     ) -> EditorialRevisionDetailRecord:
-        self._authorize(principal, AUTHOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff")
+        self._authorize(
+            principal, AUTHOR_ROLES | EDITOR_ROLES | REVIEWER_ROLES | PUBLISHER_ROLES, "staff"
+        )
         detail = self.repository.get_detail(revision_id)
         if detail is None:
             raise EditorialError(
@@ -518,7 +527,7 @@ class EditorialService:
         *,
         created_at: datetime | None = None,
     ) -> EditorialRevisionRecord:
-        self._authorize(principal, AUTHOR_ROLES, "editorial author")
+        self._authorize(principal, EDITOR_ROLES, "blog editor")
         now = created_at or datetime.now(UTC)
         record = self.repository.create_revision(post_id, draft, principal, created_at=now)
         self._audit(principal, record, "content.revision_created", None, record.status, now)
@@ -532,7 +541,7 @@ class EditorialService:
         *,
         updated_at: datetime | None = None,
     ) -> EditorialRevisionDetailRecord:
-        self._authorize(principal, AUTHOR_ROLES, "editorial author")
+        self._authorize(principal, EDITOR_ROLES, "blog editor")
         record = self._get(revision_id)
         if record.status is not EditorialStatus.DRAFT:
             raise EditorialError(
@@ -563,7 +572,7 @@ class EditorialService:
         *,
         submitted_at: datetime | None = None,
     ) -> EditorialRevisionRecord:
-        self._authorize(principal, AUTHOR_ROLES, "editorial author")
+        self._authorize(principal, EDITOR_ROLES, "blog editor")
         record = self._get(revision_id)
         if record.status is not EditorialStatus.DRAFT:
             raise EditorialError(
@@ -678,6 +687,27 @@ class EditorialService:
             principal, published, "content.revision_published", record.status, published.status, now
         )
         return published
+
+    def authorize_media(self, principal: AuthenticatedPrincipal) -> None:
+        self._authorize(principal, AUTHOR_ROLES | EDITOR_ROLES, "blog writer")
+
+    def publish_now(
+        self, principal: AuthenticatedPrincipal, revision_id: UUID
+    ) -> EditorialRevisionRecord:
+        # This composes the existing checks; callers cannot bypass review or evidence checks.
+        self._authorize(principal, PUBLISHER_ROLES, "content publisher")
+        record = self._get(revision_id)
+        if record.status is EditorialStatus.DRAFT:
+            self.submit(principal, revision_id)
+            record = self._get(revision_id)
+        if record.status is EditorialStatus.IN_REVIEW:
+            self.decide(
+                principal,
+                revision_id,
+                EditorialDecision.APPROVE,
+                reason="Reviewed for immediate publication by an authorized editor.",
+            )
+        return self.publish(principal, revision_id, published_at=datetime.now(UTC))
 
     def _get(self, revision_id: UUID) -> EditorialRevisionRecord:
         record = self.repository.get_for_update(revision_id)

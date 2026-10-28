@@ -1,0 +1,216 @@
+.intro {
+  max-width: 760px;
+  padding-block: 56px 16px;
+}
+.intro h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5.6vw, 68px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.intro p {
+  margin: 22px 0 0;
+  max-width: 56ch;
+  color: var(--ink-2);
+  font-size: 18px;
+  line-height: 1.6;
+}
+.offer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+.offer h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 560;
+  line-height: 1.2;
+}
+.offer p {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 20px;
+  max-width: 60ch;
+}
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 16px;
+}
+.steps li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--kiln);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+}
+.steps strong {
+  display: block;
+  font-size: 17px;
+}
+.steps span {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+.honest {
+  max-width: 60ch;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.honest p {
+  margin: 0 0 1em;
+}
+.honest a {
+  color: var(--cobalt);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.form {
+  display: grid;
+  gap: 24px;
+  max-width: 720px;
+}
+.field {
+  display: grid;
+  gap: 8px;
+}
+.field label,
+.fieldset legend {
+  font-size: 15px;
+  font-weight: 600;
+}
+.hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  color: var(--night);
+  font: inherit;
+  font-size: 16px;
+}
+.textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px 20px;
+}
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 10px;
+}
+.choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px 16px;
+}
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 40px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.choice input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--cobalt);
+}
+.honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+.actions p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.status {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+.statusSuccess {
+  background: var(--glaze-soft);
+  color: var(--glaze-deep);
+}
+.statusError {
+  background: var(--kiln-soft);
+  color: var(--kiln-deep);
+}
+.done {
+  max-width: 60ch;
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: var(--glaze-soft);
+}
+.done h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 560;
+}
+.done p {
+  margin: 0;
+  line-height: 1.6;
+}
+@media (max-width: 760px) {
+  .offer {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}

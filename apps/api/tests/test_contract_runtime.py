@@ -8,6 +8,9 @@ ROOT = Path(__file__).resolve().parents[3]
 CONTRACT_PATH = ROOT / "packages/contracts/openapi.yaml"
 
 IMPLEMENTED_OPERATIONS = {
+    "/admin/content/media-access": "get",
+    "/admin/content/revisions/{revision_id}/publish-now": "post",
+    "/admin/blog-permissions": ("get", "put"),
     "/auth/me": "get",
     "/assistant/answer": "post",
     "/admin/sources": ("get", "post"),
@@ -35,6 +38,15 @@ IMPLEMENTED_OPERATIONS = {
 }
 
 IMPLEMENTED_AUTHORIZATION = {
+    "/admin/content/media-access": {
+        "mode": "role-gated",
+        "roles": ["content_author", "blog_create", "blog_edit", "admin"],
+    },
+    "/admin/content/revisions/{revision_id}/publish-now": {
+        "mode": "role-gated",
+        "roles": ["knowledge_publisher", "blog_publish", "admin"],
+    },
+    "/admin/blog-permissions": {"mode": "role-gated", "roles": ["admin"]},
     "/auth/me": {"mode": "authenticated", "roles": []},
     "/assistant/answer": {"mode": "authenticated", "roles": []},
     "/admin/sources": {"mode": "role-gated", "roles": ["admin"]},
@@ -76,35 +88,67 @@ IMPLEMENTED_AUTHORIZATION = {
     "/admin/content/authors": {
         "get": {
             "mode": "role-gated",
-            "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
+            "roles": [
+                "content_author",
+                "blog_create",
+                "blog_edit",
+                "content_reviewer",
+                "knowledge_publisher",
+                "blog_publish",
+                "admin",
+            ],
         },
-        "post": {"mode": "role-gated", "roles": ["content_author", "admin"]},
+        "post": {"mode": "role-gated", "roles": ["content_author", "blog_create", "admin"]},
     },
     "/admin/content/reviewed-sources": {
         "mode": "role-gated",
-        "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
+        "roles": [
+            "content_author",
+            "blog_create",
+            "blog_edit",
+            "content_reviewer",
+            "knowledge_publisher",
+            "blog_publish",
+            "admin",
+        ],
     },
     "/admin/content/posts": {
         "get": {
             "mode": "role-gated",
-            "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
+            "roles": [
+                "content_author",
+                "blog_create",
+                "blog_edit",
+                "content_reviewer",
+                "knowledge_publisher",
+                "blog_publish",
+                "admin",
+            ],
         },
-        "post": {"mode": "role-gated", "roles": ["content_author", "admin"]},
+        "post": {"mode": "role-gated", "roles": ["content_author", "blog_create", "admin"]},
     },
     "/admin/content/posts/{post_id}/revisions": {
         "mode": "role-gated",
-        "roles": ["content_author", "admin"],
+        "roles": ["content_author", "blog_edit", "admin"],
     },
     "/admin/content/revisions/{revision_id}": {
         "get": {
             "mode": "role-gated",
-            "roles": ["content_author", "content_reviewer", "knowledge_publisher", "admin"],
+            "roles": [
+                "content_author",
+                "blog_create",
+                "blog_edit",
+                "content_reviewer",
+                "knowledge_publisher",
+                "blog_publish",
+                "admin",
+            ],
         },
-        "put": {"mode": "role-gated", "roles": ["content_author", "admin"]},
+        "put": {"mode": "role-gated", "roles": ["content_author", "blog_edit", "admin"]},
     },
     "/admin/content/revisions/{revision_id}/submit": {
         "mode": "role-gated",
-        "roles": ["content_author", "admin"],
+        "roles": ["content_author", "blog_edit", "admin"],
     },
     "/admin/content/revisions/{revision_id}/decision": {
         "mode": "role-gated",
@@ -112,7 +156,7 @@ IMPLEMENTED_AUTHORIZATION = {
     },
     "/admin/content/revisions/{revision_id}/publish": {
         "mode": "role-gated",
-        "roles": ["knowledge_publisher", "admin"],
+        "roles": ["knowledge_publisher", "blog_publish", "admin"],
     },
     "/content/posts": {"mode": "public"},
     "/content/posts/{slug}": {"mode": "public"},

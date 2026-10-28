@@ -1,64 +1,123 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import {
+  Fraunces,
+  Instrument_Sans,
+  Instrument_Serif,
+  Inter,
+} from "next/font/google";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@uzbekistan-os/design-system/components.css";
+import { JsonLd } from "@/components/site/json-ld";
 import { SITE_URL } from "@/lib/editorial-content";
+import { organizationGraph } from "@/lib/organization-schema";
+import {
+  OPERATOR_NAME,
+  SITE_DESCRIPTION,
+  SITE_LOCKUP,
+  SITE_NAME,
+  SITE_TAGLINE,
+} from "@/lib/site";
 import "./globals.css";
+
+const display = Fraunces({
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT"],
+  display: "swap",
+  variable: "--font-fraunces",
+});
+
+const text = Inter({
+  subsets: ["latin", "cyrillic"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+// Editorial preview faces; they replace Fraunces and Inter once approved.
+const magazineDisplay = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-instrument-serif",
+});
+
+const magazineText = Instrument_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-instrument-sans",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  applicationName: "Uzbekistan OS",
-  title: "Uzbekistan OS | Trusted guides for visiting, living and business",
-  description:
-    "Reviewed guidance about visiting, living, doing business, healthcare, and immigration in Uzbekistan, with transparent sources and update dates.",
+  applicationName: SITE_NAME,
+  title:
+    "Uzbekistan OS by Kebab Travel | The verified guide to travelling in Uzbekistan",
+  description: SITE_DESCRIPTION,
   alternates: {
     canonical: SITE_URL,
     types: {
       "application/rss+xml": `${SITE_URL}/blog/rss.xml`,
     },
   },
-  category: "travel and public information",
-  creator: "Uzbekistan OS",
-  publisher: "Uzbekistan OS",
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  category: "travel",
+  creator: OPERATOR_NAME,
+  publisher: OPERATOR_NAME,
   keywords: [
-    "Uzbekistan",
     "Uzbekistan travel",
-    "Uzbekistan business",
+    "Uzbekistan travel guide",
+    "Samarkand",
+    "Bukhara",
+    "Khiva",
+    "Tashkent",
     "living in Uzbekistan",
-    "Uzbekistan immigration",
   ],
   openGraph: {
     type: "website",
-    siteName: "Uzbekistan OS",
+    siteName: SITE_LOCKUP,
     url: SITE_URL,
-    title: "Uzbekistan OS",
-    description:
-      "Reviewed guidance for visiting, living, and doing business in Uzbekistan.",
+    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
     images: [
       {
         url: `${SITE_URL}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: "Uzbekistan OS — trusted guidance for Uzbekistan",
+        alt: `${SITE_NAME} by ${OPERATOR_NAME}: ${SITE_TAGLINE}`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Uzbekistan OS",
-    description:
-      "Reviewed guidance for visiting, living, and doing business in Uzbekistan.",
+    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
     images: [`${SITE_URL}/opengraph-image`],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F8F6F1",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${display.variable} ${text.variable} ${magazineDisplay.variable} ${magazineText.variable}`}
+    >
       <body>
+        <JsonLd data={organizationGraph(SITE_URL)} />
         {children}
         <Analytics />
         <SpeedInsights />

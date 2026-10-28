@@ -52,9 +52,7 @@ class SqlAlchemyReviewRepository:
                 section_count=artifact.section_count,
                 topic=(str(artifact.details["topic"]) if artifact.details.get("topic") else None),
                 filename=(
-                    str(artifact.details["filename"])
-                    if artifact.details.get("filename")
-                    else None
+                    str(artifact.details["filename"]) if artifact.details.get("filename") else None
                 ),
                 # Topic was only set by the manual-ingestion path before the
                 # explicit provenance flag was introduced, so it is a safe

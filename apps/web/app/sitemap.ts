@@ -5,7 +5,8 @@ import {
   SITE_URL,
 } from "@/lib/editorial-content";
 
-export const revalidate = 3600;
+// Generate from current publications rather than freezing an empty build-time sitemap.
+export const dynamic = "force-dynamic";
 
 function sitemapImage(value: string | null) {
   if (!value) return null;
@@ -27,9 +28,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
+      url: `${SITE_URL}/travel`,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/living`,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
       url: `${SITE_URL}/blog`,
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/trips`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/about`,
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     {
       url: `${SITE_URL}/privacy`,

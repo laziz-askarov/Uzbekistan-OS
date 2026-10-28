@@ -1,0 +1,77 @@
+.intro {
+  max-width: 760px;
+  padding-block: 56px 24px;
+}
+.intro h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5.6vw, 68px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.intro p {
+  margin: 22px 0 0;
+  max-width: 56ch;
+  color: var(--ink-2);
+  font-size: 18px;
+  line-height: 1.6;
+}
+.authors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.authors li a {
+  display: block;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper-raised);
+}
+.authors li a:hover {
+  border-color: var(--cobalt);
+}
+.authors strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 560;
+}
+.authors span {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+.checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 18px;
+  max-width: var(--measure);
+}
+.checks li {
+  padding-left: 22px;
+  position: relative;
+  font-size: 16.5px;
+  line-height: 1.6;
+}
+.checks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--glaze);
+}
+.checks strong {
+  display: block;
+}

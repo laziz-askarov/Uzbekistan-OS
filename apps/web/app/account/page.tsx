@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStaffIdentity } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
+import { getBlogIdentity } from "@/lib/blog-auth";
 import AccountSettings from "./account-settings";
 
 export const metadata = { title: "Your account | Uzbekistan OS" };
@@ -29,6 +30,18 @@ export default async function AccountPage() {
     .filter(Boolean)
     .join(" ");
   const staffIdentity = await getStaffIdentity();
+  const blogIdentity = await getBlogIdentity().catch(() => null);
+  const canAccessBlogs = blogIdentity?.roles.some((role) =>
+    [
+      "admin",
+      "content_author",
+      "content_reviewer",
+      "knowledge_publisher",
+      "blog_create",
+      "blog_edit",
+      "blog_publish",
+    ].includes(role),
+  );
 
   return (
     <main className="account-page">
@@ -67,6 +80,19 @@ export default async function AccountPage() {
           userId={data.user.id}
         />
 
+        {canAccessBlogs ? (
+          <section className="account-section">
+            <h2>Blog tools</h2>
+            <Link className="pill pill-light" href="/admin/content">
+              Blog studio
+            </Link>
+            {blogIdentity?.roles.includes("admin") ? (
+              <Link className="pill pill-light" href="/admin/blog-permissions">
+                Manage blog permissions
+              </Link>
+            ) : null}
+          </section>
+        ) : null}
         {staffIdentity ? (
           <section
             className="account-section account-admin-section"

@@ -8,11 +8,11 @@ async function webFile(path) {
   return readFile(new URL(path, webRoot), "utf8");
 }
 
-test("the editorial studio is admin-only and excluded from search indexes", async () => {
+test("the editorial studio checks current API roles and is excluded from search indexes", async () => {
   const page = await webFile("app/admin/content/page.tsx");
 
-  assert.match(page, /getStaffIdentity\(\)/);
-  assert.match(page, /identity\?\.role !== "admin"/);
+  assert.match(page, /getBlogIdentity\(\)/);
+  assert.match(page, /identity\?\.roles.some/);
   assert.match(page, /redirect\("\/account"\)/);
   assert.match(page, /robots: \{ index: false, follow: false \}/);
 });
@@ -74,4 +74,25 @@ test("content drafts carry SEO, structured data, author, and evidence fields", a
     studio,
     /Every published post identifies[\s\S]*responsible human[\s\S]*author/,
   );
+});
+
+test("blog grants are admin managed and expose independent accessible controls", async () => {
+  const [page, controls, auth, studio] = await Promise.all([
+    webFile("app/admin/blog-permissions/page.tsx"),
+    webFile("app/admin/blog-permissions/permissions.tsx"),
+    webFile("lib/blog-auth.ts"),
+    webFile("app/admin/content/content-studio.tsx"),
+  ]);
+  assert.match(page, /roles.includes\("admin"\)/);
+  assert.match(page, /redirect\("\/account"\)/);
+  assert.match(auth, /\/auth\/me/);
+  assert.match(auth, /cache: "no-store"/);
+  for (const permission of ["blog_create", "blog_edit", "blog_publish"]) {
+    assert.ok(controls.includes(permission));
+    assert.ok(studio.includes(permission));
+  }
+  assert.match(controls, /<fieldset disabled=\{busy\}>/);
+  assert.match(controls, /aria-live="polite"/);
+  assert.match(studio, /!ownAuthor && canCreate/);
+  assert.match(studio, /status === "approved" && canPublish/);
 });

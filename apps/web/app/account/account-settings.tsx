@@ -572,9 +572,8 @@ export default function AccountSettings({
 
         <div className="account-privacy-content">
           <p className="account-section-copy">
-            Saved conversations do not expire automatically. They remain in
-            your account until you delete each conversation or delete your
-            account.
+            Saved conversations do not expire automatically. They remain in your
+            account until you delete each conversation or delete your account.
           </p>
 
           <div className="account-data-action">
