@@ -1,7 +1,14 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/editorial-content";
 
-const privatePaths = ["/account/", "/admin/", "/api/", "/auth/", "/chat"];
+const privatePaths = [
+  "/account/",
+  "/admin/",
+  "/api/",
+  "/auth/",
+  "/chat",
+  "/preview",
+];
 
 // Search engines and AI answer engines are welcome on every public page; the
 // signed-in assistant and administration surfaces stay out of every index.

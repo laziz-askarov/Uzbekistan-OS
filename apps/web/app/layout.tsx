@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import {
+  Fraunces,
+  Instrument_Sans,
+  Instrument_Serif,
+  Inter,
+} from "next/font/google";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -27,6 +32,21 @@ const text = Inter({
   subsets: ["latin", "cyrillic"],
   display: "swap",
   variable: "--font-inter",
+});
+
+// Editorial preview faces; they replace Fraunces and Inter once approved.
+const magazineDisplay = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-instrument-serif",
+});
+
+const magazineText = Instrument_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-instrument-sans",
 });
 
 export const metadata: Metadata = {
@@ -80,7 +100,10 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${text.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${text.variable} ${magazineDisplay.variable} ${magazineText.variable}`}
+    >
       <body>
         <JsonLd data={organizationGraph(SITE_URL)} />
         {children}
