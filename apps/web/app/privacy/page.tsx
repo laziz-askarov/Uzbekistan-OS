@@ -77,6 +77,31 @@ const sections = [
     ),
   },
   {
+    id: "trip-inquiries",
+    title: "Trip inquiries",
+    content: (
+      <>
+        <p>
+          If you send a trip-planning inquiry through the form on the Plan my
+          trip page, we collect your name, email address, travel month, number
+          of nights and travellers, interests, comfort level, budget band, and
+          any message you write. Kebab Travel, the Tashkent travel company that
+          publishes Uzbekistan OS, uses this information only to reply to you
+          and prepare a trip proposal. You do not need an account to send an
+          inquiry, and we do not add you to a mailing list.
+        </p>
+        <p>
+          Inquiries are stored in our customer database and are visible only to
+          staff who handle trip planning. We keep an inquiry for 24 months after
+          we last worked on it, then delete it, unless a booking follows and its
+          records must be kept for accounting or legal reasons. You can ask us
+          to delete your inquiry sooner by emailing{" "}
+          <a href="mailto:info@uzbekistanos.com">info@uzbekistanos.com</a>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "how-we-use-information",
     title: "How we use information",
     content: (

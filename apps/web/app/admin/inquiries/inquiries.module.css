@@ -1,0 +1,69 @@
+.page {
+  width: min(100% - 2 * var(--site-gutter), var(--site-width));
+  margin-inline: auto;
+  padding-block: 40px 80px;
+}
+.page h1 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 540;
+}
+.page > p {
+  margin: 0 0 28px;
+  color: var(--ink-2);
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 16px;
+}
+.card {
+  padding: 20px 24px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-bottom: 10px;
+}
+.head strong {
+  font-size: 18px;
+}
+.status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--glaze-soft);
+  color: var(--glaze-deep);
+  font-size: 13px;
+  font-weight: 650;
+}
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 20px;
+  font-size: 14.5px;
+}
+.facts dt {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.facts dd {
+  margin: 0;
+}
+.message {
+  margin: 14px 0 0;
+  white-space: pre-wrap;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.empty {
+  color: var(--ink-2);
+}
