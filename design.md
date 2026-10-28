@@ -1,10 +1,12 @@
 # Uzbekistan OS visual design language
 
-Status: MVP design direction
-Last updated: 2026-08-09
-Reference inspiration: [Lumos Figma landing-page frame](https://www.figma.com/design/2XAZzNlOfcDAkgQx2vCXLZ/Lumos-Figma-File--Community-?node-id=2409-213), adapted for Uzbekistan OS
-Applies to: public web, guided workflows, grounded answers, knowledge pages,
-authentication, administration, review, and the design-system catalogue
+Status: MVP design direction, amended 2026-10-28 for the tourism-first refresh
+Last updated: 2026-10-28
+
+> 2026-10 refresh: the public site now leads with travel as "Uzbekistan OS by Kebab Travel". Public pages use the brand tokens in `apps/web/app/globals.css` (plaster paper, night ink, Registan cobalt, glaze for verification marks, kiln clay for the trip service), Fraunces for display type and Inter for text, and a margin-label band layout. The visa workspace notes below describe the signed-in assistant, which is no longer linked from public navigation. See `docs/strategy/brand-refresh-2026.md` and ADR 0026.
+> Reference inspiration: [Lumos Figma landing-page frame](https://www.figma.com/design/2XAZzNlOfcDAkgQx2vCXLZ/Lumos-Figma-File--Community-?node-id=2409-213), adapted for Uzbekistan OS
+> Applies to: public web, guided workflows, grounded answers, knowledge pages,
+> authentication, administration, review, and the design-system catalogue
 
 ## Internal visa workspace reference
 
